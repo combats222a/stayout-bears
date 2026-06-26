@@ -6,14 +6,18 @@ import {
 } from '../utils/bears';
 import { playSpawnSound } from '../utils/sound';
 
+const WARN_BEFORE_SPAWN_MS = 5 * 60 * 1000; // звук за 5 минут до спавна
+
 function BearRow({ bear, onKill, onVanish, onReset }) {
   const [ms, setMs]     = useState(() => getTimeLeftMs(bear));
   const [elap, setElap] = useState('--:--:--');
-  const wasDeadRef      = useRef(getBearStatus(bear) === 'dead');
+  // Если в момент монтирования/смены медведя до спавна уже <=5 мин (или он уже спавнулся),
+  // звук задним числом не проигрываем — только когда порог будет пройден "вживую".
+  const warnedRef = useRef(getTimeLeftMs(bear) <= WARN_BEFORE_SPAWN_MS);
 
   useEffect(() => {
     setMs(getTimeLeftMs(bear));
-    wasDeadRef.current = getBearStatus(bear) === 'dead';
+    warnedRef.current = getTimeLeftMs(bear) <= WARN_BEFORE_SPAWN_MS;
   }, [bear]);
 
   useEffect(() => {
@@ -21,8 +25,8 @@ function BearRow({ bear, onKill, onVanish, onReset }) {
       const left = getTimeLeftMs(bear);
       setMs(left);
       setElap(formatElapsed(bear.killed_at));
-      if (left <= 0 && wasDeadRef.current) {
-        wasDeadRef.current = false;
+      if (bear.spawn_at && left > 0 && left <= WARN_BEFORE_SPAWN_MS && !warnedRef.current) {
+        warnedRef.current = true;
         playSpawnSound();
       }
     }, 500);
@@ -92,11 +96,8 @@ function BearRow({ bear, onKill, onVanish, onReset }) {
   );
 }
 
-export default function BearsPage({ bears: initialBears, clan }) {
-  const [bears, setBears] = useState(initialBears);
+export default function BearsPage({ bears, clan, onBearChange }) {
   const [error, setError] = useState('');
-
-  if (initialBears !== bears && initialBears.length > 0) setBears(initialBears);
 
   // Ensure all 11 bears exist in the list (merge with BEARS_LIST)
   const mergedBears = BEARS_LIST.map(meta => {
@@ -112,7 +113,7 @@ export default function BearsPage({ bears: initialBears, clan }) {
     try {
       const body = killedAt ? { killed_at: killedAt } : {};
       const { bear } = await api.post(`/bears/${index}/kill`, body);
-      setBears(prev => prev.map(b => b.bear_index === index ? { ...bear } : b));
+      onBearChange({ ...bear });
     } catch (e) { setError(e.message); }
   }
 
@@ -126,7 +127,7 @@ export default function BearsPage({ bears: initialBears, clan }) {
     setError('');
     try {
       const { bear } = await api.post(`/bears/${index}/reset`);
-      setBears(prev => prev.map(b => b.bear_index === index ? { ...bear } : b));
+      onBearChange({ ...bear });
     } catch (e) { setError(e.message); }
   }
 
@@ -179,7 +180,7 @@ export default function BearsPage({ bears: initialBears, clan }) {
         </table>
       </div>
       <div className="tbl-hint">
-        ⚡ Звук при спавне · «Исчез» — медведь пропал ~5 мин назад
+        ⚡ Звук за 5 мин до спавна · «Исчез» — медведь пропал ~5 мин назад
       </div>
     </div>
   );

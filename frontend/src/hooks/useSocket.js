@@ -7,9 +7,9 @@ export function getSocket() {
   return socketInstance;
 }
 
-export function useSocket(token, onBearUpdate, onClanUpdate) {
-  const handlersRef = useRef({ onBearUpdate, onClanUpdate });
-  handlersRef.current = { onBearUpdate, onClanUpdate };
+export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect) {
+  const handlersRef = useRef({ onBearUpdate, onClanUpdate, onReconnect });
+  handlersRef.current = { onBearUpdate, onClanUpdate, onReconnect };
 
   useEffect(() => {
     if (!token) {
@@ -28,7 +28,21 @@ export function useSocket(token, onBearUpdate, onClanUpdate) {
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
     socketInstance = io(SOCKET_URL, {
       auth: { token },
-      reconnectionAttempts: 5,
+      reconnection: true,
+      reconnectionAttempts: Infinity, // раньше было 5 — после 5 неудачных попыток сокет
+      reconnectionDelay: 1000,        // умирал навсегда и таблица замирала до ручного рефреша
+      reconnectionDelayMax: 10000,
+    });
+
+    let isFirstConnect = true;
+    socketInstance.on('connect', () => {
+      if (isFirstConnect) {
+        isFirstConnect = false;
+        return;
+      }
+      // Сокет переподключился после разрыва — подтягиваем актуальные данные,
+      // чтобы не потерять события, которые пришли пока связи не было.
+      handlersRef.current.onReconnect?.();
     });
 
     socketInstance.on('bear:update', (bear) => {

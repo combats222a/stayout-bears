@@ -49,7 +49,21 @@ export default function App() {
     loadClan();
   }, [loadClan]);
 
-  useSocket(token, handleBearUpdate, handleClanUpdate);
+  // Если соединение пропало и восстановилось (сон вкладки, разрыв сети, "уснувший" бэкенд) —
+  // подтягиваем актуальное состояние с сервера, чтобы не потерять события, пропущенные офлайн.
+  const handleReconnect = useCallback(() => {
+    loadClan();
+  }, [loadClan]);
+
+  useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect);
+
+  // Подстраховка: даже если сокет почему-то не пришёл/завис, раз в 30 сек
+  // подтягиваем свежие данные с сервера, чтобы таблица не "зависала" до ручного рефреша.
+  useEffect(() => {
+    if (!token || !clan) return;
+    const id = setInterval(loadClan, 30000);
+    return () => clearInterval(id);
+  }, [token, clan, loadClan]);
 
   function onAuth(newUser, newToken) {
     setToken(newToken);
@@ -88,7 +102,7 @@ export default function App() {
       <Header user={user} page={page} onNavigate={setPage} onLogout={onLogout} />
       <main className="main">
         {page === 'bears' && (
-          <BearsPage bears={bears} clan={clan} />
+          <BearsPage bears={bears} clan={clan} onBearChange={handleBearUpdate} />
         )}
         {page === 'clan' && (
           <ClanPage user={user} clan={clan} members={members} onClanChange={loadClan} />
