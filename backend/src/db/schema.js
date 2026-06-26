@@ -11,37 +11,6 @@ async function initSchema() {
       is_superadmin BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
-
-    CREATE TABLE IF NOT EXISTS clans (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(64) UNIQUE NOT NULL,
-      code CHAR(6) UNIQUE NOT NULL,
-      owner_id INTEGER NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS bears (
-      id SERIAL PRIMARY KEY,
-      clan_id INTEGER NOT NULL,
-      bear_index INTEGER NOT NULL CHECK (bear_index BETWEEN 1 AND 11),
-      killed_at TIMESTAMPTZ,
-      killed_by INTEGER,
-      spawn_at TIMESTAMPTZ,
-      UNIQUE(clan_id, bear_index)
-    );
-
-const { pool } = require('./pool');
-async function initSchema() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      nick VARCHAR(32) UNIQUE NOT NULL,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
-      clan_id INTEGER,
-      is_superadmin BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
     CREATE TABLE IF NOT EXISTS clans (
       id SERIAL PRIMARY KEY,
       name VARCHAR(64) UNIQUE NOT NULL,
@@ -83,12 +52,7 @@ async function initSchema() {
       END IF;
     END $$;
   `);
-  console.log('✅ Database schema ready');
-}
-module.exports = { initSchema };
-  `);
-
-  console.log('✅ Database schema ready');
+  console.log('Database schema ready');
 }
 
 module.exports = { initSchema };
