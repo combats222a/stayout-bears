@@ -1,4 +1,4 @@
-export const BEAR_RESPAWN_MS = 33 * 60 * 1000;
+export const BEAR_RESPAWN_MS = 35 * 60 * 1000;
 export const VANISH_OFFSET_MS = 5 * 60 * 1000; // "Исчез" = убит 5 мин назад
 
 export const BEARS_LIST = [
