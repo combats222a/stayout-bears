@@ -29,7 +29,16 @@ async function initSchema() {
       UNIQUE(clan_id, bear_index)
     );
 
-    -- password reset codes
+    -- Shining (Гора Сияния) — одна запись на клан
+    CREATE TABLE IF NOT EXISTS shining (
+      clan_id      INTEGER PRIMARY KEY REFERENCES clans(id) ON DELETE CASCADE,
+      anchor_iso   TIMESTAMPTZ NOT NULL,
+      location_id  VARCHAR(16)  NOT NULL DEFAULT 'gmt-1',
+      game_time_str VARCHAR(8)  NOT NULL DEFAULT '',
+      set_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      set_by_nick  VARCHAR(64)  NOT NULL DEFAULT ''
+    );
+
     CREATE TABLE IF NOT EXISTS password_reset_codes (
       id SERIAL PRIMARY KEY,
       email VARCHAR(255) NOT NULL,

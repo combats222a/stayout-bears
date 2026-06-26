@@ -34,6 +34,7 @@ app.use((req, _res, next) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/clans', require('./routes/clans'));
 app.use('/api/bears', require('./routes/bears'));
+app.use('/api/shining', require('./routes/shining'));
 app.use('/api/admin', require('./routes/admin'));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));

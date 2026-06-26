@@ -7,9 +7,9 @@ export function getSocket() {
   return socketInstance;
 }
 
-export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect) {
-  const handlersRef = useRef({ onBearUpdate, onClanUpdate, onReconnect });
-  handlersRef.current = { onBearUpdate, onClanUpdate, onReconnect };
+export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate) {
+  const handlersRef = useRef({ onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate });
+  handlersRef.current = { onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate };
 
   useEffect(() => {
     if (!token) {
@@ -29,8 +29,8 @@ export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect) {
     socketInstance = io(SOCKET_URL, {
       auth: { token },
       reconnection: true,
-      reconnectionAttempts: Infinity, // раньше было 5 — после 5 неудачных попыток сокет
-      reconnectionDelay: 1000,        // умирал навсегда и таблица замирала до ручного рефреша
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
     });
 
@@ -40,8 +40,6 @@ export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect) {
         isFirstConnect = false;
         return;
       }
-      // Сокет переподключился после разрыва — подтягиваем актуальные данные,
-      // чтобы не потерять события, которые пришли пока связи не было.
       handlersRef.current.onReconnect?.();
     });
 
@@ -53,8 +51,13 @@ export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect) {
       handlersRef.current.onClanUpdate?.();
     });
 
+    // Сияние — обновление от другого игрока клана
+    socketInstance.on('shining:update', (data) => {
+      handlersRef.current.onShiningUpdate?.(data);
+    });
+
     return () => {
-      // Don't disconnect on unmount — keep the socket alive globally
+      // Keep socket alive globally
     };
   }, [token]);
 }

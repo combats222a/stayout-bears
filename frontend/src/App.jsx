@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import AuthPage from './pages/AuthPage';
 import BearsPage from './pages/BearsPage';
+import ShiningPage from './pages/ShiningPage';
 import ClanPage from './pages/ClanPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
@@ -9,14 +10,17 @@ import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [page, setPage] = useState('bears');
-  const [clan, setClan] = useState(null);
+  const [user, setUser]       = useState(null);
+  const [token, setToken]     = useState(() => localStorage.getItem('token'));
+  const [page, setPage]       = useState('bears');
+  const [clan, setClan]       = useState(null);
   const [members, setMembers] = useState([]);
-  const [bears, setBears] = useState([]);
-  const [bans, setBans] = useState([]);
+  const [bears, setBears]     = useState([]);
+  const [bans, setBans]       = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Shining data — общее для клана, хранится в памяти + синхронизируется через сокет
+  const [shiningData, setShiningData] = useState(null);
 
   // Load user on mount
   useEffect(() => {
@@ -27,7 +31,7 @@ export default function App() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  // Load clan data
+  // Load clan data (включая shining если бэкенд поддерживает)
   const loadClan = useCallback(async () => {
     if (!token) return;
     try {
@@ -36,27 +40,41 @@ export default function App() {
       setMembers(data.members);
       setBears(data.bears || []);
       setBans(data.bans || []);
+      // Если бэкенд возвращает shining — используем его
+      if (data.shining) setShiningData(data.shining);
+    } catch {}
+  }, [token]);
+
+  // Подгрузить shining отдельным запросом (если роут есть)
+  const loadShining = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await api.get('/shining');
+      if (data?.anchorIso) setShiningData(data);
     } catch {}
   }, [token]);
 
   useEffect(() => {
-    if (user) loadClan();
-  }, [user, loadClan]);
+    if (user) {
+      loadClan();
+      loadShining();
+    }
+  }, [user, loadClan, loadShining]);
 
   // Socket handlers
   const handleBearUpdate = useCallback((updatedBear) => {
     setBears(prev => prev.map(b => b.bear_index === updatedBear.bear_index ? updatedBear : b));
   }, []);
 
-  const handleClanUpdate = useCallback(() => {
-    loadClan();
-  }, [loadClan]);
+  const handleClanUpdate = useCallback(() => { loadClan(); }, [loadClan]);
+  const handleReconnect  = useCallback(() => { loadClan(); loadShining(); }, [loadClan, loadShining]);
 
-  const handleReconnect = useCallback(() => {
-    loadClan();
-  }, [loadClan]);
+  // Shining update via socket
+  const handleShiningUpdate = useCallback((data) => {
+    if (data?.anchorIso) setShiningData(data);
+  }, []);
 
-  useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect);
+  useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate);
 
   useEffect(() => {
     if (!token || !clan) return;
@@ -69,7 +87,13 @@ export default function App() {
     setUser(newUser);
     setLoading(true);
     api.get('/clans/me')
-      .then(data => { setClan(data.clan); setMembers(data.members); setBears(data.bears || []); setBans(data.bans || []); })
+      .then(data => {
+        setClan(data.clan);
+        setMembers(data.members);
+        setBears(data.bears || []);
+        setBans(data.bans || []);
+        if (data.shining) setShiningData(data.shining);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -81,11 +105,16 @@ export default function App() {
     setMembers([]);
     setBears([]);
     setBans([]);
+    setShiningData(null);
     setPage('bears');
   }
 
-  function onUserUpdate(updatedUser) {
-    setUser(updatedUser);
+  function onUserUpdate(updatedUser) { setUser(updatedUser); }
+
+  // Когда игрок обновляет shining — сохраняем локально сразу,
+  // бэкенд уведомит остальных через сокет
+  function handleShiningChange(data) {
+    setShiningData(data);
   }
 
   if (loading) {
@@ -107,6 +136,13 @@ export default function App() {
       <main className="main">
         {page === 'bears' && (
           <BearsPage bears={bears} clan={clan} onBearChange={handleBearUpdate} />
+        )}
+        {page === 'shining' && (
+          <ShiningPage
+            clan={clan}
+            shiningData={shiningData}
+            onShiningChange={handleShiningChange}
+          />
         )}
         {page === 'clan' && (
           <ClanPage user={user} clan={clan} members={members} bans={bans} onClanChange={loadClan} />
