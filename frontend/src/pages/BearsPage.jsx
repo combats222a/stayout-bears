@@ -193,6 +193,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function BearsPage({ bears, clan, onBearChange }) {
   const [error, setError] = useState('');
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const mergedBears = BEARS_LIST.map(meta => {
     const found = bears.find(b => b.bear_index === meta.index);
@@ -276,6 +277,9 @@ export default function BearsPage({ bears, clan, onBearChange }) {
             ))}
           </tbody>
         </table>
+        <div className="tbl-timezone">
+          ⏱ Часовой пояс: <span className="tbl-timezone-value">{userTimezone}</span>
+        </div>
       </div>
       <div className="tbl-hint">
         ⚡ Звук за 5 мин до спавна · «Исчез» — медведь пропал ~5 мин назад · ✎ Нажми на «Время смерти» чтобы исправить
