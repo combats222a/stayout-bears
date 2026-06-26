@@ -208,7 +208,7 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           Реальное время
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#8b949e' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, color: '#8b949e' }}>
           {formatRealTime(slot.realAt)}
         </div>
       </div>
