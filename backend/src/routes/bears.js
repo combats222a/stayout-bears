@@ -28,7 +28,7 @@ router.post('/:index/kill', auth, async (req, res) => {
       [req.user.clan_id, bearIndex, killedAt, req.user.id, spawnAt]
     );
 
-    const bear = { ...rows[0], killer_nick: req.user.nick };
+    const bear = { ...rows[0], killer_nick: req.user.game_nick || req.user.nick };
     req.getIo().to(`clan:${req.user.clan_id}`).emit('bear:update', bear);
     res.json({ bear });
   } catch (e) {

@@ -105,4 +105,48 @@ router.put('/profile', auth, async (req, res) => {
   }
 });
 
+// Delete own account
+router.delete('/account', auth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // If user is clan owner — check no other members
+    if (req.user.clan_id) {
+      const { rows: clanRows } = await client.query(
+        'SELECT * FROM clans WHERE id = $1', [req.user.clan_id]
+      );
+      const clan = clanRows[0];
+      if (clan && clan.owner_id === req.user.id) {
+        const { rows: members } = await client.query(
+          'SELECT id FROM users WHERE clan_id = $1 AND id != $2',
+          [req.user.clan_id, req.user.id]
+        );
+        if (members.length > 0) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({
+            error: 'Ты владелец клана с участниками. Сначала кикни всех или передай владение.'
+          });
+        }
+        // Delete the clan (bears cascade)
+        await client.query('DELETE FROM clans WHERE id = $1', [clan.id]);
+      } else {
+        // Just leave clan
+        await client.query('UPDATE users SET clan_id = NULL WHERE id = $1', [req.user.id]);
+      }
+    }
+
+    // Delete user
+    await client.query('DELETE FROM users WHERE id = $1', [req.user.id]);
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;

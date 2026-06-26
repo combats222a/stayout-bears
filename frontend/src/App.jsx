@@ -109,7 +109,7 @@ export default function App() {
           <ClanPage user={user} clan={clan} members={members} onClanChange={loadClan} />
         )}
         {page === 'profile' && (
-          <ProfilePage user={user} onUserUpdate={onUserUpdate} />
+          <ProfilePage user={user} onUserUpdate={onUserUpdate} onLogout={onLogout} />
         )}
         {page === 'admin' && user.is_superadmin && (
           <AdminPage />
