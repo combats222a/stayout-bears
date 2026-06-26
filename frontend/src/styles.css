@@ -343,3 +343,46 @@ body {
 .btn-reset-row:hover { background: rgba(220,50,50,.08); }
 
 .tbl-hint { margin-top: 10px; font-size: 11px; color: #4a6a8a; text-align: center; }
+
+/* === EDITABLE CLOCK CELLS === */
+.clock-clickable {
+  cursor: pointer;
+  border-bottom: 1px dashed rgba(74,158,221,0.4);
+  transition: color 0.15s, border-color 0.15s;
+  display: inline-block;
+  min-width: 72px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #4a6a8a;
+}
+.clock-clickable:hover {
+  color: #4a9edd;
+  border-bottom-color: #4a9edd;
+}
+.clock-dim {
+  color: #2a3a4a;
+  border-bottom-color: rgba(74,158,221,0.15);
+}
+.clock-dim:hover {
+  color: #4a9edd;
+  border-bottom-color: #4a9edd;
+}
+.clock-edit-input {
+  background: #0d1117;
+  border: 1px solid #4a9edd;
+  border-radius: 4px;
+  color: #c8d6e5;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  outline: none;
+  width: 80px;
+}
+.clock-edit-input::placeholder {
+  color: #2a3a5a;
+}
+
+/* Column header edit hint */
+.bears-table th[title] {
+  cursor: default;
+}
