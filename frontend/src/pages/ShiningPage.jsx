@@ -94,9 +94,8 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
 }
 
 // ─── Карточка одного слота ───────────────────────────────────────
-function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
+function ShiningSlot({ slot, gameTimeStr, slotIndex }) {
   const [now, setNow] = useState(() => Date.now());
-  const warnedRef = useRef(false);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -112,14 +111,6 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
   const isPast     = msLeft <= 0 && !isBurning;
   const isUpcoming = msLeft > 0;
   const isWarn     = isUpcoming && msLeft <= WARN_BEFORE_SHINING_MS;
-
-  useEffect(() => {
-    if (isWarn && !warnedRef.current) {
-      warnedRef.current = true;
-      onWarn?.();
-    }
-    if (!isUpcoming) warnedRef.current = false;
-  }, [isWarn, isUpcoming, onWarn]);
 
   const gameTime = getSlotGameTime(gameTimeStr, slotIndex);
 
@@ -241,9 +232,20 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
     ? getUpcomingShiningSlots(shiningData.anchorIso, now)
     : null;
 
-  function handleWarn() {
-    playShiningWarningSound();
-  }
+  // Звук: следим за следующим сиянием (слот 1) — когда до него ≤5 мин реального времени
+  const warnedRef = useRef(false);
+  useEffect(() => {
+    if (!slots) return;
+    const msToNext = slots[1].realAt - now;
+    const inWarnZone = msToNext > 0 && msToNext <= WARN_BEFORE_SHINING_MS;
+    if (inWarnZone && !warnedRef.current) {
+      warnedRef.current = true;
+      playShiningWarningSound();
+    }
+    if (!inWarnZone) {
+      warnedRef.current = false;
+    }
+  });
 
   async function handleCommit({ gameTimeStr, locationId, anchorIso }) {
     const data = { anchorIso, locationId, gameTimeStr, setAt: new Date().toISOString() };
@@ -257,15 +259,13 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
   if (slots) {
     const msLeft  = slots[0].realAt - now;
     const burning = msLeft <= 0 && Math.abs(msLeft) < SHINING_DURATION_MS;
+    const msToNext = slots[1].realAt - now;
     if (burning) {
       statusPill = { color: '#50c878', text: '⚡ Сияние идёт прямо сейчас!' };
-    } else if (msLeft > 0 && msLeft <= WARN_BEFORE_SHINING_MS) {
-      statusPill = { color: '#e0a030', text: `⚠️ Сияние через ${formatShiningCountdown(msLeft)}!` };
-    } else if (msLeft > 0) {
-      statusPill = { color: '#4a9edd', text: `До ближайшего Сияния: ${formatShiningCountdown(msLeft)}` };
+    } else if (msToNext > 0 && msToNext <= WARN_BEFORE_SHINING_MS) {
+      statusPill = { color: '#e0a030', text: `⚠️ Сияние через ${formatShiningCountdown(msToNext)}!` };
     } else {
-      const next = slots[1]?.realAt - now;
-      statusPill = { color: '#4a9edd', text: `До следующего Сияния: ${next > 0 ? formatShiningCountdown(next) : '--:--'}` };
+      statusPill = { color: '#4a9edd', text: `До следующего Сияния: ${msToNext > 0 ? formatShiningCountdown(msToNext) : '--:--'}` };
     }
   }
 
@@ -347,7 +347,6 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
                 slot={slot}
                 gameTimeStr={shiningData?.gameTimeStr || '00:29'}
                 slotIndex={i}
-                onWarn={handleWarn}
               />
             ))
           : [0,1,2,3].map(i => (
