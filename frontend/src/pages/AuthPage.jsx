@@ -3,7 +3,7 @@ import { api } from '../utils/api';
 
 export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
-  const [form, setForm] = useState({ nick: '', email: '', password: '' });
+  const [form, setForm] = useState({ nick: '', game_nick: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,9 +19,19 @@ export default function AuthPage({ onAuth }) {
     try {
       let data;
       if (mode === 'login') {
-        data = await api.post('/auth/login', { login: form.nick || form.email, password: form.password });
+        data = await api.post('/auth/login', { login: form.nick, password: form.password });
       } else {
-        data = await api.post('/auth/register', { nick: form.nick, email: form.email, password: form.password });
+        if (!form.game_nick.trim()) {
+          setError('Игровой ник обязателен');
+          setLoading(false);
+          return;
+        }
+        data = await api.post('/auth/register', {
+          nick: form.nick,
+          game_nick: form.game_nick,
+          email: form.email,
+          password: form.password
+        });
       }
       localStorage.setItem('token', data.token);
       onAuth(data.user, data.token);
@@ -40,30 +50,46 @@ export default function AuthPage({ onAuth }) {
         <p className="auth-sub">Stay Out · Новая Земля</p>
 
         <div className="auth-tabs">
-          <button className={`tab ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>Войти</button>
-          <button className={`tab ${mode === 'register' ? 'active' : ''}`} onClick={() => setMode('register')}>Регистрация</button>
+          <button className={`tab ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError(''); }}>Войти</button>
+          <button className={`tab ${mode === 'register' ? 'active' : ''}`} onClick={() => { setMode('register'); setError(''); }}>Регистрация</button>
         </div>
 
         <form onSubmit={submit} className="auth-form">
-          {mode === 'register' && (
-            <input
-              className="input"
-              placeholder="Ник"
-              value={form.nick}
-              onChange={e => set('nick', e.target.value)}
-              required
-              minLength={2}
-              maxLength={32}
-            />
-          )}
           <input
             className="input"
-            placeholder={mode === 'login' ? 'Ник или email' : 'Email'}
-            type={mode === 'register' ? 'email' : 'text'}
-            value={mode === 'login' ? (form.nick || form.email) : form.email}
-            onChange={e => mode === 'login' ? set('nick', e.target.value) : set('email', e.target.value)}
+            placeholder={mode === 'login' ? 'Логин или email' : 'Логин'}
+            type="text"
+            value={form.nick}
+            onChange={e => set('nick', e.target.value)}
             required
+            minLength={mode === 'register' ? 2 : undefined}
+            maxLength={32}
+            autoComplete="username"
           />
+
+          {mode === 'register' && (
+            <>
+              <input
+                className="input"
+                placeholder="Игровой ник (виден другим игрокам)"
+                value={form.game_nick}
+                onChange={e => set('game_nick', e.target.value)}
+                required
+                minLength={2}
+                maxLength={32}
+              />
+              <input
+                className="input"
+                placeholder="Email"
+                type="email"
+                value={form.email}
+                onChange={e => set('email', e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </>
+          )}
+
           <input
             className="input"
             placeholder="Пароль"
@@ -72,6 +98,7 @@ export default function AuthPage({ onAuth }) {
             onChange={e => set('password', e.target.value)}
             required
             minLength={6}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
           />
 
           {error && <div className="error-msg">{error}</div>}

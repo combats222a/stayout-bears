@@ -107,11 +107,11 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
             <div key={m.id} className="member-row">
               <span className="member-nick">
                 {m.id === clan.owner_id && <span className="badge badge-owner">👑</span>}
-                {m.nick}
+                {m.game_nick || m.nick}
                 {m.id === user.id && <span className="badge badge-you">ты</span>}
               </span>
               {isOwner && m.id !== user.id && (
-                <button className="btn btn-danger btn-xs" onClick={() => kickMember(m.id, m.nick)}>
+                <button className="btn btn-danger btn-xs" onClick={() => kickMember(m.id, m.game_nick || m.nick)}>
                   Кик
                 </button>
               )}

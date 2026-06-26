@@ -110,11 +110,11 @@ router.get('/me', auth, async (req, res) => {
 
     const clan = clanRows[0];
     const { rows: members } = await pool.query(
-      'SELECT id, nick, email FROM users WHERE clan_id = $1 ORDER BY id',
+      'SELECT id, nick, game_nick, email FROM users WHERE clan_id = $1 ORDER BY id',
       [req.user.clan_id]
     );
     const { rows: bears } = await pool.query(
-      `SELECT b.*, u.nick as killer_nick FROM bears b
+      `SELECT b.*, COALESCE(u.game_nick, u.nick) as killer_nick FROM bears b
        LEFT JOIN users u ON b.killed_by = u.id
        WHERE b.clan_id = $1 ORDER BY b.bear_index`,
       [req.user.clan_id]

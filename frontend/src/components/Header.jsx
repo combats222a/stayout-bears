@@ -18,6 +18,12 @@ export default function Header({ user, page, onNavigate, onLogout }) {
         >
           🏕️ Клан
         </button>
+        <button
+          className={`nav-btn ${page === 'profile' ? 'active' : ''}`}
+          onClick={() => onNavigate('profile')}
+        >
+          👤 Профиль
+        </button>
         {user?.is_superadmin && (
           <button
             className={`nav-btn ${page === 'admin' ? 'active' : ''}`}
@@ -29,7 +35,7 @@ export default function Header({ user, page, onNavigate, onLogout }) {
       </nav>
 
       <div className="header-user">
-        <span className="user-nick">{user?.nick}</span>
+        <span className="user-nick">{user?.game_nick || user?.nick}</span>
         <button className="btn btn-sm btn-ghost" onClick={onLogout}>Выйти</button>
       </div>
     </header>

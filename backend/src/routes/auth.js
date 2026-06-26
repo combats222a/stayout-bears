@@ -6,25 +6,28 @@ const { auth } = require('../middleware/auth');
 
 // Register
 router.post('/register', async (req, res) => {
-  const { nick, email, password } = req.body;
-  if (!nick || !email || !password) {
-    return res.status(400).json({ error: 'nick, email и password обязательны' });
+  const { nick, game_nick, email, password } = req.body;
+  if (!nick || !game_nick || !email || !password) {
+    return res.status(400).json({ error: 'Логин, игровой ник, email и пароль обязательны' });
   }
   if (nick.length < 2 || nick.length > 32) {
-    return res.status(400).json({ error: 'Ник: от 2 до 32 символов' });
+    return res.status(400).json({ error: 'Логин: от 2 до 32 символов' });
+  }
+  if (game_nick.length < 2 || game_nick.length > 32) {
+    return res.status(400).json({ error: 'Игровой ник: от 2 до 32 символов' });
   }
   try {
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
-      'INSERT INTO users (nick, email, password_hash) VALUES ($1, $2, $3) RETURNING id, nick, email, clan_id, is_superadmin',
-      [nick, email, hash]
+      'INSERT INTO users (nick, game_nick, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, nick, game_nick, email, clan_id, is_superadmin',
+      [nick, game_nick, email, hash]
     );
     const user = rows[0];
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user });
   } catch (e) {
     if (e.code === '23505') {
-      const field = e.constraint?.includes('nick') ? 'Ник' : 'Email';
+      const field = e.constraint?.includes('nick') ? 'Логин' : 'Email';
       return res.status(409).json({ error: `${field} уже занят` });
     }
     console.error(e);
@@ -60,6 +63,46 @@ router.post('/login', async (req, res) => {
 // Get current user
 router.get('/me', auth, (req, res) => {
   res.json({ user: req.user });
+});
+
+// Update profile (login nick and/or game_nick)
+router.put('/profile', auth, async (req, res) => {
+  const { nick, game_nick } = req.body;
+  const updates = [];
+  const values = [];
+  let idx = 1;
+
+  if (nick !== undefined) {
+    if (nick.length < 2 || nick.length > 32) {
+      return res.status(400).json({ error: 'Логин: от 2 до 32 символов' });
+    }
+    updates.push(`nick = $${idx++}`);
+    values.push(nick);
+  }
+  if (game_nick !== undefined) {
+    if (game_nick.length < 2 || game_nick.length > 32) {
+      return res.status(400).json({ error: 'Игровой ник: от 2 до 32 символов' });
+    }
+    updates.push(`game_nick = $${idx++}`);
+    values.push(game_nick);
+  }
+
+  if (!updates.length) return res.status(400).json({ error: 'Нечего обновлять' });
+
+  values.push(req.user.id);
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, nick, game_nick, email, clan_id, is_superadmin`,
+      values
+    );
+    res.json({ user: rows[0] });
+  } catch (e) {
+    if (e.code === '23505') {
+      return res.status(409).json({ error: 'Логин уже занят' });
+    }
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 module.exports = router;

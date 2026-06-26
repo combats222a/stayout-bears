@@ -5,6 +5,7 @@ async function initSchema() {
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       nick VARCHAR(32) UNIQUE NOT NULL,
+      game_nick VARCHAR(32) NOT NULL DEFAULT '',
       email VARCHAR(255) UNIQUE NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
       clan_id INTEGER,
@@ -27,6 +28,14 @@ async function initSchema() {
       spawn_at TIMESTAMPTZ,
       UNIQUE(clan_id, bear_index)
     );
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='users' AND column_name='game_nick'
+      ) THEN
+        ALTER TABLE users ADD COLUMN game_nick VARCHAR(32) NOT NULL DEFAULT '';
+      END IF;
+    END $$;
     DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_clan') THEN
         ALTER TABLE users ADD CONSTRAINT fk_users_clan

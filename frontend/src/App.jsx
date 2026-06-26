@@ -4,6 +4,7 @@ import AuthPage from './pages/AuthPage';
 import BearsPage from './pages/BearsPage';
 import ClanPage from './pages/ClanPage';
 import AdminPage from './pages/AdminPage';
+import ProfilePage from './pages/ProfilePage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 
@@ -49,16 +50,12 @@ export default function App() {
     loadClan();
   }, [loadClan]);
 
-  // Если соединение пропало и восстановилось (сон вкладки, разрыв сети, "уснувший" бэкенд) —
-  // подтягиваем актуальное состояние с сервера, чтобы не потерять события, пропущенные офлайн.
   const handleReconnect = useCallback(() => {
     loadClan();
   }, [loadClan]);
 
   useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect);
 
-  // Подстраховка: даже если сокет почему-то не пришёл/завис, раз в 30 сек
-  // подтягиваем свежие данные с сервера, чтобы таблица не "зависала" до ручного рефреша.
   useEffect(() => {
     if (!token || !clan) return;
     const id = setInterval(loadClan, 30000);
@@ -84,6 +81,10 @@ export default function App() {
     setPage('bears');
   }
 
+  function onUserUpdate(updatedUser) {
+    setUser(updatedUser);
+  }
+
   if (loading) {
     return (
       <div className="splash">
@@ -106,6 +107,9 @@ export default function App() {
         )}
         {page === 'clan' && (
           <ClanPage user={user} clan={clan} members={members} onClanChange={loadClan} />
+        )}
+        {page === 'profile' && (
+          <ProfilePage user={user} onUserUpdate={onUserUpdate} />
         )}
         {page === 'admin' && user.is_superadmin && (
           <AdminPage />
