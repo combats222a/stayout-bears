@@ -37,6 +37,14 @@ async function initSchema() {
       END IF;
     END $$;
     DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='clans' AND column_name='deputy_id'
+      ) THEN
+        ALTER TABLE clans ADD COLUMN deputy_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
+    DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_clan') THEN
         ALTER TABLE users ADD CONSTRAINT fk_users_clan
           FOREIGN KEY (clan_id) REFERENCES clans(id) ON DELETE SET NULL NOT VALID;
