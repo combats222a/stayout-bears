@@ -15,6 +15,7 @@ export default function App() {
   const [clan, setClan] = useState(null);
   const [members, setMembers] = useState([]);
   const [bears, setBears] = useState([]);
+  const [bans, setBans] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Load user on mount
@@ -34,6 +35,7 @@ export default function App() {
       setClan(data.clan);
       setMembers(data.members);
       setBears(data.bears || []);
+      setBans(data.bans || []);
     } catch {}
   }, [token]);
 
@@ -67,7 +69,7 @@ export default function App() {
     setUser(newUser);
     setLoading(true);
     api.get('/clans/me')
-      .then(data => { setClan(data.clan); setMembers(data.members); setBears(data.bears || []); })
+      .then(data => { setClan(data.clan); setMembers(data.members); setBears(data.bears || []); setBans(data.bans || []); })
       .finally(() => setLoading(false));
   }
 
@@ -78,6 +80,7 @@ export default function App() {
     setClan(null);
     setMembers([]);
     setBears([]);
+    setBans([]);
     setPage('bears');
   }
 
@@ -106,7 +109,7 @@ export default function App() {
           <BearsPage bears={bears} clan={clan} onBearChange={handleBearUpdate} />
         )}
         {page === 'clan' && (
-          <ClanPage user={user} clan={clan} members={members} onClanChange={loadClan} />
+          <ClanPage user={user} clan={clan} members={members} bans={bans} onClanChange={loadClan} />
         )}
         {page === 'profile' && (
           <ProfilePage user={user} onUserUpdate={onUserUpdate} onLogout={onLogout} />

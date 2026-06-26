@@ -27,14 +27,11 @@ function TransferModal({ members, clan, onConfirm, onClose }) {
           <div className="modal-label">Выбери нового лидера группировки</div>
           <div className="transfer-list">
             {candidates.map(m => (
-              <div
-                key={m.id}
+              <div key={m.id}
                 className={`transfer-item${selectedId === m.id ? ' selected' : ''}`}
                 onClick={() => setSelectedId(m.id)}
               >
-                <span className="transfer-icon">
-                  {m.id === clan.deputy_id ? '🌨️' : '🐻'}
-                </span>
+                <span className="transfer-icon">{m.id === clan.deputy_id ? '🌨️' : '🐻'}</span>
                 <span className="transfer-nick">{m.game_nick || m.nick}</span>
                 {m.id === clan.deputy_id && <span className="transfer-role">Зам</span>}
                 {selectedId === m.id && <span className="transfer-check">✓</span>}
@@ -44,17 +41,14 @@ function TransferModal({ members, clan, onConfirm, onClose }) {
               <div className="modal-hint">В клане нет других участников</div>
             )}
           </div>
-          <div className="modal-hint" style={{marginTop: 10}}>
+          <div className="modal-hint" style={{marginTop:10}}>
             ⚠️ После передачи ты станешь обычным сокланом
           </div>
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button
-            className="modal-btn-ok"
-            disabled={!selectedId}
-            onClick={() => selectedId && onConfirm(selectedId)}
-          >
+          <button className="modal-btn-ok" disabled={!selectedId}
+            onClick={() => selectedId && onConfirm(selectedId)}>
             Передать ❄️
           </button>
         </div>
@@ -64,35 +58,32 @@ function TransferModal({ members, clan, onConfirm, onClose }) {
 }
 
 // ── Страница ─────────────────────────────────────────────────────────────────
-export default function ClanPage({ user, clan, members, onClanChange }) {
-  const [createName, setCreateName] = useState('');
-  const [joinCode,   setJoinCode]   = useState('');
-  const [error,      setError]      = useState('');
-  const [loading,    setLoading]    = useState(false);
-  const [copied,     setCopied]     = useState(false);
-  const [showTransfer, setShowTransfer] = useState(false);
+export default function ClanPage({ user, clan, members, bans = [], onClanChange }) {
+  const [createName,    setCreateName]    = useState('');
+  const [joinCode,      setJoinCode]      = useState('');
+  const [error,         setError]         = useState('');
+  const [loading,       setLoading]       = useState(false);
+  const [copied,        setCopied]        = useState(false);
+  const [showTransfer,  setShowTransfer]  = useState(false);
+  const [showBans,      setShowBans]      = useState(false);
 
-  const isOwner  = clan && clan.owner_id  === user.id;
-  const isDeputy = clan && clan.deputy_id === user.id;
+  const isOwner   = clan && clan.owner_id  === user.id;
+  const isDeputy  = clan && clan.deputy_id === user.id;
   const canManage = isOwner || isDeputy;
 
   async function createClan(e) {
     e.preventDefault();
     setLoading(true); setError('');
-    try {
-      await api.post('/clans/create', { name: createName });
-      onClanChange();
-    } catch (e) { setError(e.message); }
+    try { await api.post('/clans/create', { name: createName }); onClanChange(); }
+    catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
 
   async function joinClan(e) {
     e.preventDefault();
     setLoading(true); setError('');
-    try {
-      await api.post('/clans/join', { code: joinCode.toUpperCase() });
-      onClanChange();
-    } catch (e) { setError(e.message); }
+    try { await api.post('/clans/join', { code: joinCode.toUpperCase() }); onClanChange(); }
+    catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
 
@@ -105,6 +96,18 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
   async function kickMember(memberId, nick) {
     if (!confirm(`Исключить ${nick} из группировки?`)) return;
     try { await api.post(`/clans/kick/${memberId}`); onClanChange(); }
+    catch (e) { setError(e.message); }
+  }
+
+  async function banMember(memberId, nick) {
+    if (!confirm(`Заблокировать ${nick}? Они не смогут снова вступить в группировку.`)) return;
+    try { await api.post(`/clans/ban/${memberId}`); onClanChange(); }
+    catch (e) { setError(e.message); }
+  }
+
+  async function unbanMember(userId, nick) {
+    if (!confirm(`Разблокировать ${nick}?`)) return;
+    try { await api.post(`/clans/unban/${userId}`); onClanChange(); }
     catch (e) { setError(e.message); }
   }
 
@@ -123,6 +126,12 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
       setShowTransfer(false);
       onClanChange();
     } catch (e) { setError(e.message); }
+  }
+
+  async function refreshCode() {
+    if (!confirm('Сменить код приглашения? Старый код перестанет работать.')) return;
+    try { await api.post('/clans/refresh-code'); onClanChange(); }
+    catch (e) { setError(e.message); }
   }
 
   function copyCode() {
@@ -202,6 +211,11 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
             <button className="clan-copy-btn" onClick={copyCode}>
               {copied ? '✅ Скопировано' : '📋 Копировать'}
             </button>
+            {canManage && (
+              <button className="clan-copy-btn clan-refresh-btn" onClick={refreshCode} title="Обновить код приглашения">
+                🔄 Сменить
+              </button>
+            )}
           </div>
         </div>
 
@@ -210,6 +224,15 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
           <div className="clan-members-header">
             <span className="clan-members-title">🌨️ Участники</span>
             <span className="clan-members-count">{members.length}</span>
+            {isOwner && bans.length > 0 && (
+              <button
+                className="mem-btn mem-btn-bans-toggle"
+                onClick={() => setShowBans(v => !v)}
+                style={{marginLeft: 'auto'}}
+              >
+                🚫 Бан-лист ({bans.length})
+              </button>
+            )}
           </div>
 
           <div className="clan-members-list">
@@ -233,7 +256,7 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
                   </div>
 
                   <div className="clan-member-actions">
-                    {/* Owner can appoint/remove deputy */}
+                    {/* Owner: appoint/remove deputy */}
                     {isOwner && !isMe && role !== 'leader' && (
                       <button
                         className={`mem-btn ${role === 'deputy' ? 'mem-btn-remove-deputy' : 'mem-btn-deputy'}`}
@@ -243,7 +266,7 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
                         {role === 'deputy' ? '🌨️ Снять зама' : '🌨️ Зам'}
                       </button>
                     )}
-                    {/* Kick: owner can kick anyone except self; deputy can kick members only */}
+                    {/* Kick */}
                     {canManage && !isMe && role !== 'leader' && !(isDeputy && role === 'deputy') && (
                       <button
                         className="mem-btn mem-btn-kick"
@@ -253,11 +276,39 @@ export default function ClanPage({ user, clan, members, onClanChange }) {
                         ✕ Кик
                       </button>
                     )}
+                    {/* Ban */}
+                    {canManage && !isMe && role !== 'leader' && !(isDeputy && role === 'deputy') && (
+                      <button
+                        className="mem-btn mem-btn-ban"
+                        onClick={() => banMember(m.id, nick)}
+                        title="Заблокировать (кик + бан)"
+                      >
+                        🚫 Блок
+                      </button>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
+
+          {/* Ban list (owner only) */}
+          {isOwner && showBans && bans.length > 0 && (
+            <div className="clan-bans-section">
+              <div className="clan-bans-title">🚫 Заблокированные</div>
+              {bans.map(b => (
+                <div key={b.user_id} className="clan-ban-row">
+                  <span className="clan-ban-nick">{b.nick || `#${b.user_id}`}</span>
+                  <button
+                    className="mem-btn mem-btn-unban"
+                    onClick={() => unbanMember(b.user_id, b.nick || `#${b.user_id}`)}
+                  >
+                    ✅ Разбанить
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

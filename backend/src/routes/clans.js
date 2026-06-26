@@ -53,6 +53,16 @@ router.post('/join', auth, async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM clans WHERE code = $1', [code.toUpperCase()]);
     if (!rows.length) return res.status(404).json({ error: 'Клан не найден' });
     const clan = rows[0];
+
+    // Check if user is banned in this clan
+    const { rows: banRows } = await pool.query(
+      'SELECT id FROM clan_bans WHERE clan_id = $1 AND user_id = $2',
+      [clan.id, req.user.id]
+    );
+    if (banRows.length > 0) {
+      return res.status(403).json({ error: 'Ты заблокирован в этой группировке' });
+    }
+
     await pool.query('UPDATE users SET clan_id = $1 WHERE id = $2', [clan.id, req.user.id]);
     req.getIo().to(`clan:${clan.id}`).emit('clan:update');
     res.json({ clan });
@@ -78,12 +88,12 @@ router.post('/leave', auth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
-// Get clan info
+// Get clan info (including bans)
 router.get('/me', auth, async (req, res) => {
-  if (!req.user.clan_id) return res.json({ clan: null, members: [], bears: [] });
+  if (!req.user.clan_id) return res.json({ clan: null, members: [], bears: [], bans: [] });
   try {
     const { rows: clanRows } = await pool.query('SELECT * FROM clans WHERE id = $1', [req.user.clan_id]);
-    if (!clanRows.length) return res.json({ clan: null, members: [], bears: [] });
+    if (!clanRows.length) return res.json({ clan: null, members: [], bears: [], bans: [] });
     const clan = clanRows[0];
     const { rows: members } = await pool.query(
       'SELECT id, nick, game_nick, email FROM users WHERE clan_id = $1 ORDER BY id',
@@ -95,11 +105,19 @@ router.get('/me', auth, async (req, res) => {
        WHERE b.clan_id = $1 ORDER BY b.bear_index`,
       [req.user.clan_id]
     );
-    res.json({ clan, members, bears });
+    const { rows: bans } = await pool.query(
+      `SELECT cb.user_id, cb.banned_at, cb.banned_by,
+              COALESCE(u.game_nick, u.nick) as nick
+       FROM clan_bans cb
+       LEFT JOIN users u ON cb.user_id = u.id
+       WHERE cb.clan_id = $1 ORDER BY cb.banned_at DESC`,
+      [req.user.clan_id]
+    );
+    res.json({ clan, members, bears, bans });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
-// Kick member (owner OR deputy, but deputy can't kick owner)
+// Kick member (owner OR deputy, but deputy can't kick owner/other deputy)
 router.post('/kick/:userId', auth, async (req, res) => {
   if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
   try {
@@ -115,12 +133,60 @@ router.post('/kick/:userId', auth, async (req, res) => {
     if (!isOwner && targetId === owner_id) return res.status(403).json({ error: 'Зам не может кикнуть лидера' });
     if (!isOwner && targetId === deputy_id) return res.status(403).json({ error: 'Зам не может кикнуть другого зама' });
 
-    // If kicking deputy — clear deputy_id
     if (targetId === deputy_id) {
       await pool.query('UPDATE clans SET deputy_id = NULL WHERE id = $1', [req.user.clan_id]);
     }
 
     await pool.query('UPDATE users SET clan_id = NULL WHERE id = $1 AND clan_id = $2', [targetId, req.user.clan_id]);
+    req.getIo().to(`clan:${req.user.clan_id}`).emit('clan:update');
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
+});
+
+// Ban member (owner OR deputy; deputy can't ban owner/other deputy)
+router.post('/ban/:userId', auth, async (req, res) => {
+  if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
+  try {
+    const { rows } = await pool.query('SELECT owner_id, deputy_id FROM clans WHERE id = $1', [req.user.clan_id]);
+    if (!rows.length) return res.status(404).json({ error: 'Клан не найден' });
+    const { owner_id, deputy_id } = rows[0];
+    const isOwner = owner_id === req.user.id;
+    const isDeputy = deputy_id === req.user.id;
+    if (!isOwner && !isDeputy) return res.status(403).json({ error: 'Недостаточно прав' });
+
+    const targetId = parseInt(req.params.userId);
+    if (targetId === req.user.id) return res.status(400).json({ error: 'Нельзя заблокировать себя' });
+    if (targetId === owner_id) return res.status(403).json({ error: 'Нельзя заблокировать лидера' });
+    if (!isOwner && targetId === deputy_id) return res.status(403).json({ error: 'Зам не может заблокировать другого зама' });
+
+    // Check target is in this clan (or was previously)
+    // Kick from clan first
+    if (targetId === deputy_id) {
+      await pool.query('UPDATE clans SET deputy_id = NULL WHERE id = $1', [req.user.clan_id]);
+    }
+    await pool.query('UPDATE users SET clan_id = NULL WHERE id = $1 AND clan_id = $2', [targetId, req.user.clan_id]);
+
+    // Add ban record
+    await pool.query(
+      'INSERT INTO clan_bans (clan_id, user_id, banned_by) VALUES ($1, $2, $3) ON CONFLICT (clan_id, user_id) DO NOTHING',
+      [req.user.clan_id, targetId, req.user.id]
+    );
+
+    req.getIo().to(`clan:${req.user.clan_id}`).emit('clan:update');
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
+});
+
+// Unban member (owner only)
+router.post('/unban/:userId', auth, async (req, res) => {
+  if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
+  try {
+    const { rows } = await pool.query('SELECT owner_id FROM clans WHERE id = $1', [req.user.clan_id]);
+    if (!rows.length) return res.status(404).json({ error: 'Клан не найден' });
+    if (rows[0].owner_id !== req.user.id) return res.status(403).json({ error: 'Только лидер может разбанить' });
+
+    const targetId = parseInt(req.params.userId);
+    await pool.query('DELETE FROM clan_bans WHERE clan_id = $1 AND user_id = $2', [req.user.clan_id, targetId]);
     req.getIo().to(`clan:${req.user.clan_id}`).emit('clan:update');
     res.json({ ok: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
@@ -142,7 +208,6 @@ router.post('/transfer/:userId', auth, async (req, res) => {
     );
     if (!targetRows.length) return res.status(404).json({ error: 'Игрок не в клане' });
 
-    // New owner becomes leader; old owner becomes regular member; clear deputy if it was the new owner
     await pool.query(
       'UPDATE clans SET owner_id = $1, deputy_id = CASE WHEN deputy_id = $1 THEN NULL ELSE deputy_id END WHERE id = $2',
       [targetId, req.user.clan_id]
@@ -163,11 +228,37 @@ router.post('/deputy/:userId', auth, async (req, res) => {
     const targetId = parseInt(req.params.userId);
     if (targetId === req.user.id) return res.status(400).json({ error: 'Нельзя назначить себя замом' });
 
-    // Toggle: if already deputy — remove, else set
     const newDeputy = rows[0].deputy_id === targetId ? null : targetId;
     await pool.query('UPDATE clans SET deputy_id = $1 WHERE id = $2', [newDeputy, req.user.clan_id]);
     req.getIo().to(`clan:${req.user.clan_id}`).emit('clan:update');
     res.json({ ok: true, deputy_id: newDeputy });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
+});
+
+// Refresh invite code (owner OR deputy)
+router.post('/refresh-code', auth, async (req, res) => {
+  if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
+  try {
+    const { rows } = await pool.query('SELECT owner_id, deputy_id FROM clans WHERE id = $1', [req.user.clan_id]);
+    if (!rows.length) return res.status(404).json({ error: 'Клан не найден' });
+    const { owner_id, deputy_id } = rows[0];
+    if (owner_id !== req.user.id && deputy_id !== req.user.id) {
+      return res.status(403).json({ error: 'Недостаточно прав' });
+    }
+
+    let code, exists = true;
+    while (exists) {
+      code = genCode();
+      const { rows: r } = await pool.query('SELECT id FROM clans WHERE code = $1', [code]);
+      exists = r.length > 0;
+    }
+
+    const { rows: updated } = await pool.query(
+      'UPDATE clans SET code = $1 WHERE id = $2 RETURNING *',
+      [code, req.user.clan_id]
+    );
+    req.getIo().to(`clan:${req.user.clan_id}`).emit('clan:update');
+    res.json({ clan: updated[0] });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 

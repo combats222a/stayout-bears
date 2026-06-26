@@ -28,6 +28,26 @@ async function initSchema() {
       spawn_at TIMESTAMPTZ,
       UNIQUE(clan_id, bear_index)
     );
+
+    -- password reset codes
+    CREATE TABLE IF NOT EXISTS password_reset_codes (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      code VARCHAR(6) NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used BOOLEAN DEFAULT FALSE
+    );
+
+    -- clan bans
+    CREATE TABLE IF NOT EXISTS clan_bans (
+      id SERIAL PRIMARY KEY,
+      clan_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      banned_by INTEGER NOT NULL,
+      banned_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(clan_id, user_id)
+    );
+
     DO $$ BEGIN
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns

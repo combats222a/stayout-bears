@@ -576,3 +576,116 @@ body {
   transition: background 0.15s;
 }
 .modal-btn-ok:hover { background: #58a6ff; }
+
+/* === NEW: Ban button === */
+.mem-btn-ban {
+  background: rgba(248,81,73,0.15);
+  border: 1px solid rgba(248,81,73,0.4);
+  color: #f85149;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.mem-btn-ban:hover { background: rgba(248,81,73,0.28); }
+
+/* === NEW: Unban button === */
+.mem-btn-unban {
+  background: rgba(63,185,80,0.15);
+  border: 1px solid rgba(63,185,80,0.4);
+  color: #3fb950;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.mem-btn-unban:hover { background: rgba(63,185,80,0.28); }
+
+/* === NEW: Refresh code button === */
+.clan-refresh-btn {
+  background: rgba(210,153,34,0.15);
+  border: 1px solid rgba(210,153,34,0.4);
+  color: #d29922;
+}
+.clan-refresh-btn:hover { background: rgba(210,153,34,0.28); }
+
+/* === NEW: Ban list section === */
+.clan-bans-section {
+  margin-top: 16px;
+  border-top: 1px solid #21262d;
+  padding-top: 12px;
+}
+.clan-bans-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f85149;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.clan-ban-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #21262d;
+}
+.clan-ban-nick {
+  color: #8b949e;
+  font-size: 13px;
+}
+.mem-btn-bans-toggle {
+  background: rgba(248,81,73,0.1);
+  border: 1px solid rgba(248,81,73,0.3);
+  color: #f85149;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.mem-btn-bans-toggle:hover { background: rgba(248,81,73,0.2); }
+
+/* === NEW: Auth forgot link === */
+.auth-forgot-link {
+  display: block;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+  text-align: center;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+.auth-forgot-link:hover { color: var(--accent2); }
+
+/* === NEW: Auth mode title (forgot/reset) === */
+.auth-mode-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 8px 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* === NEW: Info message === */
+.info-msg {
+  color: #3fb950;
+  font-size: 13px;
+  background: rgba(63,185,80,0.1);
+  border: 1px solid rgba(63,185,80,0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
+  text-align: center;
+}
