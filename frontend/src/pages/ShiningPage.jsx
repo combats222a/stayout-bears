@@ -193,7 +193,7 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: isActive ? 30 : 24,
+          fontSize: 28,
           fontWeight: 700,
           color: accentColor,
           letterSpacing: '0.04em',
@@ -220,7 +220,7 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: isActive ? 22 : 17,
+          fontSize: 20,
           fontWeight: 700,
           color: timerColor,
         }}>
