@@ -106,16 +106,13 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
     return () => clearInterval(id);
   }, []);
 
-  // msLeft > 0  → сияние ещё не наступило (считаем вниз)
-  // msLeft <= 0 → сияние наступило, |msLeft| < DURATION → "горит", иначе "прошло"
   const msLeft     = slot.realAt - now;
   const isActive   = slotIndex === 0;
-  const isBurning  = msLeft <= 0 && Math.abs(msLeft) < SHINING_DURATION_MS; // "горит" ~8 сек
+  const isBurning  = msLeft <= 0 && Math.abs(msLeft) < SHINING_DURATION_MS;
   const isPast     = msLeft <= 0 && !isBurning;
   const isUpcoming = msLeft > 0;
   const isWarn     = isUpcoming && msLeft <= WARN_BEFORE_SHINING_MS;
 
-  // Предупреждение за 5 мин
   useEffect(() => {
     if (isWarn && !warnedRef.current) {
       warnedRef.current = true;
@@ -124,10 +121,8 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
     if (!isUpcoming) warnedRef.current = false;
   }, [isWarn, isUpcoming, onWarn]);
 
-  // Игровое время этого слота
   const gameTime = getSlotGameTime(gameTimeStr, slotIndex);
 
-  // Стиль карточки
   let accentColor, borderColor, bgColor, dotClass;
   if (isActive) {
     if (isBurning) {
@@ -147,14 +142,12 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
 
   const LABELS = ['Текущее / Активное', 'Следующее +1', 'Следующее +2', 'Следующее +3'];
 
-  // Что показывать в таймере
   let timerLabel, timerValue, timerColor;
   if (isBurning && isActive) {
     timerLabel = 'Статус';
     timerValue = '⚡ РЕСП!';
     timerColor = '#50c878';
   } else if (isPast && isActive) {
-    // Прошло — но слот 0 (активный) показывает сколько прошло
     timerLabel = 'Прошло';
     timerValue = formatShiningCountdown(Math.abs(msLeft));
     timerColor = '#3a5a7a';
@@ -170,30 +163,30 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
 
   return (
     <div style={{
-      flex: '1 1 180px', minWidth: 170,
+      flex: '1 1 200px', minWidth: 185,
       border: `1px solid ${borderColor}`,
       borderRadius: 10, background: bgColor,
-      padding: '14px 16px',
-      display: 'flex', flexDirection: 'column', gap: 10,
+      padding: '16px 18px',
+      display: 'flex', flexDirection: 'column', gap: 12,
       transition: 'border-color .3s, background .3s',
     }}>
       {/* Заголовок */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
         <span className={dotClass} />
         <span style={{
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
           letterSpacing: '0.07em', color: accentColor,
         }}>{LABELS[slotIndex]}</span>
       </div>
 
       {/* Игровое время */}
       <div>
-        <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+        <div style={{ fontSize: 10, color: '#6e7681', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           Игровое время
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: isActive ? 30 : 24,
+          fontSize: isActive ? 42 : 34,
           fontWeight: 700,
           color: accentColor,
           letterSpacing: '0.04em',
@@ -203,24 +196,24 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
         </div>
       </div>
 
-      {/* Реальное время (когда наступит/наступило) */}
+      {/* Реальное время */}
       <div>
-        <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+        <div style={{ fontSize: 10, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           Реальное время
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#8b949e' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: '#8b949e' }}>
           {formatRealTime(slot.realAt)}
         </div>
       </div>
 
-      {/* Таймер обратного отсчёта */}
-      <div style={{ borderTop: '1px solid rgba(30,58,95,.3)', paddingTop: 8 }}>
-        <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+      {/* Таймер */}
+      <div style={{ borderTop: '1px solid rgba(30,58,95,.3)', paddingTop: 10 }}>
+        <div style={{ fontSize: 10, color: '#6e7681', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           {timerLabel}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: isActive ? 22 : 17,
+          fontSize: isActive ? 28 : 22,
           fontWeight: 700,
           color: timerColor,
         }}>
@@ -235,8 +228,8 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
 export default function ShiningPage({ clan, shiningData, onShiningChange }) {
   const [showModal, setShowModal] = useState(false);
   const [now, setNow]             = useState(() => Date.now());
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  // Глобальный тик для статус-строки
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(id);
@@ -258,7 +251,6 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
 
   const loc = getLocation(shiningData?.locationId || DEFAULT_LOCATION_ID);
 
-  // Статус-строка (считается от слота 0)
   let statusPill = null;
   if (slots) {
     const msLeft  = slots[0].realAt - now;
@@ -270,7 +262,6 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
     } else if (msLeft > 0) {
       statusPill = { color: '#4a9edd', text: `До ближайшего Сияния: ${formatShiningCountdown(msLeft)}` };
     } else {
-      // Слот 0 прошёл, слот 1 — следующее
       const next = slots[1]?.realAt - now;
       statusPill = { color: '#4a9edd', text: `До следующего Сияния: ${next > 0 ? formatShiningCountdown(next) : '--:--'}` };
     }
@@ -359,18 +350,23 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
             ))
           : [0,1,2,3].map(i => (
               <div key={i} style={{
-                flex: '1 1 180px', minWidth: 170,
+                flex: '1 1 200px', minWidth: 185,
                 border: '1px solid #1a2535', borderRadius: 10,
-                padding: '14px 16px', opacity: 0.4,
+                padding: '16px 18px', opacity: 0.4,
               }}>
-                <div style={{ fontSize: 10, color: '#4a6a8a', textTransform: 'uppercase',
-                  letterSpacing: '.07em', marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: '#4a6a8a', textTransform: 'uppercase',
+                  letterSpacing: '.07em', marginBottom: 12 }}>
                   {['Текущее / Активное','Следующее +1','Следующее +2','Следующее +3'][i]}
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: '#1e2a3a' }}>--:--</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 40, color: '#1e2a3a' }}>--:--</div>
               </div>
             ))
         }
+      </div>
+
+      {/* Часовой пояс — как на странице медведей */}
+      <div className="tbl-timezone">
+        ⏱ Часовой пояс: <span className="tbl-timezone-value">{userTimezone}</span>
       </div>
 
       {/* Подсказка */}
