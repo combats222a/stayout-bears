@@ -163,15 +163,15 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
 
   return (
     <div style={{
-      flex: '1 1 200px', minWidth: 185,
+      flex: '1 1 0', minWidth: 0,
       border: `1px solid ${borderColor}`,
       borderRadius: 10, background: bgColor,
-      padding: '16px 18px',
-      display: 'flex', flexDirection: 'column', gap: 12,
+      padding: '14px 16px',
+      display: 'flex', flexDirection: 'column',
       transition: 'border-color .3s, background .3s',
     }}>
-      {/* Заголовок */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+      {/* Заголовок — фиксированная высота */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, height: 22, marginBottom: 10 }}>
         <span className={dotClass} />
         <span style={{
           fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
@@ -179,41 +179,43 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
         }}>{LABELS[slotIndex]}</span>
       </div>
 
-      {/* Игровое время */}
-      <div>
+      {/* Игровое время — фиксированная высота */}
+      <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 10, color: '#6e7681', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           Игровое время
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: isActive ? 42 : 34,
+          fontSize: 38,
           fontWeight: 700,
           color: accentColor,
           letterSpacing: '0.04em',
           lineHeight: 1,
+          height: 38,
+          display: 'flex', alignItems: 'center',
         }}>
           {gameTime}
         </div>
       </div>
 
-      {/* Реальное время */}
-      <div>
-        <div style={{ fontSize: 10, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+      {/* Реальное время — фиксированная высота */}
+      <div style={{ marginBottom: 12, height: 42 }}>
+        <div style={{ fontSize: 10, color: '#6e7681', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           Реальное время
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: '#8b949e' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: '#8b949e' }}>
           {formatRealTime(slot.realAt)}
         </div>
       </div>
 
-      {/* Таймер */}
+      {/* Таймер — фиксированная высота */}
       <div style={{ borderTop: '1px solid rgba(30,58,95,.3)', paddingTop: 10 }}>
         <div style={{ fontSize: 10, color: '#6e7681', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           {timerLabel}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: isActive ? 28 : 22,
+          fontSize: 26,
           fontWeight: 700,
           color: timerColor,
         }}>
@@ -337,7 +339,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
       </div>
 
       {/* 4 карточки */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10 }}>
         {slots
           ? slots.map((slot, i) => (
               <ShiningSlot
@@ -350,15 +352,15 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
             ))
           : [0,1,2,3].map(i => (
               <div key={i} style={{
-                flex: '1 1 200px', minWidth: 185,
+                flex: '1 1 0', minWidth: 0,
                 border: '1px solid #1a2535', borderRadius: 10,
-                padding: '16px 18px', opacity: 0.4,
+                padding: '14px 16px', opacity: 0.4,
               }}>
                 <div style={{ fontSize: 11, color: '#4a6a8a', textTransform: 'uppercase',
                   letterSpacing: '.07em', marginBottom: 12 }}>
                   {['Текущее / Активное','Следующее +1','Следующее +2','Следующее +3'][i]}
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 40, color: '#1e2a3a' }}>--:--</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 38, color: '#1e2a3a' }}>--:--</div>
               </div>
             ))
         }
