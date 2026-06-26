@@ -164,14 +164,14 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
                 title="Нажми чтобы исправить время смерти"
                 onClick={() => setShowModal(true)}
               >
-                {killedDisplay} ✎
+                {killedDisplay}<span className="edit-icon"> ✎</span>
               </span>
             : <span
                 className="td-clock clock-editable clock-empty"
                 title="Нажми чтобы ввести время смерти"
                 onClick={() => setShowModal(true)}
               >
-                --:--:-- ✎
+                --:--:--<span className="edit-icon"> ✎</span>
               </span>
           }
         </td>
@@ -259,7 +259,7 @@ export default function BearsPage({ bears, clan, onBearChange }) {
               <th>Действия</th>
               <th>Время спавна</th>
               <th>Прошло времени</th>
-              <th>Время смерти ✎</th>
+              <th>Время смерти</th>
               <th>Игрок</th>
             </tr>
           </thead>
