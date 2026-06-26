@@ -3,58 +3,64 @@ import { api } from '../utils/api';
 import {
   BEARS_LIST, getBearMeta, getBearStatus,
   getTimeLeftMs, formatCountdown, formatClock, formatElapsed, getProgress,
-  parseLocalTimeInput, spawnAtFromKilledAt, killedAtFromSpawnAt
+  parseLocalTimeInput, killedAtFromSpawnAt
 } from '../utils/bears';
 import { playSpawnSound } from '../utils/sound';
 
 const WARN_BEFORE_SPAWN_MS = 5 * 60 * 1000;
 
-// ── Inline editable clock cell ──────────────────────────────────────────────
-function EditableClock({ value, placeholder = '--:--:--', onCommit, dim = false }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
+// ── Modal for entering kill time ─────────────────────────────────────────────
+function KillTimeModal({ bearName, onCommit, onClose }) {
+  const [value, setValue] = useState('');
+  const [error, setError]  = useState('');
   const inputRef = useRef(null);
 
-  function startEdit() {
-    setDraft(value && value !== '--:--:--' ? value : '');
-    setEditing(true);
-    // focus next tick after render
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }
+  useEffect(() => {
+    // Pre-fill with current local time
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    setValue(`${hh}:${mm}:${ss}`);
+    setTimeout(() => inputRef.current?.select(), 0);
+  }, []);
 
-  function commit() {
-    setEditing(false);
-    if (draft.trim()) onCommit(draft.trim());
+  function handleSubmit() {
+    const iso = parseLocalTimeInput(value);
+    if (!iso) { setError('Введи время в формате ЧЧ:ММ или ЧЧ:ММ:СС'); return; }
+    onCommit(iso);
+    onClose();
   }
 
   function onKey(e) {
-    if (e.key === 'Enter') commit();
-    if (e.key === 'Escape') setEditing(false);
-  }
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        className="clock-edit-input"
-        value={draft}
-        placeholder="чч:мм:сс"
-        onChange={e => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={onKey}
-        style={{ width: 80 }}
-      />
-    );
+    if (e.key === 'Enter') handleSubmit();
+    if (e.key === 'Escape') onClose();
   }
 
   return (
-    <span
-      className={`td-clock clock-clickable${dim ? ' clock-dim' : ''}`}
-      title="Нажми чтобы ввести время"
-      onClick={startEdit}
-    >
-      {value || placeholder}
-    </span>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">⏱ Время смерти — <span className="modal-bear-name">{bearName}</span></div>
+        <div className="modal-body">
+          <label className="modal-label">Введи время когда убили медведя</label>
+          <input
+            ref={inputRef}
+            className="modal-input"
+            value={value}
+            onChange={e => { setValue(e.target.value); setError(''); }}
+            onKeyDown={onKey}
+            placeholder="09:35:00"
+            autoComplete="off"
+          />
+          {error && <div className="modal-error">{error}</div>}
+          <div className="modal-hint">Формат: ЧЧ:ММ или ЧЧ:ММ:СС · Время твоего часового пояса</div>
+        </div>
+        <div className="modal-footer">
+          <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
+          <button className="modal-btn-ok" onClick={handleSubmit}>Сохранить</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -62,6 +68,7 @@ function EditableClock({ value, placeholder = '--:--:--', onCommit, dim = false 
 function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
   const [ms, setMs]     = useState(() => getTimeLeftMs(bear));
   const [elap, setElap] = useState('--:--:--');
+  const [showModal, setShowModal] = useState(false);
   const warnedRef = useRef(getTimeLeftMs(bear) <= WARN_BEFORE_SPAWN_MS);
 
   useEffect(() => {
@@ -87,6 +94,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
   const isWarning = isDead && ms <= 60_000;
   const meta      = getBearMeta(bear.bear_index);
   const pct       = getProgress(bear);
+  const isActive  = isDead || isReady;
 
   let rowCls = 'bear-row';
   if (isReady)        rowCls += ' row-ready';
@@ -108,97 +116,77 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
   else if (isWarning) barColor = '#e0a030';
   else if (isDead)    barColor = '#4a9edd';
 
-  // -- handlers for each editable column --
-
-  // Clicked "Время спавна" → derive killed_at from it
-  function handleSpawnEdit(raw) {
-    const spawnIso = parseLocalTimeInput(raw);
-    if (!spawnIso) return;
-    const killedIso = killedAtFromSpawnAt(spawnIso);
-    onManualTime(bear.bear_index, killedIso);
-  }
-
-  // Clicked "Прошло времени" — user types elapsed like 00:15:30
-  // We derive killed_at = now - elapsed
-  function handleElapsedEdit(raw) {
-    const parts = raw.trim().split(':').map(Number);
-    if (parts.length < 2 || parts.some(isNaN)) return;
-    const [h = 0, m = 0, s = 0] = parts;
-    const elapsedMs = ((h * 3600) + (m * 60) + s) * 1000;
-    const killedIso = new Date(Date.now() - elapsedMs).toISOString();
-    onManualTime(bear.bear_index, killedIso);
-  }
-
-  // Clicked "Время смерти" → direct killed_at
-  function handleKilledEdit(raw) {
-    const killedIso = parseLocalTimeInput(raw);
-    if (!killedIso) return;
-    onManualTime(bear.bear_index, killedIso);
-  }
-
-  const spawnDisplay   = formatClock(bear.spawn_at);
-  const killedDisplay  = formatClock(bear.killed_at);
-  const isActive       = isDead || isReady; // has a kill time
+  const spawnDisplay  = formatClock(bear.spawn_at);
+  const killedDisplay = formatClock(bear.killed_at);
 
   return (
-    <tr className={rowCls}>
-      <td><span className={dotCls} /></td>
-      <td className="td-name">{meta.name}</td>
-      <td><span className="square-badge">{meta.square}</span></td>
-      <td className="td-timer">
-        {isReady
-          ? <span className="spawn-tag">⚡ Спавн!</span>
-          : <div className="prog-wrap">
-              <div className="prog-bar">
-                <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+    <>
+      <tr className={rowCls}>
+        <td><span className={dotCls} /></td>
+        <td className="td-name">{meta.name}</td>
+        <td><span className="square-badge">{meta.square}</span></td>
+        <td className="td-timer">
+          {isReady
+            ? <span className="spawn-tag">⚡ Спавн!</span>
+            : <div className="prog-wrap">
+                <div className="prog-bar">
+                  <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+                </div>
+                <span className="timer-val" style={{ color: timerColor }}>
+                  {isDead ? formatCountdown(ms) : '--:--'}
+                </span>
               </div>
-              <span className="timer-val" style={{ color: timerColor }}>
-                {isDead ? formatCountdown(ms) : '--:--'}
-              </span>
-            </div>
-        }
-      </td>
-      <td>
-        <div className="act-btns">
-          {!isDead && !isReady
-            ? <>
-                <button className="btn-now"  onClick={() => onKill(bear.bear_index)}>Сейчас</button>
-                <button className="btn-gone" onClick={() => onVanish(bear.bear_index)}>Исчез</button>
-              </>
-            : <button className="btn-reset-row" onClick={() => onReset(bear.bear_index)}>✕ Сброс</button>
           }
-        </div>
-      </td>
+        </td>
+        <td>
+          <div className="act-btns">
+            {!isDead && !isReady
+              ? <>
+                  <button className="btn-now"  onClick={() => onKill(bear.bear_index)}>Сейчас</button>
+                  <button className="btn-gone" onClick={() => onVanish(bear.bear_index)}>Исчез</button>
+                </>
+              : <button className="btn-reset-row" onClick={() => onReset(bear.bear_index)}>✕ Сброс</button>
+            }
+          </div>
+        </td>
 
-      {/* ── Время спавна (1) ── */}
-      <td>
-        <EditableClock
-          value={isActive ? spawnDisplay : null}
-          onCommit={handleSpawnEdit}
-          dim={!isActive}
+        {/* Время спавна — только отображение */}
+        <td className="td-clock">{isActive ? spawnDisplay : '--:--:--'}</td>
+
+        {/* Прошло времени — только отображение, тикает */}
+        <td className="td-clock">{isActive ? elap : '--:--:--'}</td>
+
+        {/* Время смерти — кликабельное, открывает модалку */}
+        <td>
+          {isActive
+            ? <span
+                className="td-clock clock-editable"
+                title="Нажми чтобы исправить время смерти"
+                onClick={() => setShowModal(true)}
+              >
+                {killedDisplay} ✎
+              </span>
+            : <span
+                className="td-clock clock-editable clock-empty"
+                title="Нажми чтобы ввести время смерти"
+                onClick={() => setShowModal(true)}
+              >
+                --:--:-- ✎
+              </span>
+          }
+        </td>
+
+        <td className="td-user">{bear.killer_nick || '—'}</td>
+      </tr>
+
+      {showModal && (
+        <KillTimeModal
+          bearName={meta.name}
+          onCommit={iso => onManualTime(bear.bear_index, iso)}
+          onClose={() => setShowModal(false)}
         />
-      </td>
-
-      {/* ── Прошло времени (2) ── */}
-      <td>
-        <EditableClock
-          value={isActive ? elap : null}
-          onCommit={handleElapsedEdit}
-          dim={!isActive}
-        />
-      </td>
-
-      {/* ── Время смерти (3) ── */}
-      <td>
-        <EditableClock
-          value={isActive ? killedDisplay : null}
-          onCommit={handleKilledEdit}
-          dim={!isActive}
-        />
-      </td>
-
-      <td className="td-user">{bear.killer_nick || '—'}</td>
-    </tr>
+      )}
+    </>
   );
 }
 
@@ -236,8 +224,6 @@ export default function BearsPage({ bears, clan, onBearChange }) {
     } catch (e) { setError(e.message); }
   }
 
-  // Manual time edit: user typed a time in one of the 3 editable columns.
-  // All we need is the derived killed_at and we re-submit as a kill.
   async function handleManualTime(index, killedAtIso) {
     await killBear(index, killedAtIso);
   }
@@ -271,9 +257,9 @@ export default function BearsPage({ bears, clan, onBearChange }) {
               <th>Квадрат</th>
               <th>До спавна</th>
               <th>Действия</th>
-              <th title="Нажми на время чтобы изменить">Время спавна ✎</th>
-              <th title="Нажми на время чтобы изменить">Прошло времени ✎</th>
-              <th title="Нажми на время чтобы изменить">Время смерти ✎</th>
+              <th>Время спавна</th>
+              <th>Прошло времени</th>
+              <th>Время смерти ✎</th>
               <th>Игрок</th>
             </tr>
           </thead>
@@ -292,7 +278,7 @@ export default function BearsPage({ bears, clan, onBearChange }) {
         </table>
       </div>
       <div className="tbl-hint">
-        ⚡ Звук за 5 мин до спавна · «Исчез» — медведь пропал ~5 мин назад · ✎ Нажми на время чтобы ввести вручную
+        ⚡ Звук за 5 мин до спавна · «Исчез» — медведь пропал ~5 мин назад · ✎ Нажми на «Время смерти» чтобы исправить
       </div>
     </div>
   );
