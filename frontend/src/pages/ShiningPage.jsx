@@ -102,7 +102,6 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
 // anchorRealMs: X — реальное время ПК в момент ввода
 function ShiningCard({ cardIndex, anchorGameTimeStr, anchorRealMs, onWarn }) {
   const [now, setNow] = useState(() => Date.now());
-  const warnedRef     = useRef(false);
   const burningRef    = useRef(false);
 
   useEffect(() => {
@@ -145,14 +144,14 @@ function ShiningCard({ cardIndex, anchorGameTimeStr, anchorRealMs, onWarn }) {
   const msUntilEnd   = realEndMs - now;   // до конца текущего (если горит)
   const isWarn       = !burning && msUntilStart <= WARN_BEFORE_SHINING_MS && msUntilStart > 0;
 
-  // Звук за 5 мин
+  // Звук в момент начала сияния (burning стал true)
   useEffect(() => {
-    if (cardIndex === 0 && isWarn && !warnedRef.current) {
-      warnedRef.current = true;
+    if (burning && !burningRef.current) {
+      // Сияние только что началось — играем звук
       onWarn?.();
     }
-    if (!isWarn) warnedRef.current = false;
-  }, [isWarn, cardIndex, onWarn]);
+    burningRef.current = burning;
+  }, [burning, onWarn]);
 
   // ── Цвета ──
   let accentColor, borderColor, bgColor, dotColor;
