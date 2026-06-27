@@ -1,16 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   LOCATIONS, DEFAULT_LOCATION_ID, getLocation,
-  parseGameTimeInput,
+  parseGameTimeInput, getUpcomingShiningSlots,
   formatRealTime, formatShiningCountdown,
-  formatGameTime, getCurrentGameMinutes, getShiningCards,
+  getSlotGameTime,
   WARN_BEFORE_SHINING_MS, SHINING_DURATION_MS,
 } from '../utils/shining';
 import { playShiningWarningSound } from '../utils/sound';
 import { api } from '../utils/api';
-
-// ── Игровые метки звука: 23:55, 05:55, 11:55, 17:55 (в минутах) ─
-const SOUND_MARKS_MIN = [23*60+55, 5*60+55, 11*60+55, 17*60+55]; // 1435, 355, 715, 1075
 
 // ─── Модалка ─────────────────────────────────────────────────────
 function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
@@ -42,7 +39,7 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label className="modal-label">
-              Текущее игровое время (которое видишь прямо сейчас в игре)
+              Игровое время текущего Сияния (которое видишь сейчас в игре)
             </label>
             <input
               ref={inputRef}
@@ -97,18 +94,38 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
 }
 
 // ─── Карточка одного слота ───────────────────────────────────────
-// currentGameMin — текущие игровые минуты (бегут вперёд каждую секунду)
-// card.realAt    — реальное время этого конкретного сияния (статичное)
-// card.msFromNow — сколько мс до сияния (отрицательное если прошло)
-function ShiningSlot({ card, cardIndex, currentGameMin, now }) {
-  const { gameMinutes, realAt, status, msFromNow } = card;
+function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
+  const [now, setNow] = useState(() => Date.now());
+  const warnedRef = useRef(false);
 
-  const LABELS = ['Текущее / Активное', 'Следующее +1', 'Следующее +2', 'Следующее +3'];
+  useEffect(() => {
+    const id = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
 
-  const isActive  = cardIndex === 0;
-  const isBurning = status === 'active';
-  const isPast    = status === 'past';
-  const isWarn    = status === 'upcoming' && msFromNow <= WARN_BEFORE_SHINING_MS;
+  // msLeft > 0  → сияние ещё не наступило (считаем вниз)
+  // msLeft <= 0 → сияние наступило, |msLeft| < DURATION → "горит", иначе "прошло"
+  const msLeft     = slot.realAt - now;
+  const isActive   = slotIndex === 0;
+  const isBurning  = msLeft <= 0 && Math.abs(msLeft) < SHINING_DURATION_MS; // "горит" ~8 сек
+  const isPast     = msLeft <= 0 && !isBurning;
+  const isUpcoming = msLeft > 0;
+  const isWarn     = isUpcoming && msLeft <= WARN_BEFORE_SHINING_MS;
+
+  // Предупреждение за 5 мин
+  useEffect(() => {
+    if (isWarn && !warnedRef.current) {
+      warnedRef.current = true;
+      onWarn?.();
+    }
+    if (!isUpcoming) warnedRef.current = false;
+  }, [isWarn, isUpcoming, onWarn]);
+
+  // Игровое время этого слота
+  const gameTime = getSlotGameTime(gameTimeStr, slotIndex);
 
   // Стиль карточки
   let accentColor, borderColor, bgColor, dotClass;
@@ -128,22 +145,28 @@ function ShiningSlot({ card, cardIndex, currentGameMin, now }) {
     bgColor = 'transparent'; dotClass = 'sdot';
   }
 
-  // Таймер «Через»
-  // Для прошедшего сияния в карточке 0: до следующего цикла = msFromNow + 52мин30сек
-  const SHINING_CYCLE_MS = 6 * 60 * 8750; // 3 150 000 мс
-  let countdownMs;
-  if (isPast && isActive) {
-    countdownMs = msFromNow + SHINING_CYCLE_MS; // отрицательный + цикл = положительный
-  } else {
-    countdownMs = msFromNow;
-  }
+  const LABELS = ['Текущее / Активное', 'Следующее +1', 'Следующее +2', 'Следующее +3'];
 
-  // Цвет таймера
-  let timerColor;
-  if (isBurning)      timerColor = '#50c878';
-  else if (isWarn)    timerColor = '#e0a030';
-  else if (isActive)  timerColor = '#4a9edd';
-  else                timerColor = '#6e8090';
+  // Что показывать в таймере
+  let timerLabel, timerValue, timerColor;
+  if (isBurning && isActive) {
+    timerLabel = 'Статус';
+    timerValue = '⚡ РЕСП!';
+    timerColor = '#50c878';
+  } else if (isPast && isActive) {
+    // Прошло — но слот 0 (активный) показывает сколько прошло
+    timerLabel = 'Прошло';
+    timerValue = formatShiningCountdown(Math.abs(msLeft));
+    timerColor = '#3a5a7a';
+  } else if (isUpcoming) {
+    timerLabel = isActive ? 'До Сияния' : 'Через';
+    timerValue = formatShiningCountdown(msLeft);
+    timerColor = isWarn ? '#e0a030' : (isActive ? '#4a9edd' : '#6e8090');
+  } else {
+    timerLabel = 'Прошло';
+    timerValue = '+' + formatShiningCountdown(Math.abs(msLeft));
+    timerColor = '#2a3a4a';
+  }
 
   return (
     <div style={{
@@ -160,113 +183,74 @@ function ShiningSlot({ card, cardIndex, currentGameMin, now }) {
         <span style={{
           fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
           letterSpacing: '0.07em', color: accentColor,
-        }}>{LABELS[cardIndex]}</span>
+        }}>{LABELS[slotIndex]}</span>
       </div>
 
-      {/* Игровое время — ТЕКУЩЕЕ, бежит вперёд каждую секунду */}
+      {/* Игровое время */}
       <div>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           Игровое время
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 28, fontWeight: 700,
+          fontSize: 28,
+          fontWeight: 700,
           color: accentColor,
-          letterSpacing: '0.04em', lineHeight: 1,
+          letterSpacing: '0.04em',
+          lineHeight: 1,
         }}>
-          {formatGameTime(currentGameMin)}
+          {gameTime}
         </div>
       </div>
 
-      {/* Реальное время — текущее, тикает каждую секунду */}
+      {/* Реальное время (когда наступит/наступило) */}
       <div>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
           Реальное время
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, color: '#8b949e' }}>
-          {formatRealTime(now)}
+          {formatRealTime(slot.realAt)}
         </div>
       </div>
 
-      {/* Таймер — обратный отсчёт до сияния, всегда «Через» */}
+      {/* Таймер обратного отсчёта */}
       <div style={{ borderTop: '1px solid rgba(30,58,95,.3)', paddingTop: 8 }}>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-          Через
+          {timerLabel}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 20, fontWeight: 700,
+          fontSize: 20,
+          fontWeight: 700,
           color: timerColor,
         }}>
-          {isBurning ? '⚡ ' : ''}{formatShiningCountdown(Math.max(0, countdownMs))}
+          {timerValue}
         </div>
       </div>
     </div>
   );
 }
+
 // ─── Основная страница ───────────────────────────────────────────
 export default function ShiningPage({ clan, shiningData, onShiningChange }) {
   const [showModal, setShowModal] = useState(false);
   const [now, setNow]             = useState(() => Date.now());
 
-  // Ref для отслеживания уже сыгравших звуков (ключ = "ЧЧ:ММ игрового дня")
-  // Хранит последний «игровой день» (целые сутки с момента якоря) + метку
-  const soundFiredRef = useRef(new Set());
-  // Флаг — только что установили время (первые ~2 сек не играть звук)
-  const justSetRef    = useRef(false);
-
-  // Глобальный тик каждую секунду
+  // Глобальный тик для статус-строки
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(id);
   }, []);
 
-  // Логика звука: срабатывает когда игровое время впервые достигает меток
-  useEffect(() => {
-    if (!shiningData?.anchorIso || justSetRef.current) return;
-
-    const gameMin = getCurrentGameMinutes(
-      shiningData.gameTimeStr,
-      shiningData.anchorIso,
-      now,
-    );
-
-    // Сколько полных «игровых суток» прошло с якоря (для уникальности ключа)
-    const anchorMs   = new Date(shiningData.anchorIso).getTime();
-    const elapsedMs  = now - anchorMs;
-    const dayIndex   = Math.floor(elapsedMs / (24 * 60 * 8750)); // игровых суток
-
-    // Текущая игровая минута (целая)
-    const curMin = Math.floor(gameMin);
-
-    for (const mark of SOUND_MARKS_MIN) {
-      const key = `${dayIndex}-${mark}`;
-      if (curMin === mark && !soundFiredRef.current.has(key)) {
-        soundFiredRef.current.add(key);
-        playShiningWarningSound();
-        break;
-      }
-    }
-  }, [now, shiningData]);
-
-  const hasData = !!shiningData?.anchorIso;
-
-  // Вычисляем карточки каждый рендер (тик = каждую секунду)
-  const cards = hasData
-    ? getShiningCards(shiningData.gameTimeStr, shiningData.anchorIso, now)
+  const slots = shiningData?.anchorIso
+    ? getUpcomingShiningSlots(shiningData.anchorIso, now)
     : null;
 
-  // Текущее игровое время для отображения в шапке
-  const currentGameMin = hasData
-    ? getCurrentGameMinutes(shiningData.gameTimeStr, shiningData.anchorIso, now)
-    : null;
+  function handleWarn() {
+    playShiningWarningSound();
+  }
 
   async function handleCommit({ gameTimeStr, locationId, anchorIso }) {
-    // Сбрасываем историю звуков при новой установке
-    soundFiredRef.current = new Set();
-    justSetRef.current = true;
-    setTimeout(() => { justSetRef.current = false; }, 2000);
-
     const data = { anchorIso, locationId, gameTimeStr, setAt: new Date().toISOString() };
     onShiningChange(data);
     try { await api.post('/shining/set', data); } catch {}
@@ -274,19 +258,20 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
 
   const loc = getLocation(shiningData?.locationId || DEFAULT_LOCATION_ID);
 
-  // Статус-пилюля
+  // Статус-строка (считается от слота 0)
   let statusPill = null;
-  if (cards) {
-    const c = cards[0];
-    if (c.status === 'active') {
+  if (slots) {
+    const msLeft  = slots[0].realAt - now;
+    const burning = msLeft <= 0 && Math.abs(msLeft) < SHINING_DURATION_MS;
+    if (burning) {
       statusPill = { color: '#50c878', text: '⚡ Сияние идёт прямо сейчас!' };
-    } else if (c.status === 'upcoming' && c.msFromNow <= WARN_BEFORE_SHINING_MS) {
-      statusPill = { color: '#e0a030', text: `⚠️ Сияние через ${formatShiningCountdown(c.msFromNow)}!` };
-    } else if (c.status === 'upcoming') {
-      statusPill = { color: '#4a9edd', text: `До ближайшего Сияния: ${formatShiningCountdown(c.msFromNow)}` };
+    } else if (msLeft > 0 && msLeft <= WARN_BEFORE_SHINING_MS) {
+      statusPill = { color: '#e0a030', text: `⚠️ Сияние через ${formatShiningCountdown(msLeft)}!` };
+    } else if (msLeft > 0) {
+      statusPill = { color: '#4a9edd', text: `До ближайшего Сияния: ${formatShiningCountdown(msLeft)}` };
     } else {
-      // карточка 0 — прошедшее, карточка 1 — следующее
-      const next = cards[1]?.msFromNow;
+      // Слот 0 прошёл, слот 1 — следующее
+      const next = slots[1]?.realAt - now;
       statusPill = { color: '#4a9edd', text: `До следующего Сияния: ${next > 0 ? formatShiningCountdown(next) : '--:--'}` };
     }
   }
@@ -325,12 +310,12 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
         background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10,
       }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          {hasData ? (
+          {shiningData?.anchorIso ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 13, color: '#c8d6e5' }}>
-                Текущее игровое время:{' '}
+                Введено игровое время:{' '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#58a6ff', fontWeight: 700 }}>
-                  {currentGameMin !== null ? formatGameTime(currentGameMin) : '--:--'}
+                  {shiningData.gameTimeStr}
                 </span>
                 {' · '}
                 <span style={{ color: '#50c878' }}>{loc.label}</span>
@@ -348,7 +333,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
             </div>
           ) : (
             <div style={{ fontSize: 13, color: '#8b949e' }}>
-              Введи текущее игровое время чтобы начать отсчёт
+              Введи игровое время текущего Сияния чтобы начать отсчёт
             </div>
           )}
         </div>
@@ -362,14 +347,14 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
 
       {/* 4 карточки */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {cards
-          ? cards.map((card, i) => (
+        {slots
+          ? slots.map((slot, i) => (
               <ShiningSlot
-                key={i}
-                card={card}
-                cardIndex={i}
-                currentGameMin={currentGameMin}
-                now={now}
+                key={slot.index}
+                slot={slot}
+                gameTimeStr={shiningData?.gameTimeStr || '00:29'}
+                slotIndex={i}
+                onWarn={handleWarn}
               />
             ))
           : [0,1,2,3].map(i => (
@@ -392,7 +377,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
       <div className="tbl-hint">
         ✨ Сияния каждые 6 игровых часов = 52 мин 30 сек реального времени ·
         Игровые метки: 00:29 · 06:29 · 12:29 · 18:29 ·
-        Звук в 23:55, 05:55, 11:55, 17:55 · Любой игрок клана может обновить время
+        Звук за 5 мин · Любой игрок клана может обновить время
       </div>
 
       {showModal && (
