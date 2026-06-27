@@ -25,6 +25,12 @@ export default function Header({ user, page, onNavigate, onLogout }) {
           🫀 Лут рейда
         </button>
         <button
+          className={`nav-btn ${page === 'timers' ? 'active' : ''}`}
+          onClick={() => onNavigate('timers')}
+        >
+          ⏱️ Таймеры
+        </button>
+        <button
           className={`nav-btn ${page === 'clan' ? 'active' : ''}`}
           onClick={() => onNavigate('clan')}
         >

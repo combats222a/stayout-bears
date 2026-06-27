@@ -7,6 +7,7 @@ import ClanPage from './pages/ClanPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import HeartsPage from './pages/HeartsPage';
+import TimersPage from './pages/TimersPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 
@@ -173,6 +174,9 @@ export default function App() {
         )}
         {page === 'profile' && (
           <ProfilePage user={user} onUserUpdate={onUserUpdate} onLogout={onLogout} />
+        )}
+        {page === 'timers' && (
+          <TimersPage user={user} />
         )}
         {page === 'admin' && user.is_superadmin && (
           <AdminPage />

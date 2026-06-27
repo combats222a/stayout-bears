@@ -96,6 +96,16 @@ async function initSchema() {
       UNIQUE(clan_id, user_id)
     );
 
+    -- Пользовательские таймеры — видит только создатель
+    CREATE TABLE IF NOT EXISTS user_timers (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(128) NOT NULL,
+      period_seconds INTEGER NOT NULL DEFAULT 3600,
+      last_reset_at TIMESTAMPTZ DEFAULT NOW(),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
     DO $$ BEGIN
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
@@ -141,3 +151,4 @@ async function initSchema() {
 }
 
 module.exports = { initSchema };
+// PATCH — will be appended below in the actual file
