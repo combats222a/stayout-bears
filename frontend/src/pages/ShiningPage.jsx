@@ -23,20 +23,8 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
     if (parts.length < 2 || parts.some(isNaN)) { setError('Неверный формат. Пример: 01:13'); return; }
     const [gh, gm] = parts;
     if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError('Неверное время'); return; }
-
-    // Конвертируем введённое время в GMT -01:00 (базовый часовой пояс сияния)
-    // Формула: нормализованное_время = введённое - offset_выбранной_локации + (-1)
-    const selectedLoc = LOCATIONS.find(l => l.id === locId) || LOCATIONS[0];
-    const BASE_OFFSET = -1; // GMT -01:00 — базовый пояс сияния
-    const shiftHours = BASE_OFFSET - selectedLoc.offset; // сдвиг в игровых часах
-    const totalMinutes = gh * 60 + gm + shiftHours * 60;
-    const normalizedMinutes = ((totalMinutes % 1440) + 1440) % 1440;
-    const nh = Math.floor(normalizedMinutes / 60);
-    const nm = normalizedMinutes % 60;
-    const normalizedTimeStr = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}`;
-
     const anchorRealMs = Date.now();
-    onCommit({ gameTimeStr: normalizedTimeStr, locationId: locId, anchorRealMs });
+    onCommit({ gameTimeStr: timeVal, locationId: locId, anchorRealMs });
     onClose();
   }
 
@@ -65,26 +53,6 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
             />
             <div className="modal-hint">
               Любое текущее игровое время · Формат ЧЧ:ММ
-              {(() => {
-                const parts2 = timeVal.trim().split(':').map(Number);
-                if (parts2.length < 2 || parts2.some(isNaN)) return null;
-                const [gh2, gm2] = parts2;
-                if (gh2 < 0 || gh2 > 23 || gm2 < 0 || gm2 > 59) return null;
-                const selectedLoc2 = LOCATIONS.find(l => l.id === locId) || LOCATIONS[0];
-                const BASE_OFFSET = -1;
-                const shiftHours2 = BASE_OFFSET - selectedLoc2.offset;
-                if (shiftHours2 === 0) return null;
-                const total2 = gh2 * 60 + gm2 + shiftHours2 * 60;
-                const norm2 = ((total2 % 1440) + 1440) % 1440;
-                const nh2 = Math.floor(norm2 / 60);
-                const nm2 = norm2 % 60;
-                const normStr = `${String(nh2).padStart(2,'0')}:${String(nm2).padStart(2,'0')}`;
-                return (
-                  <span style={{ color: '#50c878', marginLeft: 6 }}>
-                    → в GMT −01:00: <b>{normStr}</b>
-                  </span>
-                );
-              })()}
             </div>
           </div>
 
@@ -143,11 +111,8 @@ function computeShiningSlots(anchorGameTimeStr, anchorRealMs, nowMs) {
   const [gh = 0, gm = 0] = parts;
   const Z_minutes = gh * 60 + gm;
 
-  // Явно приводим anchorRealMs к числу (защита от строки)
-  const anchorMs = Number(anchorRealMs);
-
-  // Текущие игровые минуты
-  const elapsedRealMs = Math.max(0, nowMs - anchorMs); // не может быть отрицательным
+  // Текущие игровые минуты (без wrap, чтобы не терять направление)
+  const elapsedRealMs = nowMs - anchorRealMs;
   const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
   const totalGameMinutes = Z_minutes + elapsedGameMinutes;
   const wrapped = ((totalGameMinutes % 1440) + 1440) % 1440;
@@ -445,7 +410,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
 
       {showModal && (
         <SetGameTimeModal
-          currentLocationId={DEFAULT_LOCATION_ID}
+          currentLocationId={shiningData?.locationId || DEFAULT_LOCATION_ID}
           onCommit={handleCommit}
           onClose={() => setShowModal(false)}
         />

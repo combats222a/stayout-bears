@@ -62,11 +62,8 @@ export function getLiveGameTime(anchorGameTimeStr, anchorRealMs, slotOffsetHours
   const [gh = 0, gm = 0] = parts;
   const Z_minutes = gh * 60 + gm;
 
-  // Явно приводим anchorRealMs к числу (защита от строки с сервера)
-  const anchorMs = Number(anchorRealMs);
-
-  // Прошло реального времени с момента X (не меньше 0)
-  const elapsedRealMs = Math.max(0, nowMs - anchorMs);
+  // Прошло реального времени с момента X
+  const elapsedRealMs = nowMs - anchorRealMs;
 
   // Переводим в игровые минуты
   const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
@@ -116,8 +113,7 @@ export function getSlotRealStartTime(anchorGameTimeStr, anchorRealMs, slotOffset
   const parts = (anchorGameTimeStr || '00:00').trim().split(':').map(Number);
   const [gh = 0, gm = 0] = parts;
   const Z_minutes = gh * 60 + gm;
-  const anchorMs = Number(anchorRealMs);
-  const elapsedRealMs = Math.max(0, nowMs - anchorMs);
+  const elapsedRealMs = nowMs - anchorRealMs;
   const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
   const slotOffsetMinutes = slotOffsetHours * 60;
   const totalGameMinutes = Z_minutes + elapsedGameMinutes + slotOffsetMinutes;
