@@ -14,8 +14,8 @@ export const SHINING_INTERVAL_MS = 6 * GAME_HOUR_MS;
 // Предупреждение за 5 реальных минут
 export const WARN_BEFORE_SHINING_MS = 5 * 60 * 1000;
 
-// Сколько реального времени "горит" сияние (1 игровая минута)
-export const SHINING_DURATION_MS = GAME_MINUTE_MS; // 8.75 сек
+// Сколько реального времени "горит" сияние (1 игровой час = 60 игровых минут)
+export const SHINING_DURATION_MS = GAME_HOUR_MS; // 525 000 мс = 8 мин 45 сек
 
 // ── Локации ──────────────────────────────────────────────────────
 export const LOCATIONS = [
@@ -106,7 +106,7 @@ export function getLiveGameTime(anchorIso, baseGameTimeStr, slotIndex, nowMs = D
   const anchorMs = new Date(anchorIso).getTime();
   // Сколько реального времени прошло с момента якоря
   const elapsedRealMs = nowMs - anchorMs;
-  // Переводим в игровые минуты
+  // Переводим в игровые минуты (только elapsed, без слотового смещения)
   const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
 
   // Базовое игровое время якоря
@@ -114,7 +114,8 @@ export function getLiveGameTime(anchorIso, baseGameTimeStr, slotIndex, nowMs = D
   const [gh = 0, gm = 0] = parts;
   const anchorGameMinutes = gh * 60 + gm;
 
-  // Игровое время якоря + прошедшие игровые минуты + смещение слота
+  // Текущее живое игровое время (слот 0) + смещение слота
+  // slotIndex * 6 * 60 — смещение в игровых минутах для показа нужного слота
   const slotOffsetMinutes = slotIndex * 6 * 60;
   const totalGameMinutes = anchorGameMinutes + elapsedGameMinutes + slotOffsetMinutes;
 

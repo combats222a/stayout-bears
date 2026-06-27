@@ -106,11 +106,13 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso, nextSlot
     return () => clearInterval(id);
   }, []);
 
-  // msLeft > 0  → сияние ещё не наступило (считаем вниз)
-  // msLeft <= 0 → сияние наступило, |msLeft| < DURATION → "горит", иначе "прошло"
+  // msLeft > 0  → сияние ещё не наступило
+  // msLeft <= 0 → сияние наступило
   const msLeft     = slot.realAt - now;
   const isActive   = slotIndex === 0;
-  const isBurning  = msLeft <= 0 && Math.abs(msLeft) < SHINING_DURATION_MS; // "горит" ~8 сек
+  // Сияние "горит" пока прошло менее 1 игрового часа с момента начала
+  const msSinceStart = -msLeft; // положительное когда сияние уже началось
+  const isBurning  = msLeft <= 0 && msSinceStart < SHINING_DURATION_MS;
   const isPast     = msLeft <= 0 && !isBurning;
   const isUpcoming = msLeft > 0;
   const isWarn     = isUpcoming && msLeft <= WARN_BEFORE_SHINING_MS;
@@ -129,7 +131,7 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso, nextSlot
     ? getLiveGameTime(anchorIso, gameTimeStr, slotIndex, now)
     : getSlotGameTime(gameTimeStr, slotIndex);
 
-  // Стиль карточки
+  // Стиль карточки — зелёный когда горит, оранжевый за 5 мин, синий иначе
   let accentColor, borderColor, bgColor, dotClass;
   if (isActive) {
     if (isBurning) {
@@ -152,11 +154,13 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso, nextSlot
   // Что показывать в таймере
   let timerLabel, timerValue, timerColor;
   if (isBurning && isActive) {
-    timerLabel = 'Статус';
-    timerValue = '⚡ РЕСП!';
+    // Горит — считаем сколько осталось до конца (до конца 1 игрового часа)
+    const msRemaining = SHINING_DURATION_MS - msSinceStart;
+    timerLabel = 'До конца';
+    timerValue = formatShiningCountdown(msRemaining);
     timerColor = '#50c878';
   } else if (isPast && isActive) {
-    // Сияние прошло — показываем обратный отсчёт до следующего
+    // Сияние прошло — обратный отсчёт до следующего
     const msToNext = nextSlot ? nextSlot.realAt - now : 0;
     timerLabel = 'До следующего';
     timerValue = msToNext > 0 ? formatShiningCountdown(msToNext) : '00:00';
@@ -166,8 +170,9 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso, nextSlot
     timerValue = formatShiningCountdown(msLeft);
     timerColor = isWarn ? '#e0a030' : (isActive ? '#4a9edd' : '#6e8090');
   } else {
-    timerLabel = 'Прошло';
-    timerValue = '+' + formatShiningCountdown(Math.abs(msLeft));
+    // Не активный слот, уже прошёл — не должно случаться в нормальном окне
+    timerLabel = 'Через';
+    timerValue = formatShiningCountdown(Math.abs(msLeft));
     timerColor = '#2a3a4a';
   }
 
