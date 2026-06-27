@@ -448,7 +448,7 @@ body {
   border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all .2s; font-family: inherit; }
 .btn-reset-row:hover { background: rgba(220,50,50,.08); }
 
-.tbl-hint { margin-top: 10px; font-size: 11px; color: #4a6a8a; text-align: center; }
+.tbl-hint { margin-top: 10px; font-size: 11px; color: var(--text2); text-align: center; }
 
 /* === TABLE TIMEZONE FOOTER === */
 .tbl-timezone {

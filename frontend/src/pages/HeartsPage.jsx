@@ -226,16 +226,18 @@ function Counter({ value, onChange, color }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
       <button onClick={() => onChange(value - 1)} style={{
         width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
-        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer',
+        background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer',
         fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 600,
       }}>−</button>
       <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 17, color, minWidth: 22, textAlign: 'center' }}>
         {value}
       </span>
       <button onClick={() => onChange(value + 1)} style={{
         width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
-        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer',
+        background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer',
         fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 600,
       }}>+</button>
     </div>
   );
@@ -285,8 +287,8 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
     <tr style={{ borderBottom: '1px solid rgba(48,54,61,.5)' }}>
       {/* ДАТА */}
       <td style={{ padding: '13px 12px', width: 86, whiteSpace: 'nowrap' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>{dateStr}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{timeStr}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{dateStr}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{timeStr}</div>
       </td>
 
       {/* НИК */}
@@ -372,7 +374,7 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
               fontSize: 14, fontFamily: 'var(--font-mono)',
             }}
           />
-          <span style={{ fontSize: 13, color: 'var(--text3)' }}>руб.</span>
+          <span style={{ fontSize: 13, color: 'var(--text2)' }}>руб.</span>
         </div>
       </td>
 
@@ -537,7 +539,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
 const th = {
   padding: '10px 12px',
   fontSize: 12, fontWeight: 600,
-  color: 'var(--text3)',
+  color: 'var(--text2)',
   textTransform: 'uppercase',
   letterSpacing: '.06em',
   textAlign: 'center',
