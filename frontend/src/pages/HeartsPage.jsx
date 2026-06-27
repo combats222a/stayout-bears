@@ -224,7 +224,7 @@ function fmt(n) {
 function Counter({ value, onChange, color }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-      <button onClick={() => onChange(value - 1)} style={{
+      <button onClick={() => onChange(Math.max(0, value - 1))} style={{
         width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
         background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer',
         fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -420,7 +420,11 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
   }
 
   async function handleUpdate(id, fields) {
-    setParticipants(prev => prev.map(p => p.id === id ? { ...p, ...fields } : p));
+    const clamped = { ...fields };
+    if (clamped.hearts !== undefined) clamped.hearts = Math.max(0, clamped.hearts);
+    if (clamped.pelts  !== undefined) clamped.pelts  = Math.max(0, clamped.pelts);
+    setParticipants(prev => prev.map(p => p.id === id ? { ...p, ...clamped } : p));
+    fields = clamped;
     try { await api.patch(`/hearts/${id}`, fields); }
     catch (e) { setError(e.message); load(); }
   }
