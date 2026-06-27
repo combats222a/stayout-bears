@@ -214,6 +214,12 @@ function FindersDropdown({ anchorRef, members, finders, onChange, onClose }) {
   );
 }
 
+// ─── Форматирование числа с пробелами: 3000000 → 3 000 000 ──────────
+function fmt(n) {
+  if (n == null || n === '') return '';
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 // ─── Кнопки ± ────────────────────────────────────────────────────────
 function Counter({ value, onChange, color }) {
   return (
@@ -247,14 +253,31 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
   const dt = new Date(p.added_at);
   const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
-  const myLoot   = (p.hearts || 0) + (p.pelts || 0);
+  const myLoot    = (p.hearts || 0) + (p.pelts || 0);
   const totalLoot = totalHearts + totalPelts;
-  const shareLabel = totalLoot > 0 ? Math.round((myLoot / totalLoot) * 100) + '%' : '—';
+
+  // Доля в рублях — берём максимальную сумму продажи из всех строк (передаётся снаружи)
+  // Считаем: если есть sold_for у этой строки — показываем его, иначе пропорцию от суммы
+  // Доля = myLoot / totalLoot * sold_for этой строки (или общей суммы)
+  const shareRub = (() => {
+    if (totalLoot === 0) return null;
+    if (p.sold_for != null) return Math.round((myLoot / totalLoot) * p.sold_for);
+    return null;
+  })();
+  const shareLabel = shareRub != null ? fmt(shareRub) + ' руб.' : '—';
 
   function handleSoldBlur() {
     setSoldFocused(false);
-    const val = soldInput.trim() === '' ? null : parseInt(soldInput);
-    if (val !== p.sold_for) onUpdate(p.id, { sold_for: soldInput.trim() === '' ? '' : val });
+    // Убираем пробелы перед парсингом
+    const raw = soldInput.replace(/\s/g, '').trim();
+    const val = raw === '' ? null : parseInt(raw);
+    if (val !== p.sold_for) onUpdate(p.id, { sold_for: raw === '' ? '' : val });
+  }
+
+  // При вводе — разрешаем только цифры и форматируем на лету
+  function handleSoldChange(e) {
+    const raw = e.target.value.replace(/\s/g, '');
+    if (raw === '' || /^\d+$/.test(raw)) setSoldInput(raw);
   }
 
   return (
@@ -283,8 +306,10 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
       </td>
 
       {/* ДОЛЯ */}
-      <td style={{ padding: '10px 10px', textAlign: 'center', minWidth: 60 }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 14, color: '#3fb950' }}>{shareLabel}</span>
+      <td style={{ padding: '10px 10px', textAlign: 'center', minWidth: 100 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: '#3fb950', whiteSpace: 'nowrap' }}>
+          {shareLabel}
+        </span>
       </td>
 
       {/* УЧАСТНИКИ */}
@@ -327,12 +352,13 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
       <td style={{ padding: '10px 6px', minWidth: 160 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <input
-            type="number"
-            value={soldFocused ? soldInput : (p.sold_for != null ? String(p.sold_for) : '')}
+            type="text"
+            inputMode="numeric"
+            value={soldFocused ? fmt(soldInput) : (p.sold_for != null ? fmt(p.sold_for) : '')}
             placeholder="—"
             onFocus={() => { setSoldFocused(true); setSoldInput(p.sold_for != null ? String(p.sold_for) : ''); }}
             onBlur={handleSoldBlur}
-            onChange={e => setSoldInput(e.target.value)}
+            onChange={handleSoldChange}
             onKeyDown={e => e.key === 'Enter' && e.target.blur()}
             style={{
               width: 110, background: 'var(--bg3)', border: '1px solid var(--border)',
@@ -440,7 +466,7 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
                 <th style={{ ...th, textAlign: 'left', minWidth: 120 }}>НИК</th>
                 <th style={{ ...th, minWidth: 120 }}>❤️ СЕРДЦА</th>
                 <th style={{ ...th, minWidth: 120 }}>🧥 ШКУРЫ</th>
-                <th style={{ ...th, minWidth: 80 }}>💰 ДОЛЯ</th>
+                <th style={{ ...th, minWidth: 100 }}>💰 ДОЛЯ</th>
                 <th style={{ ...th, minWidth: 200 }}>👥 УЧАСТНИКИ</th>
                 <th style={{ ...th, minWidth: 160 }}>💸 ПРОДАЛИ ЗА</th>
                 <th style={{ ...th, width: 32 }}></th>
