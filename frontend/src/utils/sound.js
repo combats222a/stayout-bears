@@ -22,7 +22,6 @@ export function playSpawnSound() {
 export function playShiningWarningSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Two rising tones — «дин-дон» как у мессенджера
     const notes = [
       { freq: 660, t: 0,    dur: 0.12 },
       { freq: 990, t: 0.14, dur: 0.18 },
