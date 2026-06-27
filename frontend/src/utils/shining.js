@@ -92,6 +92,39 @@ export function getSlotGameTime(baseGameTimeStr, slotIndex) {
   return `${String(displayH).padStart(2,'0')}:${String(displayM).padStart(2,'0')}`;
 }
 
+// ── Живое игровое время ──────────────────────────────────────────
+/**
+ * Вычисляет текущее живое игровое время на основе якоря.
+ * anchorIso — реальное время когда было зафиксировано сияние с известным игровым временем.
+ * baseGameTimeStr — игровое время в момент якоря (например "00:29").
+ * slotOffset — смещение слота в игровых часах (0, 6, 12, 18).
+ * nowMs — текущий реальный момент времени.
+ *
+ * Возвращает строку "ЧЧ:ММ" — текущее игровое время.
+ */
+export function getLiveGameTime(anchorIso, baseGameTimeStr, slotIndex, nowMs = Date.now()) {
+  const anchorMs = new Date(anchorIso).getTime();
+  // Сколько реального времени прошло с момента якоря
+  const elapsedRealMs = nowMs - anchorMs;
+  // Переводим в игровые минуты
+  const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
+
+  // Базовое игровое время якоря
+  const parts = (baseGameTimeStr || '00:00').trim().split(':').map(Number);
+  const [gh = 0, gm = 0] = parts;
+  const anchorGameMinutes = gh * 60 + gm;
+
+  // Игровое время якоря + прошедшие игровые минуты + смещение слота
+  const slotOffsetMinutes = slotIndex * 6 * 60;
+  const totalGameMinutes = anchorGameMinutes + elapsedGameMinutes + slotOffsetMinutes;
+
+  // Оборачиваем по 24 игровым часам
+  const wrapped = ((totalGameMinutes % 1440) + 1440) % 1440;
+  const displayH = Math.floor(wrapped / 60);
+  const displayM = Math.floor(wrapped % 60);
+  return `${String(displayH).padStart(2,'0')}:${String(displayM).padStart(2,'0')}`;
+}
+
 // ── Форматирование ────────────────────────────────────────────────
 export function formatRealTime(ms) {
   if (!ms && ms !== 0) return '--:--:--';

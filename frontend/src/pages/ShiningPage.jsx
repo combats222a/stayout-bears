@@ -3,7 +3,7 @@ import {
   LOCATIONS, DEFAULT_LOCATION_ID, getLocation,
   parseGameTimeInput, getUpcomingShiningSlots,
   formatRealTime, formatShiningCountdown,
-  getSlotGameTime,
+  getSlotGameTime, getLiveGameTime,
   WARN_BEFORE_SHINING_MS, SHINING_DURATION_MS,
 } from '../utils/shining';
 import { playShiningWarningSound } from '../utils/sound';
@@ -94,7 +94,7 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
 }
 
 // ─── Карточка одного слота ───────────────────────────────────────
-function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
+function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso }) {
   const [now, setNow] = useState(() => Date.now());
   const warnedRef = useRef(false);
 
@@ -124,8 +124,10 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
     if (!isUpcoming) warnedRef.current = false;
   }, [isWarn, isUpcoming, onWarn]);
 
-  // Игровое время этого слота
-  const gameTime = getSlotGameTime(gameTimeStr, slotIndex);
+  // Живое игровое время (тикает вперёд)
+  const liveGameTime = anchorIso
+    ? getLiveGameTime(anchorIso, gameTimeStr, slotIndex, now)
+    : getSlotGameTime(gameTimeStr, slotIndex);
 
   // Стиль карточки
   let accentColor, borderColor, bgColor, dotClass;
@@ -199,7 +201,7 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn }) {
           letterSpacing: '0.04em',
           lineHeight: 1,
         }}>
-          {gameTime}
+          {liveGameTime}
         </div>
       </div>
 
@@ -355,6 +357,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
                 gameTimeStr={shiningData?.gameTimeStr || '00:29'}
                 slotIndex={i}
                 onWarn={handleWarn}
+                anchorIso={shiningData?.anchorIso}
               />
             ))
           : [0,1,2,3].map(i => (
