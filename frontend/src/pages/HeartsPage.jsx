@@ -1,413 +1,279 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../utils/api';
 
-// ─── Дропдаун выбора "кто нашёл сердце" ─────────────────────────────
-function FinderDropdown({ members, value, onChange, onClose }) {
+// ─── Дропдаун добавления участника ────────────────────────────────────
+function AddParticipantDropdown({ members, existingNicks, onAdd, onClose }) {
   const [search, setSearch] = useState('');
   const [customNick, setCustomNick] = useState('');
   const ref = useRef(null);
 
-  // Закрыть при клике вне
   useEffect(() => {
-    function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) onClose(); }
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, [onClose]);
 
   const filtered = members.filter(m => {
     const nick = m.game_nick || m.nick;
-    return nick.toLowerCase().includes(search.toLowerCase());
+    return (
+      nick.toLowerCase().includes(search.toLowerCase()) &&
+      !existingNicks.has(nick)
+    );
   });
 
-  function selectMember(m) {
-    onChange({ user_id: m.id, nick: m.game_nick || m.nick });
+  function addMember(m) {
+    onAdd({ nick: m.game_nick || m.nick, user_id: m.id });
     onClose();
   }
-
-  function selectCustom() {
-    const nick = customNick.trim();
-    if (!nick) return;
-    onChange({ user_id: null, nick });
+  function addCustom() {
+    const n = customNick.trim();
+    if (!n) return;
+    onAdd({ nick: n, user_id: null });
+    setCustomNick('');
     onClose();
   }
 
   return (
     <div ref={ref} style={{
-      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
+      position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 300,
       background: 'var(--bg2)', border: '1px solid var(--border)',
-      borderRadius: 10, boxShadow: '0 8px 30px rgba(0,0,0,.5)',
-      overflow: 'hidden', marginTop: 4, minWidth: 240,
+      borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,.6)',
+      minWidth: 260, overflow: 'hidden',
     }}>
-      {/* Поиск по участникам клана */}
       <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase',
-          letterSpacing: '.06em', marginBottom: 6 }}>
+        <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
           👥 Участники клана
         </div>
         <input
           autoFocus
-          style={{
-            width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
-            borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13,
-          }}
+          style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
           placeholder="Поиск..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
       </div>
-
-      {/* Список участников клана */}
-      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+      <div style={{ maxHeight: 180, overflowY: 'auto' }}>
         {filtered.length === 0 && (
           <div style={{ padding: '10px 12px', color: 'var(--text3)', fontSize: 12 }}>
-            Участники не найдены
+            {members.length === 0 ? 'Нет участников' : 'Все уже добавлены'}
           </div>
         )}
         {filtered.map(m => {
           const nick = m.game_nick || m.nick;
-          const selected = value?.nick === nick;
           return (
-            <div
-              key={m.id}
-              onClick={() => selectMember(m)}
-              style={{
-                padding: '8px 12px', cursor: 'pointer', fontSize: 13,
-                color: selected ? 'var(--accent)' : 'var(--text)',
-                background: selected ? 'rgba(88,166,255,.08)' : 'transparent',
-                display: 'flex', alignItems: 'center', gap: 8,
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = selected
-                ? 'rgba(88,166,255,.12)' : 'var(--bg3)'}
-              onMouseLeave={e => e.currentTarget.style.background = selected
-                ? 'rgba(88,166,255,.08)' : 'transparent'}
+            <div key={m.id} onClick={() => addMember(m)} style={{
+              padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+            onMouseLeave={e => e.currentTarget.style.background = ''}
             >
-              <span style={{ fontSize: 16 }}>🐻</span>
-              <span>{nick}</span>
-              {selected && <span style={{ marginLeft: 'auto', fontSize: 12 }}>✓</span>}
+              <span>🐻</span><span>{nick}</span>
             </div>
           );
         })}
       </div>
-
-      {/* Разделитель */}
-      <div style={{
-        padding: '8px 10px', borderTop: '1px solid var(--border)',
-        background: 'rgba(0,0,0,.2)',
-      }}>
-        <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase',
-          letterSpacing: '.06em', marginBottom: 6 }}>
-          ✍️ Вписать ник вручную (не авторизован)
+      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,.15)' }}>
+        <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
+          ✍️ Вписать ник вручную
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <input
-            style={{
-              flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)',
-              borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13,
-            }}
+            style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
             placeholder="Ник игрока..."
             value={customNick}
             onChange={e => setCustomNick(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && selectCustom()}
+            onKeyDown={e => e.key === 'Enter' && addCustom()}
           />
-          <button
-            onClick={selectCustom}
-            disabled={!customNick.trim()}
-            style={{
-              padding: '5px 12px', borderRadius: 6, border: 'none',
-              background: customNick.trim() ? 'var(--accent)' : 'var(--bg3)',
-              color: customNick.trim() ? '#0d1117' : 'var(--text3)',
-              cursor: customNick.trim() ? 'pointer' : 'default',
-              fontWeight: 700, fontSize: 13, transition: 'all 0.15s',
-            }}
-          >
-            OK
-          </button>
+          <button onClick={addCustom} disabled={!customNick.trim()} style={{
+            padding: '5px 12px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13,
+            background: customNick.trim() ? 'var(--accent)' : 'var(--bg3)',
+            color: customNick.trim() ? '#0d1117' : 'var(--text3)',
+            cursor: customNick.trim() ? 'pointer' : 'default',
+          }}>OK</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Кнопка добавления сердца ─────────────────────────────────────────
-function AddHeartButton({ members, onAdd, loading }) {
-  const [open, setOpen] = useState(false);
-  const [finder, setFinder] = useState(null); // { user_id, nick }
-  const wrapRef = useRef(null);
+// ─── Кнопки ± ────────────────────────────────────────────────────────
+function Counter({ value, onChange, color = '#e05252' }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <button onClick={() => onChange(value - 1)} style={{
+        width: 22, height: 22, borderRadius: 4, border: '1px solid var(--border)',
+        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer', fontSize: 14, lineHeight: 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>−</button>
+      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, color, minWidth: 18, textAlign: 'center' }}>
+        {value}
+      </span>
+      <button onClick={() => onChange(value + 1)} style={{
+        width: 22, height: 22, borderRadius: 4, border: '1px solid var(--border)',
+        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer', fontSize: 14, lineHeight: 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>+</button>
+    </div>
+  );
+}
 
-  function handleSelect(v) { setFinder(v); }
+// ─── Строка участника ─────────────────────────────────────────────────
+function ParticipantRow({ p, rank, totalHearts, totalPelts, onUpdate, onDelete }) {
+  const [soldInput, setSoldInput] = useState(p.sold_for != null ? String(p.sold_for) : '');
+  const [soldFocused, setSoldFocused] = useState(false);
 
-  async function handleAdd() {
-    if (!finder) return;
-    await onAdd({ found_by_user_id: finder.user_id, found_by_nick: finder.nick });
-    setFinder(null);
+  // Доля — пропорционально суммарному лоту (сердца + шкуры)
+  const myLoot = p.hearts + p.pelts;
+  const totalLoot = totalHearts + totalPelts;
+  const shareLabel = totalLoot > 0
+    ? Math.round((myLoot / totalLoot) * 100) + '%'
+    : '—';
+
+  // Расчёт выплаты — если есть sold_for у кого-то в таблице, пересчитывается
+  const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : null;
+
+  function handleSoldBlur() {
+    setSoldFocused(false);
+    const val = soldInput.trim() === '' ? null : parseInt(soldInput);
+    if (val !== p.sold_for) {
+      onUpdate(p.id, { sold_for: soldInput.trim() === '' ? '' : val });
+    }
   }
 
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-      {/* Кнопка-пикер */}
-      <div ref={wrapRef} style={{ position: 'relative' }}>
-        <button
-          onClick={() => setOpen(o => !o)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 14px', borderRadius: 8,
-            background: open ? 'var(--bg3)' : 'var(--bg2)',
-            border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
-            color: finder ? 'var(--text)' : 'var(--text3)',
-            cursor: 'pointer', fontSize: 13, transition: 'all 0.15s',
-            minWidth: 160,
-          }}
-        >
-          <span>❤️</span>
-          <span style={{ flex: 1, textAlign: 'left' }}>
-            {finder ? finder.nick : 'Кто нашёл?'}
+    <tr style={{ borderBottom: '1px solid rgba(48,54,61,.5)' }}>
+      {/* # */}
+      <td style={{ padding: '10px 10px', width: 36, color: 'var(--text3)', fontSize: 13 }}>
+        {medal || <span>{rank + 1}</span>}
+      </td>
+
+      {/* НИК */}
+      <td style={{ padding: '10px 6px' }}>
+        <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{p.nick}</span>
+        {!p.user_id && (
+          <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)', background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>
+            гость
           </span>
-          <span style={{ fontSize: 10, color: 'var(--text3)' }}>{open ? '▲' : '▼'}</span>
-        </button>
-        {open && (
-          <FinderDropdown
-            members={members}
-            value={finder}
-            onChange={handleSelect}
-            onClose={() => setOpen(false)}
-          />
         )}
-      </div>
+      </td>
 
-      {/* Кнопка "Добавить" */}
-      <button
-        onClick={handleAdd}
-        disabled={!finder || loading}
-        style={{
-          padding: '7px 18px', borderRadius: 8,
-          background: finder && !loading ? 'var(--red)' : 'var(--bg3)',
-          border: 'none',
-          color: finder && !loading ? '#fff' : 'var(--text3)',
-          cursor: finder && !loading ? 'pointer' : 'default',
-          fontSize: 14, fontWeight: 700, transition: 'all 0.15s',
-          display: 'flex', alignItems: 'center', gap: 6,
-        }}
-      >
-        {loading ? '...' : '+ Добавить сердце'}
-      </button>
-    </div>
-  );
-}
+      {/* СЕРДЦА */}
+      <td style={{ padding: '10px 6px' }}>
+        <Counter value={p.hearts} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" />
+      </td>
 
-// ─── Таблица статистики по участникам ─────────────────────────────────
-function StatsTable({ stats }) {
-  if (!stats.length) return null;
+      {/* ШКУРЫ */}
+      <td style={{ padding: '10px 6px' }}>
+        <Counter value={p.pelts} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" />
+      </td>
 
-  const max = Math.max(...stats.map(s => parseInt(s.heart_count)));
+      {/* ДОЛЯ */}
+      <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 14, color: '#3fb950' }}>
+          {shareLabel}
+        </span>
+      </td>
 
-  return (
-    <div style={{
-      background: 'var(--bg2)', border: '1px solid var(--border)',
-      borderRadius: 10, overflow: 'hidden',
-    }}>
-      {/* Заголовок */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '40px 1fr 80px 160px',
-        gap: 0, padding: '8px 14px',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg3)',
-      }}>
-        {['#', 'Игрок', '❤️', 'Прогресс'].map((h, i) => (
-          <div key={i} style={{
-            fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase',
-            letterSpacing: '.06em', fontWeight: 600,
-          }}>{h}</div>
-        ))}
-      </div>
-
-      {/* Строки */}
-      {stats.map((s, idx) => {
-        const pct = max > 0 ? (parseInt(s.heart_count) / max) * 100 : 0;
-        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
-        return (
-          <div key={`${s.nick}-${idx}`} style={{
-            display: 'grid',
-            gridTemplateColumns: '40px 1fr 80px 160px',
-            gap: 0, padding: '10px 14px',
-            borderBottom: idx < stats.length - 1 ? '1px solid rgba(48,54,61,.5)' : 'none',
-            alignItems: 'center',
-          }}>
-            <div style={{ fontSize: 13, color: 'var(--text3)' }}>
-              {medal || <span style={{ color: 'var(--text3)' }}>{idx + 1}</span>}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
-              {s.nick}
-              {s.user_id === null && (
-                <span style={{
-                  marginLeft: 6, fontSize: 10, color: 'var(--text3)',
-                  background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4,
-                }}>гость</span>
-              )}
-            </div>
-            <div style={{
-              fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700,
-              color: idx === 0 ? '#e05252' : 'var(--text)',
-            }}>
-              {s.heart_count} <span style={{ fontSize: 14 }}>❤️</span>
-            </div>
-            <div style={{ padding: '0 8px 0 0' }}>
-              <div style={{
-                height: 6, borderRadius: 3, background: 'var(--bg3)', overflow: 'hidden',
-              }}>
-                <div style={{
-                  height: '100%', borderRadius: 3,
-                  width: `${pct}%`,
-                  background: idx === 0
-                    ? 'linear-gradient(90deg, #e05252, #ff7f7f)'
-                    : 'linear-gradient(90deg, #4a6a8a, #6e8090)',
-                  transition: 'width 0.4s ease',
-                }} />
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Лог последних событий ────────────────────────────────────────────
-function HeartsLog({ hearts, onDelete }) {
-  if (!hearts.length) {
-    return (
-      <div style={{
-        textAlign: 'center', padding: '30px', color: 'var(--text3)', fontSize: 13,
-      }}>
-        Пока нет записей. Добавь первое сердце! ❤️
-      </div>
-    );
-  }
-
-  return (
-    <div style={{
-      background: 'var(--bg2)', border: '1px solid var(--border)',
-      borderRadius: 10, overflow: 'hidden',
-    }}>
-      <div style={{
-        padding: '8px 14px', borderBottom: '1px solid var(--border)',
-        background: 'var(--bg3)', fontSize: 11, color: 'var(--text3)',
-        textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 600,
-      }}>
-        📋 История находок
-      </div>
-      {hearts.map((h, idx) => (
-        <div key={h.id} style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '9px 14px',
-          borderBottom: idx < hearts.length - 1 ? '1px solid rgba(48,54,61,.5)' : 'none',
-        }}>
-          <span style={{ fontSize: 16 }}>❤️</span>
-          <div style={{ flex: 1 }}>
-            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{h.found_by_nick}</span>
-            {!h.found_by_user_id && (
-              <span style={{
-                marginLeft: 5, fontSize: 10, color: 'var(--text3)',
-                background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4,
-              }}>гость</span>
-            )}
-            <span style={{ color: 'var(--text3)', fontSize: 12, marginLeft: 8 }}>
-              нашёл сердце
-            </span>
-            {h.note && (
-              <span style={{ color: 'var(--text3)', fontSize: 12, marginLeft: 6 }}>
-                · {h.note}
-              </span>
-            )}
-          </div>
-          <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
-            {new Date(h.recorded_at).toLocaleString('ru-RU', {
-              day: '2-digit', month: '2-digit',
-              hour: '2-digit', minute: '2-digit',
-            })}
-          </span>
-          {h.recorder_nick && (
-            <span style={{ fontSize: 11, color: 'var(--text3)' }}>от {h.recorder_nick}</span>
-          )}
-          <button
-            onClick={() => onDelete(h.id)}
-            title="Удалить"
+      {/* ПРОДАЛИ ЗА */}
+      <td style={{ padding: '10px 6px', minWidth: 130 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <input
+            type="number"
+            value={soldFocused ? soldInput : (p.sold_for != null ? String(p.sold_for) : '')}
+            placeholder="—"
+            onFocus={() => { setSoldFocused(true); setSoldInput(p.sold_for != null ? String(p.sold_for) : ''); }}
+            onBlur={handleSoldBlur}
+            onChange={e => setSoldInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && e.target.blur()}
             style={{
-              background: 'none', border: 'none', color: 'var(--text3)',
-              cursor: 'pointer', fontSize: 16, padding: '0 4px',
-              opacity: 0.5, transition: 'opacity 0.15s',
+              width: 90, background: 'var(--bg3)', border: '1px solid var(--border)',
+              borderRadius: 6, color: 'var(--text)', padding: '4px 8px',
+              fontSize: 13, fontFamily: 'var(--font-mono)',
             }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
-          >
-            ×
-          </button>
+          />
+          <span style={{ fontSize: 12, color: 'var(--text3)' }}>руб.</span>
         </div>
-      ))}
-    </div>
+      </td>
+
+      {/* Удалить */}
+      <td style={{ padding: '10px 6px', textAlign: 'center', width: 32 }}>
+        <button onClick={() => onDelete(p.id)} title="Удалить" style={{
+          background: 'none', border: 'none', color: 'var(--text3)',
+          cursor: 'pointer', fontSize: 18, lineHeight: 1, opacity: 0.5,
+          transition: 'opacity .15s', padding: '0 4px',
+        }}
+        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+        onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
+        >×</button>
+      </td>
+    </tr>
   );
 }
 
 // ─── Основная страница ────────────────────────────────────────────────
 export default function HeartsPage({ clan, members, onHeartsUpdate }) {
-  const [hearts, setHearts] = useState([]);
-  const [stats,  setStats]  = useState([]);
+  const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
   const [error, setError] = useState('');
+  const addBtnRef = useRef(null);
 
-  const loadHearts = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       const data = await api.get('/hearts');
-      setHearts(data.hearts || []);
-      setStats(data.stats || []);
-    } catch {
-      setError('Не удалось загрузить данные');
-    } finally {
-      setLoading(false);
-    }
+      setParticipants(data.participants || []);
+    } catch { setError('Ошибка загрузки'); }
+    finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { loadHearts(); }, [loadHearts]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (onHeartsUpdate) onHeartsUpdate(load); }, [onHeartsUpdate, load]);
 
-  // Синхронизация через сокет (если onHeartsUpdate передаёт reload)
-  useEffect(() => {
-    if (onHeartsUpdate) onHeartsUpdate(loadHearts);
-  }, [onHeartsUpdate, loadHearts]);
-
-  async function handleAdd({ found_by_user_id, found_by_nick }) {
-    setAdding(true);
+  async function handleAdd({ nick, user_id }) {
     setError('');
     try {
-      await api.post('/hearts', { found_by_user_id, found_by_nick });
-      await loadHearts();
-    } catch (e) {
-      setError(e.message || 'Ошибка');
-    } finally {
-      setAdding(false);
-    }
+      await api.post('/hearts/participant', { nick, user_id });
+      await load();
+    } catch (e) { setError(e.message); }
+  }
+
+  async function handleUpdate(id, fields) {
+    // Оптимистично обновляем локально
+    setParticipants(prev => prev.map(p => p.id === id ? { ...p, ...fields } : p));
+    try {
+      await api.patch(`/hearts/${id}`, fields);
+      // Не перезагружаем — сокет сделает это для других участников
+    } catch (e) { setError(e.message); load(); }
   }
 
   async function handleDelete(id) {
     try {
       await api.delete(`/hearts/${id}`);
-      await loadHearts();
-    } catch (e) {
-      setError(e.message || 'Ошибка удаления');
-    }
+      setParticipants(prev => prev.filter(p => p.id !== id));
+    } catch (e) { setError(e.message); }
   }
 
-  // Общее количество сердец
-  const totalHearts = stats.reduce((sum, s) => sum + parseInt(s.heart_count), 0);
+  async function handleReset() {
+    if (!window.confirm('Очистить таблицу рейда?')) return;
+    try {
+      await api.post('/hearts/reset');
+      setParticipants([]);
+    } catch (e) { setError(e.message); }
+  }
+
+  const existingNicks = new Set(participants.map(p => p.nick));
+  const totalHearts = participants.reduce((s, p) => s + (p.hearts || 0), 0);
+  const totalPelts  = participants.reduce((s, p) => s + (p.pelts  || 0), 0);
+
+  // Сортировка по сумме лута (убывание)
+  const sorted = [...participants].sort((a, b) => (b.hearts + b.pelts) - (a.hearts + a.pelts));
 
   if (!clan) {
     return (
       <div className="page">
-        <h2 className="page-title">❤️ Учёт сердец</h2>
-        <div className="empty-state"><p>Вступи в клан чтобы вести учёт сердец</p></div>
+        <h2 className="page-title">🫀 Учёт лута</h2>
+        <div className="empty-state"><p>Вступи в клан чтобы вести учёт</p></div>
       </div>
     );
   }
@@ -416,64 +282,122 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
     <div className="page">
       {/* Заголовок */}
       <div className="bears-hdr">
-        <h2 className="page-title">❤️ Учёт сердец — {clan.name}</h2>
+        <h2 className="page-title">🫀 Учёт лута — {clan.name}</h2>
         <div className="stat-pills">
           <span className="pill" style={{ color: '#e05252', borderColor: '#e05252', background: 'rgba(224,82,82,.1)' }}>
-            ❤️ Всего: {totalHearts}
+            ❤️ Сердец: {totalHearts}
+          </span>
+          <span className="pill" style={{ color: '#7eb8e0', borderColor: '#7eb8e0', background: 'rgba(126,184,224,.1)' }}>
+            🧥 Шкур: {totalPelts}
           </span>
           <span className="pill">
-            👥 Участников: {stats.length}
+            👥 Участников: {participants.length}
           </span>
         </div>
       </div>
 
-      {/* Блок добавления */}
-      <div style={{
-        padding: '14px 16px',
-        background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10,
-        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-      }}>
-        <AddHeartButton members={members} onAdd={handleAdd} loading={adding} />
-        {error && (
-          <div style={{ fontSize: 13, color: 'var(--red)', padding: '4px 8px' }}>
-            ⚠️ {error}
-          </div>
-        )}
-      </div>
-
-      {/* Статистика */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Загрузка...</div>
-      ) : (
-        <>
-          {stats.length > 0 && (
-            <div>
-              <div style={{
-                fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase',
-                letterSpacing: '.07em', marginBottom: 8, fontWeight: 600,
-              }}>
-                🏆 Таблица лидеров
-              </div>
-              <StatsTable stats={stats} />
-            </div>
-          )}
-
-          {/* Лог */}
-          <div>
-            <div style={{
-              fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase',
-              letterSpacing: '.07em', marginBottom: 8, fontWeight: 600,
-            }}>
-              История
-            </div>
-            <HeartsLog hearts={hearts} onDelete={handleDelete} />
-          </div>
-        </>
+      {error && (
+        <div style={{ fontSize: 13, color: 'var(--red)', padding: '8px 12px', background: 'rgba(248,81,73,.08)', borderRadius: 8, border: '1px solid rgba(248,81,73,.2)' }}>
+          ⚠️ {error}
+        </div>
       )}
 
+      {/* Таблица */}
+      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+              <th style={th}>#</th>
+              <th style={{ ...th, textAlign: 'left' }}>НИК</th>
+              <th style={th}>❤️ СЕРДЦА</th>
+              <th style={th}>🧥 ШКУРЫ</th>
+              <th style={th}>💰 ДОЛЯ</th>
+              <th style={th}>💸 ПРОДАЛИ ЗА</th>
+              <th style={th}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Загрузка...</td></tr>
+            ) : sorted.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 13 }}>
+                Нажми «+ Добавить участника» чтобы начать учёт
+              </td></tr>
+            ) : (
+              sorted.map((p, idx) => (
+                <ParticipantRow
+                  key={p.id}
+                  p={p}
+                  rank={idx}
+                  totalHearts={totalHearts}
+                  totalPelts={totalPelts}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                />
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {/* Нижняя панель — добавить + сброс */}
+        <div style={{
+          borderTop: '1px solid var(--border)', padding: '10px 14px',
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          background: 'rgba(0,0,0,.1)',
+        }}>
+          <div ref={addBtnRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowAdd(o => !o)}
+              style={{
+                padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                background: showAdd ? 'var(--bg3)' : 'var(--accent)',
+                color: showAdd ? 'var(--text)' : '#0d1117',
+                border: 'none', cursor: 'pointer', transition: 'all .15s',
+              }}
+            >
+              + Добавить участника
+            </button>
+            {showAdd && (
+              <AddParticipantDropdown
+                members={members}
+                existingNicks={existingNicks}
+                onAdd={handleAdd}
+                onClose={() => setShowAdd(false)}
+              />
+            )}
+          </div>
+
+          <div style={{ flex: 1 }} />
+
+          {participants.length > 0 && (
+            <button onClick={handleReset} style={{
+              padding: '6px 14px', borderRadius: 8, fontSize: 13,
+              background: 'none', border: '1px solid var(--border)',
+              color: 'var(--text3)', cursor: 'pointer',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--red)'; e.currentTarget.style.color = 'var(--red)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text3)'; }}
+            >
+              🗑 Очистить рейд
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="tbl-hint">
-        ❤️ Нажми «Кто нашёл?» → выбери участника клана или впиши ник вручную · Статистика обновляется сразу
+        ❤️ + шкуры 🧥 = доля считается автоматически · Нажми «Продали за» чтобы вписать сумму · «Очистить рейд» — сброс таблицы после рейда
       </div>
     </div>
   );
 }
+
+const th = {
+  padding: '8px 10px',
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--text3)',
+  textTransform: 'uppercase',
+  letterSpacing: '.06em',
+  textAlign: 'center',
+  whiteSpace: 'nowrap',
+};

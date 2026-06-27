@@ -39,16 +39,27 @@ async function initSchema() {
       set_by_nick  VARCHAR(64)  NOT NULL DEFAULT ''
     );
 
-    -- Hearts (учёт сердец) — записи о найденных сердцах
-    CREATE TABLE IF NOT EXISTS hearts (
+    -- Loot session participants — учёт сердец и шкур за рейд
+    CREATE TABLE IF NOT EXISTS loot_participants (
       id SERIAL PRIMARY KEY,
       clan_id INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
-      found_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      found_by_nick VARCHAR(64) NOT NULL DEFAULT '',
-      recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      recorded_at TIMESTAMPTZ DEFAULT NOW(),
-      note TEXT DEFAULT ''
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      nick VARCHAR(64) NOT NULL DEFAULT '',
+      hearts INTEGER NOT NULL DEFAULT 0,
+      pelts INTEGER NOT NULL DEFAULT 0,
+      sold_for INTEGER,
+      added_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(clan_id, nick)
     );
+
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='loot_participants' AND column_name='sold_for'
+      ) THEN
+        ALTER TABLE loot_participants ADD COLUMN sold_for INTEGER;
+      END IF;
+    END $$;
 
     CREATE TABLE IF NOT EXISTS password_reset_codes (
       id SERIAL PRIMARY KEY,

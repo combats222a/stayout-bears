@@ -2,80 +2,93 @@ const router = require('express').Router();
 const { pool } = require('../db/pool');
 const { auth } = require('../middleware/auth');
 
-// GET /api/hearts — список всех сердец клана + статистика по участникам
+// GET /api/hearts — список участников рейда клана
 router.get('/', auth, async (req, res) => {
-  if (!req.user.clan_id) return res.json({ hearts: [], stats: [] });
-  try {
-    const { rows: hearts } = await pool.query(
-      `SELECT h.*, COALESCE(u.game_nick, u.nick) as recorder_nick
-       FROM hearts h
-       LEFT JOIN users u ON h.recorded_by = u.id
-       WHERE h.clan_id = $1
-       ORDER BY h.recorded_at DESC`,
-      [req.user.clan_id]
-    );
-
-    // Статистика: кол-во сердец по каждому участнику
-    const { rows: stats } = await pool.query(
-      `SELECT
-         h.found_by_nick as nick,
-         h.found_by_user_id as user_id,
-         COUNT(*) as heart_count
-       FROM hearts h
-       WHERE h.clan_id = $1
-       GROUP BY h.found_by_nick, h.found_by_user_id
-       ORDER BY heart_count DESC`,
-      [req.user.clan_id]
-    );
-
-    res.json({ hearts, stats });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
-});
-
-// POST /api/hearts — добавить сердце
-// body: { found_by_user_id?: number, found_by_nick: string, note?: string }
-router.post('/', auth, async (req, res) => {
-  if (!req.user.clan_id) return res.status(403).json({ error: 'Ты не в клане' });
-
-  const { found_by_user_id, found_by_nick, note } = req.body;
-  if (!found_by_nick || !found_by_nick.trim()) {
-    return res.status(400).json({ error: 'Укажи ник игрока' });
-  }
-
+  if (!req.user.clan_id) return res.json({ participants: [] });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO hearts (clan_id, found_by_user_id, found_by_nick, recorded_by, note)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [
-        req.user.clan_id,
-        found_by_user_id || null,
-        found_by_nick.trim(),
-        req.user.id,
-        note || '',
-      ]
+      `SELECT * FROM loot_participants
+       WHERE clan_id = $1
+       ORDER BY added_at ASC`,
+      [req.user.clan_id]
     );
-
-    req.getIo().to(`clan:${req.user.clan_id}`).emit('hearts:update');
-    res.json({ heart: rows[0] });
+    res.json({ participants: rows });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
-// DELETE /api/hearts/:id — удалить запись (любой член клана)
+// POST /api/hearts/participant — добавить участника
+router.post('/participant', auth, async (req, res) => {
+  if (!req.user.clan_id) return res.status(403).json({ error: 'Ты не в клане' });
+  const { nick, user_id } = req.body;
+  if (!nick || !nick.trim()) return res.status(400).json({ error: 'Укажи ник' });
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO loot_participants (clan_id, user_id, nick)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (clan_id, nick) DO UPDATE SET nick = EXCLUDED.nick
+       RETURNING *`,
+      [req.user.clan_id, user_id || null, nick.trim()]
+    );
+    req.getIo().to(`clan:${req.user.clan_id}`).emit('hearts:update');
+    res.json({ participant: rows[0] });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// PATCH /api/hearts/:id — обновить hearts/pelts/sold_for
+router.patch('/:id', auth, async (req, res) => {
+  if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
+  const { hearts, pelts, sold_for } = req.body;
+  const sets = [];
+  const vals = [];
+  let i = 1;
+  if (hearts !== undefined) { sets.push(`hearts = $${i++}`); vals.push(Math.max(0, hearts)); }
+  if (pelts  !== undefined) { sets.push(`pelts  = $${i++}`); vals.push(Math.max(0, pelts)); }
+  if (sold_for !== undefined) { sets.push(`sold_for = $${i++}`); vals.push(sold_for === '' || sold_for === null ? null : parseInt(sold_for)); }
+  if (!sets.length) return res.status(400).json({ error: 'Нечего обновлять' });
+  vals.push(req.params.id, req.user.clan_id);
+  try {
+    const { rows } = await pool.query(
+      `UPDATE loot_participants SET ${sets.join(', ')}
+       WHERE id = $${i} AND clan_id = $${i+1} RETURNING *`,
+      vals
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Не найден' });
+    req.getIo().to(`clan:${req.user.clan_id}`).emit('hearts:update');
+    res.json({ participant: rows[0] });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// DELETE /api/hearts/:id — удалить участника
 router.delete('/:id', auth, async (req, res) => {
   if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM hearts WHERE id = $1 AND clan_id = $2',
+      'DELETE FROM loot_participants WHERE id = $1 AND clan_id = $2',
       [req.params.id, req.user.clan_id]
     );
-    if (!rowCount) return res.status(404).json({ error: 'Запись не найдена' });
+    if (!rowCount) return res.status(404).json({ error: 'Не найден' });
+    req.getIo().to(`clan:${req.user.clan_id}`).emit('hearts:update');
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// POST /api/hearts/reset — сбросить всю таблицу (очистить рейд)
+router.post('/reset', auth, async (req, res) => {
+  if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
+  try {
+    await pool.query('DELETE FROM loot_participants WHERE clan_id = $1', [req.user.clan_id]);
     req.getIo().to(`clan:${req.user.clan_id}`).emit('hearts:update');
     res.json({ ok: true });
   } catch (e) {

@@ -22,7 +22,7 @@ export default function Header({ user, page, onNavigate, onLogout }) {
           className={`nav-btn ${page === 'hearts' ? 'active' : ''}`}
           onClick={() => onNavigate('hearts')}
         >
-          ❤️ Сердца
+          🫀 Лут рейда
         </button>
         <button
           className={`nav-btn ${page === 'clan' ? 'active' : ''}`}
