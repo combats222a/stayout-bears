@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  LOCATIONS, DEFAULT_LOCATION_ID, getLocation,
+  DEFAULT_LOCATION_ID, getLocation,
   getLiveGameTime, isShiningActive, formatRealTime, formatCountdown,
   SHINING_INTERVAL_MS, SHINING_DURATION_MS, WARN_BEFORE_SHINING_MS,
   GAME_MINUTE_MS,
@@ -9,9 +9,8 @@ import { playShiningWarningSound } from '../utils/sound';
 import { api } from '../utils/api';
 
 // ─── Модалка ввода якорей Z и X ──────────────────────────────────
-function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
+function SetGameTimeModal({ onCommit, onClose }) {
   const [timeVal, setTimeVal] = useState('');
-  const [locId,   setLocId]   = useState(currentLocationId || DEFAULT_LOCATION_ID);
   const [error,   setError]   = useState('');
   const inputRef = useRef(null);
 
@@ -24,7 +23,7 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
     const [gh, gm] = parts;
     if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError('Неверное время'); return; }
     const anchorRealMs = Date.now();
-    onCommit({ gameTimeStr: timeVal, locationId: locId, anchorRealMs });
+    onCommit({ gameTimeStr: timeVal, locationId: DEFAULT_LOCATION_ID, anchorRealMs });
     onClose();
   }
 
@@ -54,33 +53,6 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
             <div className="modal-hint">
               Любое текущее игровое время · Формат ЧЧ:ММ
             </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label className="modal-label">Локация (игровой часовой пояс)</label>
-            {LOCATIONS.map(l => {
-              const active = locId === l.id;
-              return (
-                <label key={l.id} style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
-                  padding: '9px 12px', borderRadius: 8, cursor: 'pointer',
-                  border: `1px solid ${active ? '#58a6ff' : '#30363d'}`,
-                  background: active ? 'rgba(88,166,255,0.08)' : 'transparent',
-                  transition: 'all .15s',
-                }}>
-                  <input type="radio" name="loc" value={l.id}
-                    checked={active} onChange={() => setLocId(l.id)}
-                    style={{ marginTop: 3, accentColor: '#58a6ff' }}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: active ? '#58a6ff' : '#e6edf3' }}>
-                      {l.label}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#8b949e', marginTop: 2 }}>{l.name}</div>
-                  </div>
-                </label>
-              );
-            })}
           </div>
 
           {error && <div className="modal-error">{error}</div>}
@@ -410,7 +382,6 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
 
       {showModal && (
         <SetGameTimeModal
-          currentLocationId={shiningData?.locationId || DEFAULT_LOCATION_ID}
           onCommit={handleCommit}
           onClose={() => setShowModal(false)}
         />
