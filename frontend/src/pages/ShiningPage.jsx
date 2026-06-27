@@ -22,7 +22,12 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
     if (!timeVal.trim()) { setError('Введи игровое время'); return; }
     const iso = parseGameTimeInput(timeVal, locId);
     if (!iso) { setError('Неверный формат. Пример: 06:29'); return; }
-    onCommit({ gameTimeStr: timeVal, locationId: locId, anchorIso: iso });
+    // Нормализуем игровое время до начала текущего сияния (XX:00)
+    const parts = timeVal.trim().split(':').map(Number);
+    const [gh = 0] = parts;
+    const shiningStartHour = Math.floor(gh / 6) * 6; // 0, 6, 12, 18
+    const normalizedGameTimeStr = `${String(shiningStartHour).padStart(2,'0')}:00`;
+    onCommit({ gameTimeStr: normalizedGameTimeStr, locationId: locId, anchorIso: iso });
     onClose();
   }
 
