@@ -50,7 +50,11 @@ export default function App() {
     if (!token) return;
     try {
       const data = await api.get('/shining');
-      if (data?.anchorIso) setShiningData(data);
+      if (data?.anchorIso || data?.anchorRealMs) {
+        // Обеспечиваем наличие anchorRealMs
+        if (data.anchorIso && !data.anchorRealMs) data.anchorRealMs = new Date(data.anchorIso).getTime();
+        setShiningData(data);
+      }
     } catch {}
   }, [token]);
 
@@ -71,7 +75,10 @@ export default function App() {
 
   // Shining update via socket
   const handleShiningUpdate = useCallback((data) => {
-    if (data?.anchorIso) setShiningData(data);
+    if (data?.anchorIso || data?.anchorRealMs) {
+      if (data.anchorIso && !data.anchorRealMs) data.anchorRealMs = new Date(data.anchorIso).getTime();
+      setShiningData(data);
+    }
   }, []);
 
   useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate);

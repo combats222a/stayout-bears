@@ -2,20 +2,20 @@
 // Гора Сияния — игровое время и расчёт респов
 // ═══════════════════════════════════════════════════════════════
 
-// 1 игровая минута = 8.75 реальных секунд
-export const GAME_MINUTE_MS      = 8750;
-export const GAME_HOUR_MS        = 60 * GAME_MINUTE_MS;   // 525 000 мс = 8 мин 45 сек
-export const GAME_DAY_MS         = 24 * GAME_HOUR_MS;     // 12 600 000 мс = 3 ч 30 мин
+// ── Константы ────────────────────────────────────────────────────
+// 1 игровая минута = 8750 мс реального времени
+export const GAME_MINUTE_MS   = 8750;
+export const GAME_HOUR_MS     = 60  * GAME_MINUTE_MS;  // 525 000 мс = 8 мин 45 сек
+export const GAME_DAY_MS      = 24  * GAME_HOUR_MS;    // 12 600 000 мс = 3 ч 30 мин
 
-// Интервал между сияниями: 6 игровых часов реального времени
-// 6 * 60 * 8750 = 3 150 000 мс = 52 мин 30 сек реального времени
-export const SHINING_INTERVAL_MS = 6 * GAME_HOUR_MS;
+// Интервал между сияниями = 6 игровых часов = 52 мин 30 сек реального времени
+export const SHINING_INTERVAL_MS    = 6 * GAME_HOUR_MS;  // 3 150 000 мс
 
-// Предупреждение за 5 реальных минут
+// Сияние "горит" 1 игровой час = 8 мин 45 сек реального времени
+export const SHINING_DURATION_MS    = GAME_HOUR_MS;       // 525 000 мс
+
+// Предупреждение за 5 реальных минут до начала
 export const WARN_BEFORE_SHINING_MS = 5 * 60 * 1000;
-
-// Сколько реального времени "горит" сияние (1 игровой час = 60 игровых минут)
-export const SHINING_DURATION_MS = GAME_HOUR_MS; // 525 000 мс = 8 мин 45 сек
 
 // ── Локации ──────────────────────────────────────────────────────
 export const LOCATIONS = [
@@ -29,115 +29,128 @@ export function getLocation(id) {
   return LOCATIONS.find(l => l.id === id) || LOCATIONS[0];
 }
 
-// ── Парсинг ввода ─────────────────────────────────────────────────
+// ── Якорь (Z + X) ────────────────────────────────────────────────
 /**
- * Игрок ВИДИТ сияние прямо сейчас и вводит текущее игровое время (например "01:05").
- * Сияние началось в начале этого игрового часа (XX:00).
- * Нужно вычислить реальное время начала сияния:
- *   anchorReal = now - (введённые игровые минуты * GAME_MINUTE_MS)
+ * Z = gameTimeStr — любое игровое время которое видит игрок прямо сейчас (например "01:13")
+ * X = Date.now() — реальное время ПК в момент нажатия кнопки
  *
- * Например: введено 01:05 → сияние началось 65 игровых минут назад реального времени
- * 65 * 8750 мс = 568 750 мс ≈ 9 мин 28 сек назад
- *
- * Возвращает ISO-строку реального времени начала текущего сияния.
+ * Сохраняем оба значения как есть.
+ * anchorGameTimeStr = Z (строка "ЧЧ:ММ")
+ * anchorRealMs      = X (миллисекунды)
  */
-export function parseGameTimeInput(gameTimeStr, locationId) {
+export function parseGameTimeInput(gameTimeStr) {
   const parts = gameTimeStr.trim().split(':').map(Number);
   if (parts.length < 2 || parts.some(isNaN)) return null;
   const [gh, gm] = parts;
   if (gh < 0 || gh > 23 || gm < 0 || gm > 59) return null;
-
-  // Сколько игровых минут прошло с начала текущего сияния (с XX:00)
-  // Начало сияния — это начало текущего игрового часа
-  const gameMinutesSinceStart = (gh % 6) * 60 + gm;
-
-  // Переводим в реальные миллисекунды
-  const realMsSinceStart = gameMinutesSinceStart * GAME_MINUTE_MS;
-
-  // Якорь = сейчас минус прошедшее реальное время с начала сияния
-  const anchorMs = Date.now() - realMsSinceStart;
-  return new Date(anchorMs).toISOString();
-}
-
-// ── Скользящее окно из 4 слотов ──────────────────────────────────
-/**
- * anchorIso — реальный UTC момент когда было зафиксировано сияние.
- * refTimeMs — текущий момент.
- *
- * Слот 0 = ТЕКУЩЕЕ: последнее прошедшее сияние (если с тех пор < SHINING_DURATION_MS — "горит")
- *                   или следующее ближайшее (если прошедшее уже далеко)
- * Слоты 1,2,3 = следующие три
- *
- * Логика скользящего окна:
- *   elapsed = now - anchor
- *   baseN = floor(elapsed / interval)  → индекс последнего прошедшего
- *   slot[0].realAt = anchor + baseN * interval   (последнее прошедшее)
- *   slot[1].realAt = anchor + (baseN+1) * interval
- *   ...
- */
-export function getUpcomingShiningSlots(anchorIso, refTimeMs = Date.now()) {
-  const anchorMs   = new Date(anchorIso).getTime();
-  const intervalMs = SHINING_INTERVAL_MS;
-  const elapsed    = refTimeMs - anchorMs;
-  const baseN      = Math.floor(elapsed / intervalMs);
-
-  const slots = [];
-  for (let i = 0; i < 4; i++) {
-    slots.push({
-      realAt: anchorMs + (baseN + i) * intervalMs,
-      index:  baseN + i,
-    });
-  }
-  return slots;
-}
-
-// ── Отображение игрового времени слота ───────────────────────────
-/**
- * baseGameTimeStr — введённое игровое время (например "17:26")
- * slotIndex — 0,1,2,3 → прибавляем 0,6,12,18 игровых часов
- */
-export function getSlotGameTime(baseGameTimeStr, slotIndex) {
-  const parts = (baseGameTimeStr || '00:00').trim().split(':').map(Number);
-  const [gh = 0, gm = 0] = parts;
-  const totalMin   = gh * 60 + gm + slotIndex * 6 * 60;
-  const wrapped    = ((totalMin % 1440) + 1440) % 1440;
-  const displayH   = Math.floor(wrapped / 60);
-  const displayM   = wrapped % 60;
-  return `${String(displayH).padStart(2,'0')}:${String(displayM).padStart(2,'0')}`;
+  // Якорь X = прямо сейчас
+  return new Date().toISOString();
 }
 
 // ── Живое игровое время ──────────────────────────────────────────
 /**
- * Вычисляет текущее живое игровое время на основе якоря.
- * anchorIso — реальное время когда было зафиксировано сияние с известным игровым временем.
- * baseGameTimeStr — игровое время в момент якоря (например "00:29").
- * slotOffset — смещение слота в игровых часах (0, 6, 12, 18).
- * nowMs — текущий реальный момент времени.
+ * Вычисляет текущее игровое время по формуле:
+ *   currentGameMinutes = Z_minutes + (now - X) / GAME_MINUTE_MS
  *
- * Возвращает строку "ЧЧ:ММ" — текущее игровое время.
+ * Z = anchorGameTimeStr (введённое игровое время)
+ * X = anchorRealMs (реальное время момента ввода)
+ * slotOffsetHours = 0, 6, 12, 18 для карточек 1-4
  */
-export function getLiveGameTime(anchorIso, baseGameTimeStr, slotIndex, nowMs = Date.now()) {
-  const anchorMs = new Date(anchorIso).getTime();
-  // Сколько реального времени прошло с момента якоря
-  const elapsedRealMs = nowMs - anchorMs;
-  // Переводим в игровые минуты (только elapsed, без слотового смещения)
+export function getLiveGameTime(anchorGameTimeStr, anchorRealMs, slotOffsetHours, nowMs = Date.now()) {
+  // Z в минутах
+  const parts = (anchorGameTimeStr || '00:00').trim().split(':').map(Number);
+  const [gh = 0, gm = 0] = parts;
+  const Z_minutes = gh * 60 + gm;
+
+  // Прошло реального времени с момента X
+  const elapsedRealMs = nowMs - anchorRealMs;
+
+  // Переводим в игровые минуты
   const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
 
-  // Базовое игровое время якоря
-  const parts = (baseGameTimeStr || '00:00').trim().split(':').map(Number);
-  const [gh = 0, gm = 0] = parts;
-  const anchorGameMinutes = gh * 60 + gm;
+  // Смещение слота в игровых минутах
+  const slotOffsetMinutes = slotOffsetHours * 60;
 
-  // Текущее живое игровое время (слот 0) + смещение слота
-  // slotIndex * 6 * 60 — смещение в игровых минутах для показа нужного слота
-  const slotOffsetMinutes = slotIndex * 6 * 60;
-  const totalGameMinutes = anchorGameMinutes + elapsedGameMinutes + slotOffsetMinutes;
+  // Итого игровых минут
+  const totalGameMinutes = Z_minutes + elapsedGameMinutes + slotOffsetMinutes;
 
-  // Оборачиваем по 24 игровым часам
-  const wrapped = ((totalGameMinutes % 1440) + 1440) % 1440;
+  // Оборачиваем по 24 игровым часам (1440 минут)
+  const wrapped  = ((totalGameMinutes % 1440) + 1440) % 1440;
   const displayH = Math.floor(wrapped / 60);
   const displayM = Math.floor(wrapped % 60);
   return `${String(displayH).padStart(2,'0')}:${String(displayM).padStart(2,'0')}`;
+}
+
+// ── Определяем горит ли сияние по текущему игровому времени ──────
+/**
+ * Сияние горит когда минуты игрового времени попадают в диапазоны:
+ *   00:00–01:00, 06:00–07:00, 12:00–13:00, 18:00–19:00
+ *
+ * liveGameTimeStr = текущее живое игровое время "ЧЧ:ММ"
+ * Возвращает true если горит, false если нет
+ */
+export function isShiningActive(liveGameTimeStr) {
+  const parts = liveGameTimeStr.split(':').map(Number);
+  const [gh = 0, gm = 0] = parts;
+  const totalMin = gh * 60 + gm;
+  // Начало каждого сияния: 0:00, 6:00, 12:00, 18:00 (в минутах: 0, 360, 720, 1080)
+  const shiningStarts = [0, 360, 720, 1080];
+  return shiningStarts.some(start => totalMin >= start && totalMin < start + 60);
+}
+
+// ── Реальное время начала ближайшего сияния для карточки N ───────
+/**
+ * Для карточки N (0-based) вычисляем реальное время начала сияния:
+ *
+ * Текущее живое игровое время → определяем сколько игровых минут
+ * до следующего XX:00 (начала следующего сияния для этого слота).
+ * Переводим в реальное время.
+ *
+ * slotOffsetHours = 0, 6, 12, 18
+ */
+export function getSlotRealStartTime(anchorGameTimeStr, anchorRealMs, slotOffsetHours, nowMs = Date.now()) {
+  // Текущее живое игровое время для этого слота (с учётом смещения)
+  const parts = (anchorGameTimeStr || '00:00').trim().split(':').map(Number);
+  const [gh = 0, gm = 0] = parts;
+  const Z_minutes = gh * 60 + gm;
+  const elapsedRealMs = nowMs - anchorRealMs;
+  const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
+  const slotOffsetMinutes = slotOffsetHours * 60;
+  const totalGameMinutes = Z_minutes + elapsedGameMinutes + slotOffsetMinutes;
+  const wrapped = ((totalGameMinutes % 1440) + 1440) % 1440;
+
+  // Сколько игровых минут осталось до следующего XX:00 (начало следующего игрового часа в серии 0,6,12,18)
+  // Текущий игровой час
+  const currentGameHour = Math.floor(wrapped / 60);
+  // Начало следующего сияния (ближайший час кратный 6, строго больше текущего часа)
+  const nextShiningHour = Math.ceil((currentGameHour + 1) / 6) * 6;
+  const nextShiningMin = nextShiningHour * 60; // может быть > 1440, обернём
+  const gameMinutesUntilNext = nextShiningMin - wrapped;
+
+  // Переводим в реальное время
+  const realMsUntilNext = gameMinutesUntilNext * GAME_MINUTE_MS;
+  return nowMs + realMsUntilNext;
+}
+
+// ── 4 карточки сияний ────────────────────────────────────────────
+/**
+ * Возвращает массив из 4 объектов для карточек СИЯНИЕ 1-4.
+ * Каждый объект содержит:
+ *   slotOffsetHours — смещение (0, 6, 12, 18)
+ *   realStartMs     — реальное время начала ближайшего сияния этого слота
+ */
+export function getShiningCards(anchorGameTimeStr, anchorRealMs, nowMs = Date.now()) {
+  return [0, 6, 12, 18].map((offsetHours, cardIndex) => {
+    // Реальное время начала ближайшего сияния для СИЯНИЯ 1 (слот 0)
+    // Для карточек 2-4 добавляем интервалы × cardIndex
+    const baseRealStart = getSlotRealStartTime(anchorGameTimeStr, anchorRealMs, 0, nowMs);
+    const realStartMs = baseRealStart + cardIndex * SHINING_INTERVAL_MS;
+    return {
+      cardNumber:      cardIndex + 1,
+      slotOffsetHours: offsetHours,
+      realStartMs,
+    };
+  });
 }
 
 // ── Форматирование ────────────────────────────────────────────────
@@ -148,12 +161,28 @@ export function formatRealTime(ms) {
   });
 }
 
-export function formatShiningCountdown(ms) {
+export function formatCountdown(ms) {
   if (ms <= 0) return '00:00';
-  const totalS = Math.floor(Math.abs(ms) / 1000);
+  const totalS = Math.floor(ms / 1000);
   const h = Math.floor(totalS / 3600);
   const m = Math.floor((totalS % 3600) / 60);
   const s = totalS % 60;
   if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// Алиас для обратной совместимости
+export const formatShiningCountdown = formatCountdown;
+export function getSlotGameTime(baseGameTimeStr, slotIndex) {
+  return getLiveGameTime(baseGameTimeStr, Date.now(), slotIndex * 6, Date.now());
+}
+export function getUpcomingShiningSlots(anchorIso, refTimeMs = Date.now()) {
+  const anchorMs = new Date(anchorIso).getTime();
+  const intervalMs = SHINING_INTERVAL_MS;
+  const elapsed = refTimeMs - anchorMs;
+  const baseN = Math.floor(elapsed / intervalMs);
+  return Array.from({ length: 4 }, (_, i) => ({
+    realAt: anchorMs + (baseN + i) * intervalMs,
+    index: baseN + i,
+  }));
 }
