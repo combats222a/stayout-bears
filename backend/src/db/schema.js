@@ -60,6 +60,14 @@ async function initSchema() {
         ALTER TABLE loot_participants ADD COLUMN sold_for INTEGER;
       END IF;
     END $$;
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='loot_participants' AND column_name='finders'
+      ) THEN
+        ALTER TABLE loot_participants ADD COLUMN finders JSONB NOT NULL DEFAULT '[]';
+      END IF;
+    END $$;
 
     CREATE TABLE IF NOT EXISTS password_reset_codes (
       id SERIAL PRIMARY KEY,

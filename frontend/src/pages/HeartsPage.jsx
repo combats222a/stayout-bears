@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../utils/api';
 
-// ─── Дропдаун добавления участника ────────────────────────────────────
+// ─── Дропдаун добавления участника в таблицу ──────────────────────────
 function AddParticipantDropdown({ members, existingNicks, onAdd, onClose }) {
   const [search, setSearch] = useState('');
   const [customNick, setCustomNick] = useState('');
@@ -15,23 +15,8 @@ function AddParticipantDropdown({ members, existingNicks, onAdd, onClose }) {
 
   const filtered = members.filter(m => {
     const nick = m.game_nick || m.nick;
-    return (
-      nick.toLowerCase().includes(search.toLowerCase()) &&
-      !existingNicks.has(nick)
-    );
+    return nick.toLowerCase().includes(search.toLowerCase()) && !existingNicks.has(nick);
   });
-
-  function addMember(m) {
-    onAdd({ nick: m.game_nick || m.nick, user_id: m.id });
-    onClose();
-  }
-  function addCustom() {
-    const n = customNick.trim();
-    if (!n) return;
-    onAdd({ nick: n, user_id: null });
-    setCustomNick('');
-    onClose();
-  }
 
   return (
     <div ref={ref} style={{
@@ -44,8 +29,7 @@ function AddParticipantDropdown({ members, existingNicks, onAdd, onClose }) {
         <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
           👥 Участники клана
         </div>
-        <input
-          autoFocus
+        <input autoFocus
           style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
           placeholder="Поиск..."
           value={search}
@@ -61,12 +45,10 @@ function AddParticipantDropdown({ members, existingNicks, onAdd, onClose }) {
         {filtered.map(m => {
           const nick = m.game_nick || m.nick;
           return (
-            <div key={m.id} onClick={() => addMember(m)} style={{
-              padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text)',
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
-            onMouseLeave={e => e.currentTarget.style.background = ''}
+            <div key={m.id} onClick={() => { onAdd({ nick, user_id: m.id }); onClose(); }}
+              style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+              onMouseLeave={e => e.currentTarget.style.background = ''}
             >
               <span>🐻</span><span>{nick}</span>
             </div>
@@ -83,73 +65,192 @@ function AddParticipantDropdown({ members, existingNicks, onAdd, onClose }) {
             placeholder="Ник игрока..."
             value={customNick}
             onChange={e => setCustomNick(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addCustom()}
+            onKeyDown={e => { if (e.key === 'Enter' && customNick.trim()) { onAdd({ nick: customNick.trim(), user_id: null }); onClose(); }}}
           />
-          <button onClick={addCustom} disabled={!customNick.trim()} style={{
-            padding: '5px 12px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13,
-            background: customNick.trim() ? 'var(--accent)' : 'var(--bg3)',
-            color: customNick.trim() ? '#0d1117' : 'var(--text3)',
-            cursor: customNick.trim() ? 'pointer' : 'default',
-          }}>OK</button>
+          <button
+            onClick={() => { if (customNick.trim()) { onAdd({ nick: customNick.trim(), user_id: null }); onClose(); }}}
+            disabled={!customNick.trim()}
+            style={{ padding: '5px 12px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13,
+              background: customNick.trim() ? 'var(--accent)' : 'var(--bg3)',
+              color: customNick.trim() ? '#0d1117' : 'var(--text3)',
+              cursor: customNick.trim() ? 'pointer' : 'default' }}
+          >OK</button>
         </div>
       </div>
     </div>
   );
 }
 
+// ─── Дропдаун «кто нашёл» внутри строки ──────────────────────────────
+function FindersDropdown({ members, finders, onChange, onClose }) {
+  const [customNick, setCustomNick] = useState('');
+  const [search, setSearch] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) onClose(); }
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [onClose]);
+
+  const findersSet = new Set(finders);
+
+  function toggle(nick) {
+    const next = findersSet.has(nick)
+      ? finders.filter(f => f !== nick)
+      : [...finders, nick];
+    onChange(next);
+  }
+
+  function addCustom() {
+    const n = customNick.trim();
+    if (!n || findersSet.has(n)) return;
+    onChange([...finders, n]);
+    setCustomNick('');
+  }
+
+  const filtered = members.filter(m => {
+    const nick = m.game_nick || m.nick;
+    return nick.toLowerCase().includes(search.toLowerCase());
+  });
+
+  return (
+    <div ref={ref} style={{
+      position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 400,
+      background: 'var(--bg2)', border: '1px solid var(--border)',
+      borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,.7)',
+      minWidth: 240, overflow: 'hidden',
+    }}>
+      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
+          👥 Кто нашёл — клан
+        </div>
+        <input autoFocus
+          style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
+          placeholder="Поиск..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      </div>
+      <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+        {filtered.map(m => {
+          const nick = m.game_nick || m.nick;
+          const checked = findersSet.has(nick);
+          return (
+            <div key={m.id} onClick={() => toggle(nick)}
+              style={{ padding: '7px 12px', cursor: 'pointer', fontSize: 13,
+                color: checked ? 'var(--accent)' : 'var(--text)',
+                background: checked ? 'rgba(88,166,255,.07)' : 'transparent',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = checked ? 'rgba(88,166,255,.12)' : 'var(--bg3)'}
+              onMouseLeave={e => e.currentTarget.style.background = checked ? 'rgba(88,166,255,.07)' : 'transparent'}
+            >
+              <span style={{ fontSize: 14, width: 16 }}>{checked ? '✓' : ''}</span>
+              <span>{nick}</span>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && <div style={{ padding: '10px 12px', color: 'var(--text3)', fontSize: 12 }}>Никого нет</div>}
+      </div>
+      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,.15)' }}>
+        <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
+          ✍️ Вписать вручную
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
+            placeholder="Ник..."
+            value={customNick}
+            onChange={e => setCustomNick(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addCustom()}
+          />
+          <button onClick={addCustom} disabled={!customNick.trim()}
+            style={{ padding: '5px 10px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13,
+              background: customNick.trim() ? 'var(--accent)' : 'var(--bg3)',
+              color: customNick.trim() ? '#0d1117' : 'var(--text3)',
+              cursor: customNick.trim() ? 'pointer' : 'default' }}
+          >+</button>
+        </div>
+        {/* Текущие выбранные */}
+        {finders.length > 0 && (
+          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {finders.map(f => (
+              <span key={f} onClick={() => toggle(f)} style={{
+                fontSize: 11, padding: '2px 7px', borderRadius: 10,
+                background: 'rgba(88,166,255,.15)', color: 'var(--accent)',
+                cursor: 'pointer', border: '1px solid rgba(88,166,255,.3)',
+              }}>
+                {f} ×
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Кнопки ± ────────────────────────────────────────────────────────
-function Counter({ value, onChange, color = '#e05252' }) {
+function Counter({ value, onChange, color }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <button onClick={() => onChange(value - 1)} style={{
         width: 22, height: 22, borderRadius: 4, border: '1px solid var(--border)',
-        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer', fontSize: 14, lineHeight: 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer',
+        fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>−</button>
       <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, color, minWidth: 18, textAlign: 'center' }}>
         {value}
       </span>
       <button onClick={() => onChange(value + 1)} style={{
         width: 22, height: 22, borderRadius: 4, border: '1px solid var(--border)',
-        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer', fontSize: 14, lineHeight: 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer',
+        fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>+</button>
     </div>
   );
 }
 
 // ─── Строка участника ─────────────────────────────────────────────────
-function ParticipantRow({ p, rank, totalHearts, totalPelts, onUpdate, onDelete }) {
+function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, members }) {
   const [soldInput, setSoldInput] = useState(p.sold_for != null ? String(p.sold_for) : '');
   const [soldFocused, setSoldFocused] = useState(false);
+  const [showFinders, setShowFinders] = useState(false);
 
-  // Доля — пропорционально суммарному лоту (сердца + шкуры)
-  const myLoot = p.hearts + p.pelts;
+  const finders = Array.isArray(p.finders) ? p.finders : [];
+
+  // Дата ДД.ММ.ГГ
+  const dt = new Date(p.added_at);
+  const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+
+  // Доля
+  const myLoot = (p.hearts || 0) + (p.pelts || 0);
   const totalLoot = totalHearts + totalPelts;
-  const shareLabel = totalLoot > 0
-    ? Math.round((myLoot / totalLoot) * 100) + '%'
-    : '—';
-
-  // Расчёт выплаты — если есть sold_for у кого-то в таблице, пересчитывается
-  const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : null;
+  const shareLabel = totalLoot > 0 ? Math.round((myLoot / totalLoot) * 100) + '%' : '—';
 
   function handleSoldBlur() {
     setSoldFocused(false);
     const val = soldInput.trim() === '' ? null : parseInt(soldInput);
-    if (val !== p.sold_for) {
-      onUpdate(p.id, { sold_for: soldInput.trim() === '' ? '' : val });
-    }
+    if (val !== p.sold_for) onUpdate(p.id, { sold_for: soldInput.trim() === '' ? '' : val });
+  }
+
+  function handleFindersChange(next) {
+    onUpdate(p.id, { finders: next });
   }
 
   return (
     <tr style={{ borderBottom: '1px solid rgba(48,54,61,.5)' }}>
-      {/* # */}
-      <td style={{ padding: '10px 10px', width: 36, color: 'var(--text3)', fontSize: 13 }}>
-        {medal || <span>{rank + 1}</span>}
+
+      {/* ДАТА */}
+      <td style={{ padding: '10px 10px', width: 70, whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text3)' }}>
+          {dateStr}
+        </span>
       </td>
 
       {/* НИК */}
-      <td style={{ padding: '10px 6px' }}>
+      <td style={{ padding: '10px 6px', minWidth: 100 }}>
         <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{p.nick}</span>
         {!p.user_id && (
           <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)', background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>
@@ -160,23 +261,61 @@ function ParticipantRow({ p, rank, totalHearts, totalPelts, onUpdate, onDelete }
 
       {/* СЕРДЦА */}
       <td style={{ padding: '10px 6px' }}>
-        <Counter value={p.hearts} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" />
+        <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" />
       </td>
 
       {/* ШКУРЫ */}
       <td style={{ padding: '10px 6px' }}>
-        <Counter value={p.pelts} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" />
+        <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" />
       </td>
 
       {/* ДОЛЯ */}
-      <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+      <td style={{ padding: '10px 10px', textAlign: 'center', minWidth: 60 }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 14, color: '#3fb950' }}>
           {shareLabel}
         </span>
       </td>
 
+      {/* УЧАСТНИКИ — кто нашёл */}
+      <td style={{ padding: '10px 6px', minWidth: 140 }}>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <div
+            onClick={() => setShowFinders(o => !o)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap',
+              cursor: 'pointer', padding: '4px 8px', borderRadius: 6,
+              border: `1px solid ${showFinders ? 'var(--accent)' : 'var(--border)'}`,
+              background: showFinders ? 'rgba(88,166,255,.06)' : 'var(--bg3)',
+              minWidth: 100, minHeight: 28,
+              transition: 'all .15s',
+            }}
+          >
+            {finders.length === 0 ? (
+              <span style={{ fontSize: 12, color: 'var(--text3)' }}>Выбрать...</span>
+            ) : (
+              finders.map(f => (
+                <span key={f} style={{
+                  fontSize: 11, padding: '1px 6px', borderRadius: 8,
+                  background: 'rgba(88,166,255,.15)', color: 'var(--accent)',
+                  border: '1px solid rgba(88,166,255,.25)',
+                }}>{f}</span>
+              ))
+            )}
+            <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text3)', paddingLeft: 4 }}>▼</span>
+          </div>
+          {showFinders && (
+            <FindersDropdown
+              members={members}
+              finders={finders}
+              onChange={handleFindersChange}
+              onClose={() => setShowFinders(false)}
+            />
+          )}
+        </div>
+      </td>
+
       {/* ПРОДАЛИ ЗА */}
-      <td style={{ padding: '10px 6px', minWidth: 130 }}>
+      <td style={{ padding: '10px 6px', minWidth: 120 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <input
             type="number"
@@ -187,7 +326,7 @@ function ParticipantRow({ p, rank, totalHearts, totalPelts, onUpdate, onDelete }
             onChange={e => setSoldInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && e.target.blur()}
             style={{
-              width: 90, background: 'var(--bg3)', border: '1px solid var(--border)',
+              width: 86, background: 'var(--bg3)', border: '1px solid var(--border)',
               borderRadius: 6, color: 'var(--text)', padding: '4px 8px',
               fontSize: 13, fontFamily: 'var(--font-mono)',
             }}
@@ -197,14 +336,14 @@ function ParticipantRow({ p, rank, totalHearts, totalPelts, onUpdate, onDelete }
       </td>
 
       {/* Удалить */}
-      <td style={{ padding: '10px 6px', textAlign: 'center', width: 32 }}>
+      <td style={{ padding: '10px 6px', textAlign: 'center', width: 28 }}>
         <button onClick={() => onDelete(p.id)} title="Удалить" style={{
           background: 'none', border: 'none', color: 'var(--text3)',
-          cursor: 'pointer', fontSize: 18, lineHeight: 1, opacity: 0.5,
-          transition: 'opacity .15s', padding: '0 4px',
+          cursor: 'pointer', fontSize: 18, lineHeight: 1, opacity: 0.45,
+          transition: 'opacity .15s', padding: '0 2px',
         }}
         onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
+        onMouseLeave={e => e.currentTarget.style.opacity = '0.45'}
         >×</button>
       </td>
     </tr>
@@ -214,10 +353,9 @@ function ParticipantRow({ p, rank, totalHearts, totalPelts, onUpdate, onDelete }
 // ─── Основная страница ────────────────────────────────────────────────
 export default function HeartsPage({ clan, members, onHeartsUpdate }) {
   const [participants, setParticipants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [error, setError] = useState('');
-  const addBtnRef = useRef(null);
+  const [loading, setLoading]           = useState(true);
+  const [showAdd, setShowAdd]           = useState(false);
+  const [error, setError]               = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -239,12 +377,9 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
   }
 
   async function handleUpdate(id, fields) {
-    // Оптимистично обновляем локально
     setParticipants(prev => prev.map(p => p.id === id ? { ...p, ...fields } : p));
-    try {
-      await api.patch(`/hearts/${id}`, fields);
-      // Не перезагружаем — сокет сделает это для других участников
-    } catch (e) { setError(e.message); load(); }
+    try { await api.patch(`/hearts/${id}`, fields); }
+    catch (e) { setError(e.message); load(); }
   }
 
   async function handleDelete(id) {
@@ -256,18 +391,13 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
 
   async function handleReset() {
     if (!window.confirm('Очистить таблицу рейда?')) return;
-    try {
-      await api.post('/hearts/reset');
-      setParticipants([]);
-    } catch (e) { setError(e.message); }
+    try { await api.post('/hearts/reset'); setParticipants([]); }
+    catch (e) { setError(e.message); }
   }
 
-  const existingNicks = new Set(participants.map(p => p.nick));
-  const totalHearts = participants.reduce((s, p) => s + (p.hearts || 0), 0);
-  const totalPelts  = participants.reduce((s, p) => s + (p.pelts  || 0), 0);
-
-  // Сортировка по сумме лута (убывание)
-  const sorted = [...participants].sort((a, b) => (b.hearts + b.pelts) - (a.hearts + a.pelts));
+  const existingNicks  = new Set(participants.map(p => p.nick));
+  const totalHearts    = participants.reduce((s, p) => s + (p.hearts || 0), 0);
+  const totalPelts     = participants.reduce((s, p) => s + (p.pelts  || 0), 0);
 
   if (!clan) {
     return (
@@ -280,19 +410,12 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
 
   return (
     <div className="page">
-      {/* Заголовок */}
       <div className="bears-hdr">
         <h2 className="page-title">🫀 Учёт лута — {clan.name}</h2>
         <div className="stat-pills">
-          <span className="pill" style={{ color: '#e05252', borderColor: '#e05252', background: 'rgba(224,82,82,.1)' }}>
-            ❤️ Сердец: {totalHearts}
-          </span>
-          <span className="pill" style={{ color: '#7eb8e0', borderColor: '#7eb8e0', background: 'rgba(126,184,224,.1)' }}>
-            🧥 Шкур: {totalPelts}
-          </span>
-          <span className="pill">
-            👥 Участников: {participants.length}
-          </span>
+          <span className="pill" style={{ color: '#e05252', borderColor: '#e05252', background: 'rgba(224,82,82,.1)' }}>❤️ Сердец: {totalHearts}</span>
+          <span className="pill" style={{ color: '#7eb8e0', borderColor: '#7eb8e0', background: 'rgba(126,184,224,.1)' }}>🧥 Шкур: {totalPelts}</span>
+          <span className="pill">👥 Участников: {participants.length}</span>
         </div>
       </div>
 
@@ -302,59 +425,58 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
         </div>
       )}
 
-      {/* Таблица */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-              <th style={th}>#</th>
-              <th style={{ ...th, textAlign: 'left' }}>НИК</th>
-              <th style={th}>❤️ СЕРДЦА</th>
-              <th style={th}>🧥 ШКУРЫ</th>
-              <th style={th}>💰 ДОЛЯ</th>
-              <th style={th}>💸 ПРОДАЛИ ЗА</th>
-              <th style={th}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Загрузка...</td></tr>
-            ) : sorted.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 13 }}>
-                Нажми «+ Добавить участника» чтобы начать учёт
-              </td></tr>
-            ) : (
-              sorted.map((p, idx) => (
-                <ParticipantRow
-                  key={p.id}
-                  p={p}
-                  rank={idx}
-                  totalHearts={totalHearts}
-                  totalPelts={totalPelts}
-                  onUpdate={handleUpdate}
-                  onDelete={handleDelete}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+                <th style={th}>ДАТА</th>
+                <th style={{ ...th, textAlign: 'left' }}>НИК</th>
+                <th style={th}>❤️ СЕРДЦА</th>
+                <th style={th}>🧥 ШКУРЫ</th>
+                <th style={th}>💰 ДОЛЯ</th>
+                <th style={th}>👥 УЧАСТНИКИ</th>
+                <th style={th}>💸 ПРОДАЛИ ЗА</th>
+                <th style={th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Загрузка...</td></tr>
+              ) : participants.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 13 }}>
+                  Нажми «+ Добавить участника» чтобы начать учёт
+                </td></tr>
+              ) : (
+                participants.map(p => (
+                  <ParticipantRow
+                    key={p.id}
+                    p={p}
+                    totalHearts={totalHearts}
+                    totalPelts={totalPelts}
+                    onUpdate={handleUpdate}
+                    onDelete={handleDelete}
+                    members={members}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Нижняя панель — добавить + сброс */}
+        {/* Нижняя панель */}
         <div style={{
           borderTop: '1px solid var(--border)', padding: '10px 14px',
-          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          display: 'flex', alignItems: 'center', gap: 12,
           background: 'rgba(0,0,0,.1)',
         }}>
-          <div ref={addBtnRef} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowAdd(o => !o)}
-              style={{
-                padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                background: showAdd ? 'var(--bg3)' : 'var(--accent)',
-                color: showAdd ? 'var(--text)' : '#0d1117',
-                border: 'none', cursor: 'pointer', transition: 'all .15s',
-              }}
-            >
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowAdd(o => !o)} style={{
+              padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              background: showAdd ? 'var(--bg3)' : 'var(--accent)',
+              color: showAdd ? 'var(--text)' : '#0d1117',
+              border: 'none', cursor: 'pointer', transition: 'all .15s',
+            }}>
               + Добавить участника
             </button>
             {showAdd && (
@@ -366,26 +488,22 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
               />
             )}
           </div>
-
           <div style={{ flex: 1 }} />
-
           {participants.length > 0 && (
             <button onClick={handleReset} style={{
               padding: '6px 14px', borderRadius: 8, fontSize: 13,
               background: 'none', border: '1px solid var(--border)',
-              color: 'var(--text3)', cursor: 'pointer',
+              color: 'var(--text3)', cursor: 'pointer', transition: 'all .15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--red)'; e.currentTarget.style.color = 'var(--red)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text3)'; }}
-            >
-              🗑 Очистить рейд
-            </button>
+            >🗑 Очистить рейд</button>
           )}
         </div>
       </div>
 
       <div className="tbl-hint">
-        ❤️ + шкуры 🧥 = доля считается автоматически · Нажми «Продали за» чтобы вписать сумму · «Очистить рейд» — сброс таблицы после рейда
+        ❤️ + шкуры 🧥 = доля считается автоматически · Колонка «Участники» — кто нашёл лут · «Очистить рейд» сбрасывает таблицу
       </div>
     </div>
   );
@@ -393,8 +511,7 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
 
 const th = {
   padding: '8px 10px',
-  fontSize: 11,
-  fontWeight: 600,
+  fontSize: 11, fontWeight: 600,
   color: 'var(--text3)',
   textTransform: 'uppercase',
   letterSpacing: '.06em',
