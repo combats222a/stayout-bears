@@ -223,26 +223,26 @@ function fmt(n) {
 // ─── Кнопки ± ────────────────────────────────────────────────────────
 function Counter({ value, onChange, color }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
       <button onClick={() => onChange(value - 1)} style={{
-        width: 22, height: 22, borderRadius: 4, border: '1px solid var(--border)',
+        width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
         background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer',
-        fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>−</button>
-      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, color, minWidth: 18, textAlign: 'center' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 17, color, minWidth: 22, textAlign: 'center' }}>
         {value}
       </span>
       <button onClick={() => onChange(value + 1)} style={{
-        width: 22, height: 22, borderRadius: 4, border: '1px solid var(--border)',
+        width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
         background: 'var(--bg3)', color: 'var(--text2)', cursor: 'pointer',
-        fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>+</button>
     </div>
   );
 }
 
 // ─── Строка участника ─────────────────────────────────────────────────
-function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, members }) {
+function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, members, canDelete }) {
   const [soldInput, setSoldInput]     = useState(p.sold_for != null ? String(p.sold_for) : '');
   const [soldFocused, setSoldFocused] = useState(false);
   const [showFinders, setShowFinders] = useState(false);
@@ -284,42 +284,42 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
   return (
     <tr style={{ borderBottom: '1px solid rgba(48,54,61,.5)' }}>
       {/* ДАТА */}
-      <td style={{ padding: '10px 10px', width: 72, whiteSpace: 'nowrap' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text3)' }}>{dateStr}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text3)', opacity: 0.6, marginTop: 1 }}>{timeStr}</div>
+      <td style={{ padding: '13px 12px', width: 86, whiteSpace: 'nowrap' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>{dateStr}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{timeStr}</div>
       </td>
 
       {/* НИК */}
-      <td style={{ padding: '10px 6px' }}>
-        <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{p.nick}</span>
+      <td style={{ padding: '13px 8px' }}>
+        <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15 }}>{p.nick}</span>
         {!p.user_id && (
           <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)', background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>гость</span>
         )}
       </td>
 
       {/* СЕРДЦА */}
-      <td style={{ padding: '10px 6px', textAlign: 'center' }}>
+      <td style={{ padding: '13px 8px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex' }}>
           <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" />
         </div>
       </td>
 
       {/* ШКУРЫ */}
-      <td style={{ padding: '10px 6px', textAlign: 'center' }}>
+      <td style={{ padding: '13px 8px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex' }}>
           <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" />
         </div>
       </td>
 
       {/* ДОЛЯ */}
-      <td style={{ padding: '10px 10px', textAlign: 'center', minWidth: 100 }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: '#3fb950', whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '13px 12px', textAlign: 'center', minWidth: 110 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 14, color: '#3fb950', whiteSpace: 'nowrap' }}>
           {shareLabel}
         </span>
       </td>
 
       {/* УЧАСТНИКИ */}
-      <td style={{ padding: '10px 6px', minWidth: 200 }}>
+      <td style={{ padding: '13px 8px', minWidth: 200 }}>
         <div
           ref={findersBtnRef}
           onClick={() => setShowFinders(o => !o)}
@@ -355,7 +355,7 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
       </td>
 
       {/* ПРОДАЛИ ЗА */}
-      <td style={{ padding: '10px 6px', minWidth: 160 }}>
+      <td style={{ padding: '13px 8px', minWidth: 160 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <input
             type="text"
@@ -368,30 +368,32 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
             onKeyDown={e => e.key === 'Enter' && e.target.blur()}
             style={{
               width: 110, background: 'var(--bg3)', border: '1px solid var(--border)',
-              borderRadius: 6, color: 'var(--text)', padding: '4px 8px',
-              fontSize: 13, fontFamily: 'var(--font-mono)',
+              borderRadius: 6, color: 'var(--text)', padding: '5px 8px',
+              fontSize: 14, fontFamily: 'var(--font-mono)',
             }}
           />
-          <span style={{ fontSize: 12, color: 'var(--text3)' }}>руб.</span>
+          <span style={{ fontSize: 13, color: 'var(--text3)' }}>руб.</span>
         </div>
       </td>
 
-      {/* Удалить */}
-      <td style={{ padding: '10px 6px', textAlign: 'center', width: 28 }}>
-        <button onClick={() => onDelete(p.id)} title="Удалить" style={{
-          background: 'none', border: 'none', color: 'var(--text3)',
-          cursor: 'pointer', fontSize: 18, lineHeight: 1, opacity: 0.45, padding: '0 2px',
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '0.45'}
-        >×</button>
+      {/* Удалить — только лидер и зам */}
+      <td style={{ padding: '13px 6px', textAlign: 'center', width: 32 }}>
+        {canDelete && (
+          <button onClick={() => onDelete(p.id)} title="Удалить" style={{
+            background: 'none', border: 'none', color: 'var(--text3)',
+            cursor: 'pointer', fontSize: 20, lineHeight: 1, opacity: 0.45, padding: '0 2px',
+          }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '0.45'}
+          >×</button>
+        )}
       </td>
     </tr>
   );
 }
 
 // ─── Основная страница ────────────────────────────────────────────────
-export default function HeartsPage({ clan, members, onHeartsUpdate }) {
+export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading]           = useState(true);
   const [showAdd, setShowAdd]           = useState(false);
@@ -435,6 +437,8 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
   const existingNicks = new Set(participants.map(p => p.nick));
   const totalHearts   = participants.reduce((s, p) => s + (p.hearts || 0), 0);
   const totalPelts    = participants.reduce((s, p) => s + (p.pelts  || 0), 0);
+  // Только лидер (owner) и зам (deputy) могут удалять строки
+  const canDelete = clan && user && (clan.owner_id === user.id || clan.deputy_id === user.id);
   // Новые строки сверху
   const sorted = [...participants].sort((a, b) => new Date(b.added_at) - new Date(a.added_at));
 
@@ -493,7 +497,7 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
                     key={p.id} p={p}
                     totalHearts={totalHearts} totalPelts={totalPelts}
                     onUpdate={handleUpdate} onDelete={handleDelete}
-                    members={members}
+                    members={members} canDelete={canDelete}
                   />
                 ))
               )}
@@ -526,7 +530,7 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
             )}
           </div>
           <div style={{ flex: 1 }} />
-          {participants.length > 0 && (
+          {canDelete && participants.length > 0 && (
             <button onClick={handleReset} style={{
               padding: '6px 14px', borderRadius: 8, fontSize: 13,
               background: 'none', border: '1px solid var(--border)',
@@ -547,8 +551,8 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
 }
 
 const th = {
-  padding: '8px 10px',
-  fontSize: 11, fontWeight: 600,
+  padding: '10px 12px',
+  fontSize: 12, fontWeight: 600,
   color: 'var(--text3)',
   textTransform: 'uppercase',
   letterSpacing: '.06em',

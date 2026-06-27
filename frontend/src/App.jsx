@@ -167,6 +167,7 @@ export default function App() {
           <HeartsPage
             clan={clan}
             members={members}
+            user={user}
             onHeartsUpdate={setHeartsReloader}
           />
         )}
