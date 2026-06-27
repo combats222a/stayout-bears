@@ -143,8 +143,11 @@ function computeShiningSlots(anchorGameTimeStr, anchorRealMs, nowMs) {
   const [gh = 0, gm = 0] = parts;
   const Z_minutes = gh * 60 + gm;
 
-  // Текущие игровые минуты (без wrap, чтобы не терять направление)
-  const elapsedRealMs = nowMs - anchorRealMs;
+  // Явно приводим anchorRealMs к числу (защита от строки)
+  const anchorMs = Number(anchorRealMs);
+
+  // Текущие игровые минуты
+  const elapsedRealMs = Math.max(0, nowMs - anchorMs); // не может быть отрицательным
   const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
   const totalGameMinutes = Z_minutes + elapsedGameMinutes;
   const wrapped = ((totalGameMinutes % 1440) + 1440) % 1440;
