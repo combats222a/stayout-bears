@@ -244,7 +244,7 @@ function Counter({ value, onChange, color }) {
 }
 
 // ─── Строка участника ─────────────────────────────────────────────────
-function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, members, canDelete }) {
+function ParticipantRow({ p, onUpdate, onDelete, members, canDelete }) {
   const [soldInput, setSoldInput]     = useState(p.sold_for != null ? String(p.sold_for) : '');
   const [soldFocused, setSoldFocused] = useState(false);
   const [showFinders, setShowFinders] = useState(false);
@@ -256,16 +256,13 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
   const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-  const myLoot    = (p.hearts || 0) + (p.pelts || 0);
-  const totalLoot = totalHearts + totalPelts;
-
-  // Доля в рублях — берём максимальную сумму продажи из всех строк (передаётся снаружи)
-  // Считаем: если есть sold_for у этой строки — показываем его, иначе пропорцию от суммы
-  // Доля = myLoot / totalLoot * sold_for этой строки (или общей суммы)
+  // Доля = "Продали за" ÷ количество участников (finders) этой строки
+  // Каждая строка считается независимо, сердца/шкуры на долю не влияют
   const shareRub = (() => {
-    if (totalLoot === 0) return null;
-    if (p.sold_for != null) return Math.round((myLoot / totalLoot) * p.sold_for);
-    return null;
+    if (p.sold_for == null) return null;
+    const count = finders.length;
+    if (count === 0) return null;
+    return Math.round(p.sold_for / count);
   })();
   const shareLabel = shareRub != null ? fmt(shareRub) + ' руб.' : '—';
 
@@ -495,7 +492,6 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
                 sorted.map(p => (
                   <ParticipantRow
                     key={p.id} p={p}
-                    totalHearts={totalHearts} totalPelts={totalPelts}
                     onUpdate={handleUpdate} onDelete={handleDelete}
                     members={members} canDelete={canDelete}
                   />
