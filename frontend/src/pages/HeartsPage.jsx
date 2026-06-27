@@ -252,6 +252,7 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
 
   const dt = new Date(p.added_at);
   const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
   const myLoot    = (p.hearts || 0) + (p.pelts || 0);
   const totalLoot = totalHearts + totalPelts;
@@ -284,7 +285,8 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
     <tr style={{ borderBottom: '1px solid rgba(48,54,61,.5)' }}>
       {/* ДАТА */}
       <td style={{ padding: '10px 10px', width: 72, whiteSpace: 'nowrap' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text3)' }}>{dateStr}</span>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text3)' }}>{dateStr}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text3)', opacity: 0.6, marginTop: 1 }}>{timeStr}</div>
       </td>
 
       {/* НИК */}
@@ -296,13 +298,17 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
       </td>
 
       {/* СЕРДЦА */}
-      <td style={{ padding: '10px 6px' }}>
-        <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" />
+      <td style={{ padding: '10px 6px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex' }}>
+          <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" />
+        </div>
       </td>
 
       {/* ШКУРЫ */}
-      <td style={{ padding: '10px 6px' }}>
-        <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" />
+      <td style={{ padding: '10px 6px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex' }}>
+          <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" />
+        </div>
       </td>
 
       {/* ДОЛЯ */}
@@ -429,6 +435,8 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
   const existingNicks = new Set(participants.map(p => p.nick));
   const totalHearts   = participants.reduce((s, p) => s + (p.hearts || 0), 0);
   const totalPelts    = participants.reduce((s, p) => s + (p.pelts  || 0), 0);
+  // Новые строки сверху
+  const sorted = [...participants].sort((a, b) => new Date(b.added_at) - new Date(a.added_at));
 
   if (!clan) {
     return (
@@ -480,7 +488,7 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
                   Нажми «+ Добавить участника» чтобы начать учёт
                 </td></tr>
               ) : (
-                participants.map(p => (
+                sorted.map(p => (
                   <ParticipantRow
                     key={p.id} p={p}
                     totalHearts={totalHearts} totalPelts={totalPelts}
