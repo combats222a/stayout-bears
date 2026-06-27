@@ -6,6 +6,7 @@ import ShiningPage from './pages/ShiningPage';
 import ClanPage from './pages/ClanPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
+import HeartsPage from './pages/HeartsPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 
@@ -21,6 +22,9 @@ export default function App() {
 
   // Shining data — общее для клана, хранится в памяти + синхронизируется через сокет
   const [shiningData, setShiningData] = useState(null);
+
+  // Колбэк для перезагрузки сердец (устанавливается из HeartsPage)
+  const [heartsReloader, setHeartsReloader] = useState(null);
 
   // Load user on mount
   useEffect(() => {
@@ -81,7 +85,12 @@ export default function App() {
     }
   }, []);
 
-  useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate);
+  // Hearts update via socket
+  const handleHeartsUpdate = useCallback(() => {
+    if (heartsReloader) heartsReloader();
+  }, [heartsReloader]);
+
+  useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate, handleHeartsUpdate);
 
   useEffect(() => {
     if (!token || !clan) return;
@@ -153,6 +162,13 @@ export default function App() {
         )}
         {page === 'clan' && (
           <ClanPage user={user} clan={clan} members={members} bans={bans} onClanChange={loadClan} />
+        )}
+        {page === 'hearts' && (
+          <HeartsPage
+            clan={clan}
+            members={members}
+            onHeartsUpdate={setHeartsReloader}
+          />
         )}
         {page === 'profile' && (
           <ProfilePage user={user} onUserUpdate={onUserUpdate} onLogout={onLogout} />

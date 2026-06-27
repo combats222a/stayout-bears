@@ -39,6 +39,17 @@ async function initSchema() {
       set_by_nick  VARCHAR(64)  NOT NULL DEFAULT ''
     );
 
+    -- Hearts (учёт сердец) — записи о найденных сердцах
+    CREATE TABLE IF NOT EXISTS hearts (
+      id SERIAL PRIMARY KEY,
+      clan_id INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+      found_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      found_by_nick VARCHAR(64) NOT NULL DEFAULT '',
+      recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      recorded_at TIMESTAMPTZ DEFAULT NOW(),
+      note TEXT DEFAULT ''
+    );
+
     CREATE TABLE IF NOT EXISTS password_reset_codes (
       id SERIAL PRIMARY KEY,
       email VARCHAR(255) NOT NULL,

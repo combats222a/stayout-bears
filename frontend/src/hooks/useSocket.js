@@ -7,9 +7,9 @@ export function getSocket() {
   return socketInstance;
 }
 
-export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate) {
-  const handlersRef = useRef({ onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate });
-  handlersRef.current = { onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate };
+export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate) {
+  const handlersRef = useRef({ onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate });
+  handlersRef.current = { onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate };
 
   useEffect(() => {
     if (!token) {
@@ -54,6 +54,11 @@ export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect, onShin
     // Сияние — обновление от другого игрока клана
     socketInstance.on('shining:update', (data) => {
       handlersRef.current.onShiningUpdate?.(data);
+    });
+
+    // Сердца — кто-то добавил или удалил запись
+    socketInstance.on('hearts:update', () => {
+      handlersRef.current.onHeartsUpdate?.();
     });
 
     return () => {
