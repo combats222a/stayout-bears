@@ -115,36 +115,34 @@ function ShiningCard({ cardIndex, anchorGameTimeStr, anchorRealMs, onWarn }) {
   // ── Живое игровое время этой карточки ──
   const liveGameTime = getLiveGameTime(anchorGameTimeStr, anchorRealMs, slotOffsetHours, now);
 
-  // ── Горит ли сияние сейчас в этой карточке ──
+  // ── Горит ли сияние сейчас ──
   const burning = isShiningActive(liveGameTime);
 
-  // ── Реальное время начала ближайшего сияния для этой карточки ──
-  // = X + (реальных мс до следующего XX:00 в слоте 0) + cardIndex * интервал
-  // Проще: найдём когда начнётся следующее сияние слота 0, потом добавим смещение карточки
+  // ── Реальное время начала следующего сияния ──
+  // Считаем от якоря X (anchorRealMs) — СТАТИЧНО, не зависит от now
+  // Игровое время в момент ввода (Z)
+  const [zh, zm] = (anchorGameTimeStr || '00:00').split(':').map(Number);
+  const Z_minutes = zh * 60 + zm;
+  // Текущий игровой час относительно якоря
+  const elapsedGameMinAtAnchor = 0; // в момент якоря прошло 0
+  // Ближайший следующий XX:00 от Z (игровые минуты)
+  const anchorGameHour = Math.floor(Z_minutes / 60);
+  const nextShiningGameHourFromAnchor = Math.ceil((anchorGameHour + 1) / 6) * 6;
+  const gameMinutesUntilNextFromAnchor = nextShiningGameHourFromAnchor * 60 - Z_minutes;
+  const realMsUntilNextFromAnchor = gameMinutesUntilNextFromAnchor * 8750;
 
-  // Игровое время слота 0 прямо сейчас
-  const liveSlot0 = getLiveGameTime(anchorGameTimeStr, anchorRealMs, 0, now);
-  const [s0h, s0m] = liveSlot0.split(':').map(Number);
-  const slot0TotalMin = s0h * 60 + s0m;
+  // Реальное время старта СИЯНИЕ 1 (следующее от момента ввода)
+  const slot0NextRealStart = anchorRealMs + realMsUntilNextFromAnchor;
 
-  // Сколько игровых минут до следующего XX:00 (кратного 6 часам)
-  const currentGameHour = Math.floor(slot0TotalMin / 60);
-  const nextShiningGameHour = Math.ceil((currentGameHour + 1) / 6) * 6;
-  const gameMinutesUntilNext = nextShiningGameHour * 60 - slot0TotalMin;
-  const realMsUntilSlot0Next = gameMinutesUntilNext * 8750; // GAME_MINUTE_MS
+  // Реальное время старта для ЭТОЙ карточки
+  const realStartMs = slot0NextRealStart + cardIndex * SHINING_INTERVAL_MS;
 
-  // Реальное время старта сияния для ЭТОЙ карточки
-  const realStartMs = now + realMsUntilSlot0Next + cardIndex * SHINING_INTERVAL_MS;
+  // Реальное время конца этого сияния
+  const realEndMs = realStartMs + SHINING_DURATION_MS;
 
-  // Если горит — реальное время конца = начало + SHINING_DURATION_MS
-  // начало = realStartMs - SHINING_INTERVAL_MS (предыдущий цикл)
-  const realEndMs = realStartMs - SHINING_INTERVAL_MS + SHINING_DURATION_MS;
-
-  // ── Таймер ──
-  // Если горит: считаем до конца (до realEndMs)
-  // Если не горит: считаем до начала (до realStartMs)
-  const msUntilStart = realStartMs - now;
-  const msUntilEnd   = burning ? (realEndMs - now) : 0;
+  // ── Таймеры (зависят от now — тикают) ──
+  const msUntilStart = realStartMs - now; // до начала следующего
+  const msUntilEnd   = realEndMs - now;   // до конца текущего (если горит)
   const isWarn       = !burning && msUntilStart <= WARN_BEFORE_SHINING_MS && msUntilStart > 0;
 
   // Звук за 5 мин
