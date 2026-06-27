@@ -39,7 +39,7 @@ function AddParticipantDropdown({ anchorRef, members, existingNicks, onAdd, onCl
 
   const filtered = members.filter(m => {
     const nick = m.game_nick || m.nick;
-    return nick.toLowerCase().includes(search.toLowerCase()) && !existingNicks.has(nick);
+    return nick.toLowerCase().includes(search.toLowerCase());
   });
 
   return (
@@ -69,13 +69,17 @@ function AddParticipantDropdown({ anchorRef, members, existingNicks, onAdd, onCl
           )}
           {filtered.map(m => {
             const nick = m.game_nick || m.nick;
+            const alreadyIn = existingNicks.has(nick);
             return (
-              <div key={m.id} onClick={() => { onAdd({ nick, user_id: m.id }); onClose(); }}
-                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}
+              <div key={m.id} onClick={() => { onAdd({ nick, user_id: m.id, alreadyIn }); onClose(); }}
+                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
                 onMouseLeave={e => e.currentTarget.style.background = ''}
               >
-                <span>🐻</span><span>{nick}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🐻</span><span>{nick}</span>
+                </span>
+                {alreadyIn && <span style={{ fontSize: 11, color: '#3fb950', background: 'rgba(63,185,80,.1)', border: '1px solid rgba(63,185,80,.3)', borderRadius: 6, padding: '1px 6px' }}>+1 ❤️</span>}
               </div>
             );
           })}
@@ -288,7 +292,7 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
       </td>
 
       {/* УЧАСТНИКИ */}
-      <td style={{ padding: '10px 6px', minWidth: 150 }}>
+      <td style={{ padding: '10px 6px', minWidth: 200 }}>
         <div
           ref={findersBtnRef}
           onClick={() => setShowFinders(o => !o)}
@@ -297,7 +301,7 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
             cursor: 'pointer', padding: '5px 8px', borderRadius: 6,
             border: `1px solid ${showFinders ? 'var(--accent)' : 'var(--border)'}`,
             background: showFinders ? 'rgba(88,166,255,.06)' : 'var(--bg3)',
-            minWidth: 110, minHeight: 30, transition: 'all .15s',
+            minWidth: 180, minHeight: 30, transition: 'all .15s',
           }}
         >
           {finders.length === 0
@@ -324,7 +328,7 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
       </td>
 
       {/* ПРОДАЛИ ЗА */}
-      <td style={{ padding: '10px 6px', minWidth: 120 }}>
+      <td style={{ padding: '10px 6px', minWidth: 160 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <input
             type="number"
@@ -335,7 +339,7 @@ function ParticipantRow({ p, totalHearts, totalPelts, onUpdate, onDelete, member
             onChange={e => setSoldInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && e.target.blur()}
             style={{
-              width: 86, background: 'var(--bg3)', border: '1px solid var(--border)',
+              width: 110, background: 'var(--bg3)', border: '1px solid var(--border)',
               borderRadius: 6, color: 'var(--text)', padding: '4px 8px',
               fontSize: 13, fontFamily: 'var(--font-mono)',
             }}
@@ -377,8 +381,16 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (onHeartsUpdate) onHeartsUpdate(load); }, [onHeartsUpdate, load]);
 
-  async function handleAdd({ nick, user_id }) {
+  async function handleAdd({ nick, user_id, alreadyIn }) {
     setError('');
+    if (alreadyIn) {
+      // Участник уже в таблице — добавляем +1 сердце
+      const existing = participants.find(p => p.nick === nick);
+      if (existing) {
+        await handleUpdate(existing.id, { hearts: (existing.hearts || 0) + 1 });
+      }
+      return;
+    }
     try { await api.post('/hearts/participant', { nick, user_id }); await load(); }
     catch (e) { setError(e.message); }
   }
@@ -433,17 +445,17 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
       {/* Таблица — без overflow:hidden чтобы дропдауны (порталы) не обрезались */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10 }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 750 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
             <thead>
               <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-                <th style={th}>ДАТА</th>
-                <th style={{ ...th, textAlign: 'left' }}>НИК</th>
-                <th style={th}>❤️ СЕРДЦА</th>
-                <th style={th}>🧥 ШКУРЫ</th>
-                <th style={th}>💰 ДОЛЯ</th>
-                <th style={th}>👥 УЧАСТНИКИ</th>
-                <th style={th}>💸 ПРОДАЛИ ЗА</th>
-                <th style={th}></th>
+                <th style={{ ...th, width: 80 }}>ДАТА</th>
+                <th style={{ ...th, textAlign: 'left', minWidth: 120 }}>НИК</th>
+                <th style={{ ...th, minWidth: 120 }}>❤️ СЕРДЦА</th>
+                <th style={{ ...th, minWidth: 120 }}>🧥 ШКУРЫ</th>
+                <th style={{ ...th, minWidth: 80 }}>💰 ДОЛЯ</th>
+                <th style={{ ...th, minWidth: 200 }}>👥 УЧАСТНИКИ</th>
+                <th style={{ ...th, minWidth: 160 }}>💸 ПРОДАЛИ ЗА</th>
+                <th style={{ ...th, width: 32 }}></th>
               </tr>
             </thead>
             <tbody>
