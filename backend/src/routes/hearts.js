@@ -23,7 +23,6 @@ router.post('/participant', auth, async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO loot_participants (clan_id, user_id, nick, finders)
        VALUES ($1, $2, $3, '[]')
-       ON CONFLICT (clan_id, nick) DO UPDATE SET nick = EXCLUDED.nick
        RETURNING *`,
       [req.user.clan_id, user_id || null, nick.trim()]
     );

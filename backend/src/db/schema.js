@@ -48,8 +48,8 @@ async function initSchema() {
       hearts INTEGER NOT NULL DEFAULT 0,
       pelts INTEGER NOT NULL DEFAULT 0,
       sold_for INTEGER,
-      added_at TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(clan_id, nick)
+      finders JSONB NOT NULL DEFAULT '[]',
+      added_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     DO $$ BEGIN
@@ -66,6 +66,15 @@ async function initSchema() {
         WHERE table_name='loot_participants' AND column_name='finders'
       ) THEN
         ALTER TABLE loot_participants ADD COLUMN finders JSONB NOT NULL DEFAULT '[]';
+      END IF;
+    END $$;
+    -- Убираем UNIQUE ограничение если оно есть (разрешаем несколько строк на одного игрока)
+    DO $$ BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'loot_participants_clan_id_nick_key'
+      ) THEN
+        ALTER TABLE loot_participants DROP CONSTRAINT loot_participants_clan_id_nick_key;
       END IF;
     END $$;
 

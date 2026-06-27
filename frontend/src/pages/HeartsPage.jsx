@@ -22,7 +22,7 @@ function useDropdownPos(triggerRef, open) {
 }
 
 // ─── Дропдаун добавления участника в таблицу ──────────────────────────
-function AddParticipantDropdown({ anchorRef, members, existingNicks, onAdd, onClose }) {
+function AddParticipantDropdown({ anchorRef, members, onAdd, onClose }) {
   const [search, setSearch] = useState('');
   const [customNick, setCustomNick] = useState('');
   const ref = useRef(null);
@@ -69,17 +69,13 @@ function AddParticipantDropdown({ anchorRef, members, existingNicks, onAdd, onCl
           )}
           {filtered.map(m => {
             const nick = m.game_nick || m.nick;
-            const alreadyIn = existingNicks.has(nick);
             return (
-              <div key={m.id} onClick={() => { onAdd({ nick, user_id: m.id, alreadyIn }); onClose(); }}
-                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}
+              <div key={m.id} onClick={() => { onAdd({ nick, user_id: m.id }); onClose(); }}
+                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
                 onMouseLeave={e => e.currentTarget.style.background = ''}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>🐻</span><span>{nick}</span>
-                </span>
-                {alreadyIn && <span style={{ fontSize: 11, color: '#3fb950', background: 'rgba(63,185,80,.1)', border: '1px solid rgba(63,185,80,.3)', borderRadius: 6, padding: '1px 6px' }}>+1 ❤️</span>}
+                <span>🐻</span><span>{nick}</span>
               </div>
             );
           })}
@@ -381,16 +377,8 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (onHeartsUpdate) onHeartsUpdate(load); }, [onHeartsUpdate, load]);
 
-  async function handleAdd({ nick, user_id, alreadyIn }) {
+  async function handleAdd({ nick, user_id }) {
     setError('');
-    if (alreadyIn) {
-      // Участник уже в таблице — добавляем +1 сердце
-      const existing = participants.find(p => p.nick === nick);
-      if (existing) {
-        await handleUpdate(existing.id, { hearts: (existing.hearts || 0) + 1 });
-      }
-      return;
-    }
     try { await api.post('/hearts/participant', { nick, user_id }); await load(); }
     catch (e) { setError(e.message); }
   }
@@ -498,7 +486,6 @@ export default function HeartsPage({ clan, members, onHeartsUpdate }) {
               <AddParticipantDropdown
                 anchorRef={addBtnRef}
                 members={members}
-                existingNicks={existingNicks}
                 onAdd={handleAdd}
                 onClose={() => setShowAdd(false)}
               />
