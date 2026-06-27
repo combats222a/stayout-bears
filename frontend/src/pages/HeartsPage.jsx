@@ -428,12 +428,6 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
     catch (e) { setError(e.message); }
   }
 
-  async function handleReset() {
-    if (!window.confirm('Очистить таблицу рейда?')) return;
-    try { await api.post('/hearts/reset'); setParticipants([]); }
-    catch (e) { setError(e.message); }
-  }
-
   const existingNicks = new Set(participants.map(p => p.nick));
   const totalHearts   = participants.reduce((s, p) => s + (p.hearts || 0), 0);
   const totalPelts    = participants.reduce((s, p) => s + (p.pelts  || 0), 0);
@@ -530,16 +524,6 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
             )}
           </div>
           <div style={{ flex: 1 }} />
-          {canDelete && participants.length > 0 && (
-            <button onClick={handleReset} style={{
-              padding: '6px 14px', borderRadius: 8, fontSize: 13,
-              background: 'none', border: '1px solid var(--border)',
-              color: 'var(--text3)', cursor: 'pointer', transition: 'all .15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--red)'; e.currentTarget.style.color = 'var(--red)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text3)'; }}
-            >🗑 Очистить рейд</button>
-          )}
         </div>
       </div>
 
