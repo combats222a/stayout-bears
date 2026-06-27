@@ -442,7 +442,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
 
       {showModal && (
         <SetGameTimeModal
-          currentLocationId={shiningData?.locationId || DEFAULT_LOCATION_ID}
+          currentLocationId={DEFAULT_LOCATION_ID}
           onCommit={handleCommit}
           onClose={() => setShowModal(false)}
         />
