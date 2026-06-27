@@ -94,7 +94,7 @@ function SetGameTimeModal({ onCommit, onClose, currentLocationId }) {
 }
 
 // ─── Карточка одного слота ───────────────────────────────────────
-function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso }) {
+function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso, nextSlot }) {
   const [now, setNow] = useState(() => Date.now());
   const warnedRef = useRef(false);
 
@@ -156,9 +156,10 @@ function ShiningSlot({ slot, gameTimeStr, slotIndex, onWarn, anchorIso }) {
     timerValue = '⚡ РЕСП!';
     timerColor = '#50c878';
   } else if (isPast && isActive) {
-    // Прошло — но слот 0 (активный) показывает сколько прошло
-    timerLabel = 'Прошло';
-    timerValue = formatShiningCountdown(Math.abs(msLeft));
+    // Сияние прошло — показываем обратный отсчёт до следующего
+    const msToNext = nextSlot ? nextSlot.realAt - now : 0;
+    timerLabel = 'До следующего';
+    timerValue = msToNext > 0 ? formatShiningCountdown(msToNext) : '00:00';
     timerColor = '#3a5a7a';
   } else if (isUpcoming) {
     timerLabel = isActive ? 'До Сияния' : 'Через';
@@ -358,6 +359,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
                 slotIndex={i}
                 onWarn={handleWarn}
                 anchorIso={shiningData?.anchorIso}
+                nextSlot={slots[i + 1] || null}
               />
             ))
           : [0,1,2,3].map(i => (
