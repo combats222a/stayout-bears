@@ -743,20 +743,23 @@ body {
   grid-template-columns: 32px 1fr 90px 160px 160px 100px 260px;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  font-size: 15px;
 }
 .timer-row:last-child { border-bottom: none; }
 
 .timer-row-header {
   background: var(--accent2);
   color: #fff;
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   border-bottom: none;
+}
+.timer-row-header > * {
+  color: #fff !important;
 }
 
 .timer-row-drag {
@@ -776,14 +779,14 @@ body {
 
 .timer-row-period {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text2);
   text-align: center;
 }
 
 .timer-row-remaining {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--green);
   display: flex;
   flex-direction: column;
@@ -809,12 +812,12 @@ body {
 
 .timer-row-elapsed {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--green);
 }
 .timer-row-forecast {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text2);
 }
 
