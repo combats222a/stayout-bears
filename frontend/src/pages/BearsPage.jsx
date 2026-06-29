@@ -121,7 +121,8 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
 
   return (
     <>
-      <tr className={rowCls}>
+      {/* Desktop table row */}
+      <tr className={`${rowCls} bear-row-desktop`}>
         <td><span className={dotCls} /></td>
         <td className="td-name">{meta.name}</td>
         <td><span className="square-badge">{meta.square}</span></td>
@@ -149,34 +150,65 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
             }
           </div>
         </td>
-
-        {/* Время спавна — только отображение */}
         <td className="td-clock">{isActive ? spawnDisplay : '--:--:--'}</td>
-
-        {/* Прошло времени — только отображение, тикает */}
         <td className="td-clock">{isActive ? elap : '--:--:--'}</td>
-
-        {/* Время смерти — кликабельное, открывает модалку */}
         <td>
           {isActive
-            ? <span
-                className="td-clock clock-editable"
-                title="Нажми чтобы исправить время смерти"
-                onClick={() => setShowModal(true)}
-              >
+            ? <span className="td-clock clock-editable" title="Нажми чтобы исправить время смерти" onClick={() => setShowModal(true)}>
                 {killedDisplay}<span className="edit-icon"> ✎</span>
               </span>
-            : <span
-                className="td-clock clock-editable clock-empty"
-                title="Нажми чтобы ввести время смерти"
-                onClick={() => setShowModal(true)}
-              >
+            : <span className="td-clock clock-editable clock-empty" title="Нажми чтобы ввести время смерти" onClick={() => setShowModal(true)}>
                 --:--:--<span className="edit-icon"> ✎</span>
               </span>
           }
         </td>
-
         <td className="td-user">{bear.killer_nick || '—'}</td>
+      </tr>
+
+      {/* Mobile card row */}
+      <tr className={`${rowCls} bear-row-mobile`}>
+        <td colSpan={9} style={{ padding: 0 }}>
+          <div className="bear-mobile-card">
+            <div className="bear-mobile-header">
+              <span className={dotCls} />
+              <span className="bear-mobile-name">{meta.name}</span>
+              <span className="square-badge" style={{ marginLeft: 'auto' }}>{meta.square}</span>
+            </div>
+            <div className="bear-mobile-timer">
+              {isReady
+                ? <span className="spawn-tag">⚡ Спавн!</span>
+                : <div className="prog-wrap">
+                    <div className="prog-bar">
+                      <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+                    </div>
+                    <span className="timer-val" style={{ color: timerColor }}>
+                      {isDead ? formatCountdown(ms) : '--:--'}
+                    </span>
+                  </div>
+              }
+            </div>
+            {isActive && (
+              <div className="bear-mobile-meta">
+                <span>🕐 Смерть:&nbsp;
+                  <span className="clock-editable" onClick={() => setShowModal(true)}>
+                    {killedDisplay} <span className="edit-icon">✎</span>
+                  </span>
+                </span>
+                <span>⚡ Спавн: {spawnDisplay}</span>
+                {bear.killer_nick && <span>👤 {bear.killer_nick}</span>}
+              </div>
+            )}
+            <div className="bear-mobile-actions">
+              {!isDead && !isReady
+                ? <>
+                    <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(bear.bear_index)}>Сейчас</button>
+                    <button className="btn-gone" style={{ flex: 1 }} onClick={() => onVanish(bear.bear_index)}>Исчез</button>
+                  </>
+                : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(bear.bear_index)}>✕ Сброс</button>
+              }
+            </div>
+          </div>
+        </td>
       </tr>
 
       {showModal && (

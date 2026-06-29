@@ -53,45 +53,59 @@ function TimerRow({ timer, onReset, onClear, onDelete }) {
     : 0;
 
   return (
-    <div className="timer-row">
-      <div className="timer-row-drag">≡</div>
-
-      <div className="timer-row-name">{timer.name}</div>
-
-      <div className="timer-row-period">
-        {formatDuration(timer.period_seconds)}
+    <>
+      {/* Desktop row */}
+      <div className="timer-row timer-row-desktop">
+        <div className="timer-row-drag">≡</div>
+        <div className="timer-row-name">{timer.name}</div>
+        <div className="timer-row-period">{formatDuration(timer.period_seconds)}</div>
+        <div className={`timer-row-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
+          {isEmpty ? '-- : -- : --' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
+          {!isEmpty && !isExpired && (
+            <div className="timer-mini-bar">
+              <div className="timer-mini-fill" style={{ width: `${progressPct}%` }} />
+            </div>
+          )}
+        </div>
+        <div className="timer-row-elapsed">
+          {isEmpty ? '-- : -- : --' : formatDuration(elapsed > 0 ? elapsed : 0)}
+        </div>
+        <div className="timer-row-forecast">
+          {isEmpty ? '-- : -- : --' : isExpired ? 'Уже!' :
+            forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </div>
+        <div className="timer-row-actions">
+          <button className="btn btn-sm btn-primary" onClick={() => onReset(timer.id)}>Обновить</button>
+          <button className="btn btn-sm btn-orange" onClick={() => onClear(timer.id)}>Очистить</button>
+          <button className="btn btn-sm btn-danger" onClick={() => onDelete(timer.id)}>Удалить</button>
+        </div>
       </div>
 
-      <div className={`timer-row-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
-        {isEmpty ? '-- : -- : --' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
+      {/* Mobile card */}
+      <div className="timer-card-mobile">
+        <div className="timer-card-header">
+          <span className="timer-card-name">{timer.name}</span>
+          <span className="timer-card-period">каждые {formatDuration(timer.period_seconds)}</span>
+        </div>
+        <div className={`timer-card-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
+          {isEmpty ? '--:--:--' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
+        </div>
         {!isEmpty && !isExpired && (
-          <div className="timer-mini-bar">
+          <div className="timer-mini-bar" style={{ margin: '4px 0' }}>
             <div className="timer-mini-fill" style={{ width: `${progressPct}%` }} />
           </div>
         )}
+        <div className="timer-card-meta">
+          <span>⏱ Прошло: {isEmpty ? '--' : formatDuration(elapsed > 0 ? elapsed : 0)}</span>
+          <span>🎯 В {isEmpty ? '--' : isExpired ? 'Уже!' : forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+        <div className="timer-card-actions">
+          <button className="btn btn-sm btn-primary" onClick={() => onReset(timer.id)}>Обновить</button>
+          <button className="btn btn-sm btn-orange" onClick={() => onClear(timer.id)}>Очистить</button>
+          <button className="btn btn-sm btn-danger" onClick={() => onDelete(timer.id)}>Удалить</button>
+        </div>
       </div>
-
-      <div className="timer-row-elapsed">
-        {isEmpty ? '-- : -- : --' : formatDuration(elapsed > 0 ? elapsed : 0)}
-      </div>
-
-      <div className="timer-row-forecast">
-        {isEmpty ? '-- : -- : --' : isExpired ? 'Уже!' :
-          forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-      </div>
-
-      <div className="timer-row-actions">
-        <button className="btn btn-sm btn-primary" onClick={() => onReset(timer.id)}>
-          Обновить
-        </button>
-        <button className="btn btn-sm btn-orange" onClick={() => onClear(timer.id)}>
-          Очистить
-        </button>
-        <button className="btn btn-sm btn-danger" onClick={() => onDelete(timer.id)}>
-          Удалить
-        </button>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -186,7 +200,7 @@ export default function TimersPage({ user }) {
         </div>
       ) : (
         <div className="timers-table">
-          <div className="timers-thead">
+          <div className="timers-thead timers-thead-desktop">
             <div className="timer-row timer-row-header">
               <div className="timer-row-drag"></div>
               <div className="timer-row-name">Название таймера</div>
@@ -260,6 +274,7 @@ export default function TimersPage({ user }) {
             className="btn btn-primary timer-create-btn"
             onClick={handleCreate}
             disabled={creating}
+            style={{ width: '100%' }}
           >
             + Создать таймер
           </button>
