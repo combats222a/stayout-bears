@@ -243,14 +243,56 @@ function Counter({ value, onChange, color }) {
   );
 }
 
+// ─── Ячейка «Выплачено участникам» — чек-лист по каждому из «Участников» ──
+function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }) {
+  const paidSet = new Set(paidOut);
+
+  function toggle(nick) {
+    if (!isOwner) return;
+    const next = paidSet.has(nick) ? paidOut.filter(n => n !== nick) : [...paidOut, nick];
+    onUpdate(p.id, { paid_out: next });
+  }
+
+  if (finders.length === 0) {
+    return <span style={{ fontSize: 12, color: 'var(--text3)' }}>—</span>;
+  }
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+      {finders.map(f => {
+        const paid = paidSet.has(f);
+        return (
+          <span
+            key={f}
+            onClick={() => toggle(f)}
+            title={isOwner ? (paid ? 'Отметить как невыплачено' : 'Отметить как выплачено') : (paid ? 'Выплачено' : 'Не выплачено')}
+            style={{
+              fontSize: 11, padding: '2px 7px', borderRadius: 8,
+              background: paid ? 'rgba(63,185,80,.15)' : 'rgba(255,255,255,.05)',
+              color: paid ? '#3fb950' : 'var(--text3)',
+              border: `1px solid ${paid ? 'rgba(63,185,80,.35)' : 'var(--border)'}`,
+              cursor: isOwner ? 'pointer' : 'default',
+              userSelect: 'none',
+            }}
+          >{paid ? '✓ ' : ''}{f}</span>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Строка участника ─────────────────────────────────────────────────
-function ParticipantRow({ p, onUpdate, onDelete, members, canDelete }) {
+function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUserId }) {
   const [soldInput, setSoldInput]     = useState(p.sold_for != null ? String(p.sold_for) : '');
   const [soldFocused, setSoldFocused] = useState(false);
   const [showFinders, setShowFinders] = useState(false);
   const findersBtnRef = useRef(null);
 
   const finders = Array.isArray(p.finders) ? p.finders : [];
+  const paidOut = Array.isArray(p.paid_out) ? p.paid_out : [];
+  // Редактировать «Участники» и «Выплачено» может только тот, кто добавил строку.
+  // Если created_by не задан (старая запись) — не ограничиваем.
+  const isOwner = p.created_by == null || p.created_by === currentUserId;
 
   const dt = new Date(p.added_at);
   const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -317,21 +359,23 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete }) {
         </span>
       </td>
 
-      {/* УЧАСТНИКИ */}
+      {/* УЧАСТНИКИ — редактирует только тот, кто добавил строку */}
       <td style={{ padding: '13px 8px', minWidth: 200 }}>
         <div
           ref={findersBtnRef}
-          onClick={() => setShowFinders(o => !o)}
+          onClick={() => { if (isOwner) setShowFinders(o => !o); }}
+          title={!isOwner ? 'Редактировать может только тот, кто добавил запись' : undefined}
           style={{
             display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap',
-            cursor: 'pointer', padding: '5px 8px', borderRadius: 6,
+            cursor: isOwner ? 'pointer' : 'default', padding: '5px 8px', borderRadius: 6,
             border: `1px solid ${showFinders ? 'var(--accent)' : 'var(--border)'}`,
             background: showFinders ? 'rgba(88,166,255,.06)' : 'var(--bg3)',
             minWidth: 180, minHeight: 30, transition: 'all .15s',
+            opacity: isOwner ? 1 : 0.75,
           }}
         >
           {finders.length === 0
-            ? <span style={{ fontSize: 12, color: 'var(--text3)' }}>Выбрать...</span>
+            ? <span style={{ fontSize: 12, color: 'var(--text3)' }}>{isOwner ? 'Выбрать...' : '—'}</span>
             : finders.map(f => (
               <span key={f} style={{
                 fontSize: 11, padding: '1px 6px', borderRadius: 8,
@@ -340,9 +384,10 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete }) {
               }}>{f}</span>
             ))
           }
-          <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text3)', paddingLeft: 4 }}>▼</span>
+          {isOwner && <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text3)', paddingLeft: 4 }}>▼</span>}
+          {!isOwner && <span style={{ marginLeft: 'auto', fontSize: 11, paddingLeft: 4 }}>🔒</span>}
         </div>
-        {showFinders && (
+        {showFinders && isOwner && (
           <FindersDropdown
             anchorRef={findersBtnRef}
             members={members}
@@ -351,6 +396,11 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete }) {
             onClose={() => setShowFinders(false)}
           />
         )}
+      </td>
+
+      {/* ВЫПЛАЧЕНО УЧАСТНИКАМ — редактирует только тот, кто добавил строку */}
+      <td style={{ padding: '13px 8px', minWidth: 180 }}>
+        <PaidOutCell p={p} finders={finders} paidOut={paidOut} isOwner={isOwner} onUpdate={onUpdate} />
       </td>
 
       {/* ПРОДАЛИ ЗА */}
@@ -468,7 +518,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
       {/* Таблица — без overflow:hidden чтобы дропдауны (порталы) не обрезались */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10 }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1080 }}>
             <thead>
               <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
                 <th style={{ ...th, width: 80 }}>ДАТА</th>
@@ -477,15 +527,16 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
                 <th style={{ ...th, minWidth: 120 }}>🧥 ШКУРЫ</th>
                 <th style={{ ...th, minWidth: 100 }}>💰 ДОЛЯ</th>
                 <th style={{ ...th, minWidth: 200 }}>👥 УЧАСТНИКИ</th>
-                <th style={{ ...th, minWidth: 160 }}>💸 ПРОДАЛИ ЗА</th>
+                <th style={{ ...th, minWidth: 180 }}>💸 ВЫПЛАЧЕНО УЧАСТНИКАМ</th>
+                <th style={{ ...th, minWidth: 160 }}>💵 ПРОДАЛИ ЗА</th>
                 <th style={{ ...th, width: 32 }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Загрузка...</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Загрузка...</td></tr>
               ) : participants.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 13 }}>
+                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 13 }}>
                   Нажми «+ Добавить участника» чтобы начать учёт
                 </td></tr>
               ) : (
@@ -494,6 +545,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
                     key={p.id} p={p}
                     onUpdate={handleUpdate} onDelete={handleDelete}
                     members={members} canDelete={canDelete}
+                    currentUserId={user && user.id}
                   />
                 ))
               )}
@@ -530,7 +582,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
       </div>
 
       <div className="tbl-hint">
-        ❤️ + шкуры 🧥 = доля считается автоматически · Колонка «Участники» — кто нашёл лут · «Очистить рейд» сбрасывает таблицу
+        ❤️ + шкуры 🧥 = доля считается автоматически · «Участники» и «Выплачено участникам» редактирует только тот, кто добавил строку · «Очистить рейд» сбрасывает таблицу
       </div>
     </div>
   );

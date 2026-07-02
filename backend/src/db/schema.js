@@ -68,6 +68,24 @@ async function initSchema() {
         ALTER TABLE loot_participants ADD COLUMN finders JSONB NOT NULL DEFAULT '[]';
       END IF;
     END $$;
+    -- Кто добавил строку (только этот игрок может редактировать "Участники" и "Выплачено")
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='loot_participants' AND column_name='created_by'
+      ) THEN
+        ALTER TABLE loot_participants ADD COLUMN created_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
+    -- Список ников, которым уже выплатили долю по этой строке
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='loot_participants' AND column_name='paid_out'
+      ) THEN
+        ALTER TABLE loot_participants ADD COLUMN paid_out JSONB NOT NULL DEFAULT '[]';
+      END IF;
+    END $$;
     -- Убираем UNIQUE ограничение если оно есть (разрешаем несколько строк на одного игрока)
     DO $$ BEGIN
       IF EXISTS (

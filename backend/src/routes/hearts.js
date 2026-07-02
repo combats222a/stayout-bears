@@ -21,10 +21,10 @@ router.post('/participant', auth, async (req, res) => {
   if (!nick || !nick.trim()) return res.status(400).json({ error: 'Укажи ник' });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO loot_participants (clan_id, user_id, nick, finders)
-       VALUES ($1, $2, $3, '[]')
+      `INSERT INTO loot_participants (clan_id, user_id, nick, finders, created_by)
+       VALUES ($1, $2, $3, '[]', $4)
        RETURNING *`,
-      [req.user.clan_id, user_id || null, nick.trim()]
+      [req.user.clan_id, user_id || null, nick.trim(), req.user.id]
     );
     req.getIo().to(`clan:${req.user.clan_id}`).emit('hearts:update');
     res.json({ participant: rows[0] });
@@ -34,13 +34,30 @@ router.post('/participant', auth, async (req, res) => {
 // PATCH /api/hearts/:id
 router.patch('/:id', auth, async (req, res) => {
   if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
-  const { hearts, pelts, sold_for, finders } = req.body;
+  const { hearts, pelts, sold_for, finders, paid_out } = req.body;
+
+  // "Участники" и "Выплачено участникам" — редактировать может только тот,
+  // кто добавил эту строку (created_by). Если у старой строки нет created_by
+  // (создана до обновления), доступ не ограничиваем, чтобы не сломать старые записи.
+  if (finders !== undefined || paid_out !== undefined) {
+    const { rows: ownerRows } = await pool.query(
+      'SELECT created_by FROM loot_participants WHERE id = $1 AND clan_id = $2',
+      [req.params.id, req.user.clan_id]
+    );
+    if (!ownerRows.length) return res.status(404).json({ error: 'Не найден' });
+    const createdBy = ownerRows[0].created_by;
+    if (createdBy != null && createdBy !== req.user.id) {
+      return res.status(403).json({ error: 'Редактировать эту графу может только тот, кто добавил запись' });
+    }
+  }
+
   const sets = [];
   const vals = [];
   let i = 1;
   if (hearts   !== undefined) { sets.push(`hearts   = $${i++}`); vals.push(Math.max(0, hearts)); }
   if (pelts    !== undefined) { sets.push(`pelts    = $${i++}`); vals.push(Math.max(0, pelts)); }
   if (finders  !== undefined) { sets.push(`finders  = $${i++}`); vals.push(JSON.stringify(finders)); }
+  if (paid_out !== undefined) { sets.push(`paid_out = $${i++}`); vals.push(JSON.stringify(paid_out)); }
   if (sold_for !== undefined) {
     sets.push(`sold_for = $${i++}`);
     vals.push(sold_for === '' || sold_for === null ? null : parseInt(sold_for));
