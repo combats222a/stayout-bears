@@ -37,17 +37,21 @@ router.patch('/:id', auth, async (req, res) => {
   const { hearts, pelts, sold_for, finders, paid_out } = req.body;
 
   // "Участники" и "Выплачено участникам" — редактировать может только тот,
-  // кто добавил эту строку (created_by). Если у старой строки нет created_by
-  // (создана до обновления) — доступ только у лидера/зама клана.
+  // чей аккаунт привязан к нику в этой строке (user_id, колонка «НИК»).
+  // Если ник «гостевой» (вписан вручную, аккаунта нет) — доступ у того, кто
+  // добавил строку (created_by). Если и этого нет (старая запись без обеих
+  // привязок) — доступ у лидера/зама клана, чтобы строка не «зависла» навсегда.
   if (finders !== undefined || paid_out !== undefined) {
     const { rows: ownerRows } = await pool.query(
-      'SELECT created_by FROM loot_participants WHERE id = $1 AND clan_id = $2',
+      'SELECT user_id, created_by FROM loot_participants WHERE id = $1 AND clan_id = $2',
       [req.params.id, req.user.clan_id]
     );
     if (!ownerRows.length) return res.status(404).json({ error: 'Не найден' });
-    const createdBy = ownerRows[0].created_by;
+    const { user_id: nickUserId, created_by: createdBy } = ownerRows[0];
     let allowed;
-    if (createdBy != null) {
+    if (nickUserId != null) {
+      allowed = nickUserId === req.user.id;
+    } else if (createdBy != null) {
       allowed = createdBy === req.user.id;
     } else {
       const { rows: clanRows } = await pool.query(
@@ -57,7 +61,7 @@ router.patch('/:id', auth, async (req, res) => {
       allowed = c.owner_id === req.user.id || c.deputy_id === req.user.id;
     }
     if (!allowed) {
-      return res.status(403).json({ error: 'Редактировать эту графу может только тот, кто добавил запись' });
+      return res.status(403).json({ error: 'Редактировать эту графу может только тот, чей ник указан в строке' });
     }
   }
 

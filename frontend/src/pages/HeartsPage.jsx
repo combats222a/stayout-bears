@@ -265,7 +265,7 @@ function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }) {
           <span
             key={f}
             onClick={() => toggle(f)}
-            title={isOwner ? (paid ? 'Отметить как невыплачено' : 'Отметить как выплачено') : 'Редактировать может только тот, кто добавил запись'}
+            title={isOwner ? (paid ? 'Отметить как невыплачено' : 'Отметить как выплачено') : 'Редактировать может только тот, чей ник указан в строке'}
             style={{
               fontSize: 11, padding: '2px 7px', borderRadius: 8,
               background: paid ? 'rgba(63,185,80,.15)' : 'rgba(255,255,255,.05)',
@@ -292,9 +292,15 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
 
   const finders = Array.isArray(p.finders) ? p.finders : [];
   const paidOut = Array.isArray(p.paid_out) ? p.paid_out : [];
-  // Редактировать «Участники» и «Выплачено» может только тот, кто добавил строку.
-  // Если created_by не задан (старая запись) — доступ только у лидера/зама клана.
-  const isOwner = p.created_by != null ? p.created_by === currentUserId : canManageLegacy;
+  // Редактировать «Участники» и «Выплачено» может только тот, чей аккаунт
+  // привязан к нику в этой строке (колонка «НИК» → p.user_id).
+  // Гостевой ник (без аккаунта) — доступ у того, кто добавил строку (created_by).
+  // Если нет ни того, ни другого (старая запись) — доступ у лидера/зама.
+  const isOwner = p.user_id != null
+    ? p.user_id === currentUserId
+    : p.created_by != null
+      ? p.created_by === currentUserId
+      : canManageLegacy;
 
   const dt = new Date(p.added_at);
   const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -361,12 +367,12 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
         </span>
       </td>
 
-      {/* УЧАСТНИКИ — редактирует только тот, кто добавил строку */}
+      {/* УЧАСТНИКИ — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 8px', minWidth: 200 }}>
         <div
           ref={findersBtnRef}
           onClick={() => { if (isOwner) setShowFinders(o => !o); }}
-          title={!isOwner ? 'Редактировать может только тот, кто добавил запись' : undefined}
+          title={!isOwner ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
           style={{
             display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap',
             cursor: isOwner ? 'pointer' : 'default', padding: '5px 8px', borderRadius: 6,
@@ -400,7 +406,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
         )}
       </td>
 
-      {/* ВЫПЛАЧЕНО УЧАСТНИКАМ — редактирует только тот, кто добавил строку */}
+      {/* ВЫПЛАЧЕНО УЧАСТНИКАМ — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 8px', minWidth: 180 }}>
         <PaidOutCell p={p} finders={finders} paidOut={paidOut} isOwner={isOwner} onUpdate={onUpdate} />
       </td>
@@ -585,7 +591,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
       </div>
 
       <div className="tbl-hint">
-        ❤️ + шкуры 🧥 = доля считается автоматически · «Участники» и «Выплачено участникам» редактирует только тот, кто добавил строку · «Очистить рейд» сбрасывает таблицу
+        ❤️ + шкуры 🧥 = доля считается автоматически · «Участники» и «Выплачено участникам» редактирует только тот, чей ник указан в строке · «Очистить рейд» сбрасывает таблицу
       </div>
     </div>
   );
