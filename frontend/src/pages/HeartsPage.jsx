@@ -294,7 +294,7 @@ function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }) {
 }
 
 // ─── Строка участника ─────────────────────────────────────────────────
-function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUserId, canManageLegacy }) {
+function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUserId }) {
   const [soldInput, setSoldInput]     = useState(p.sold_for != null ? String(p.sold_for) : '');
   const [soldFocused, setSoldFocused] = useState(false);
   const [showFinders, setShowFinders] = useState(false);
@@ -302,15 +302,14 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
 
   const finders = Array.isArray(p.finders) ? p.finders : [];
   const paidOut = Array.isArray(p.paid_out) ? p.paid_out : [];
-  // Редактировать «Участники» и «Выплачено» может только тот, чей аккаунт
-  // привязан к нику в этой строке (колонка «НИК» → p.user_id).
-  // Гостевой ник (без аккаунта) — доступ у того, кто добавил строку (created_by).
-  // Если нет ни того, ни другого (старая запись) — доступ у лидера/зама.
+  // Редактировать «Сердца», «Шкуры», «Продали за», «Участники» и «Выплачено»
+  // может только тот, чей аккаунт привязан к нику в этой строке (колонка
+  // «НИК» → p.user_id). Гостевой ник (без аккаунта, метка «гость») —
+  // за него некому залогиниться, поэтому редактировать его может любой
+  // участник клана.
   const isOwner = p.user_id != null
     ? p.user_id === currentUserId
-    : p.created_by != null
-      ? p.created_by === currentUserId
-      : canManageLegacy;
+    : true;
 
   const dt = new Date(p.added_at);
   const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -571,7 +570,6 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
                     onUpdate={handleUpdate} onDelete={handleDelete}
                     members={members} canDelete={canDelete}
                     currentUserId={user && user.id}
-                    canManageLegacy={canDelete}
                   />
                 ))
               )}
