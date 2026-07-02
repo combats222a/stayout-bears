@@ -221,24 +221,34 @@ function fmt(n) {
 }
 
 // ─── Кнопки ± ────────────────────────────────────────────────────────
-function Counter({ value, onChange, color }) {
+function Counter({ value, onChange, color, disabled }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-      <button onClick={() => onChange(Math.max(0, value - 1))} style={{
-        width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
-        background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer',
-        fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 600,
-      }}>−</button>
+    <div
+      style={{ display: 'flex', alignItems: 'center', gap: 7, opacity: disabled ? 0.75 : 1 }}
+      title={disabled ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
+    >
+      <button
+        disabled={disabled}
+        onClick={() => !disabled && onChange(Math.max(0, value - 1))}
+        style={{
+          width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
+          background: 'var(--bg3)', color: 'var(--text)', cursor: disabled ? 'default' : 'pointer',
+          fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 600,
+        }}>−</button>
       <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 17, color, minWidth: 22, textAlign: 'center' }}>
         {value}
       </span>
-      <button onClick={() => onChange(value + 1)} style={{
-        width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
-        background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer',
-        fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 600,
-      }}>+</button>
+      <button
+        disabled={disabled}
+        onClick={() => !disabled && onChange(value + 1)}
+        style={{
+          width: 26, height: 26, borderRadius: 5, border: '1px solid var(--border)',
+          background: 'var(--bg3)', color: 'var(--text)', cursor: disabled ? 'default' : 'pointer',
+          fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 600,
+        }}>+</button>
+      {disabled && <span style={{ fontSize: 11, marginLeft: 1 }}>🔒</span>}
     </div>
   );
 }
@@ -346,17 +356,17 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
         )}
       </td>
 
-      {/* СЕРДЦА */}
+      {/* СЕРДЦА — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 8px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex' }}>
-          <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" />
+          <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" disabled={!isOwner} />
         </div>
       </td>
 
-      {/* ШКУРЫ */}
+      {/* ШКУРЫ — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 8px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex' }}>
-          <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" />
+          <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" disabled={!isOwner} />
         </div>
       </td>
 
@@ -411,14 +421,18 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
         <PaidOutCell p={p} finders={finders} paidOut={paidOut} isOwner={isOwner} onUpdate={onUpdate} />
       </td>
 
-      {/* ПРОДАЛИ ЗА */}
+      {/* ПРОДАЛИ ЗА — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 8px', minWidth: 160 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+          title={!isOwner ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
+        >
           <input
             type="text"
             inputMode="numeric"
             value={soldFocused ? fmt(soldInput) : (p.sold_for != null ? fmt(p.sold_for) : '')}
             placeholder="—"
+            disabled={!isOwner}
             onFocus={() => { setSoldFocused(true); setSoldInput(p.sold_for != null ? String(p.sold_for) : ''); }}
             onBlur={handleSoldBlur}
             onChange={handleSoldChange}
@@ -427,9 +441,12 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
               width: 110, background: 'var(--bg3)', border: '1px solid var(--border)',
               borderRadius: 6, color: 'var(--text)', padding: '5px 8px',
               fontSize: 14, fontFamily: 'var(--font-mono)',
+              opacity: isOwner ? 1 : 0.75,
+              cursor: isOwner ? 'text' : 'default',
             }}
           />
           <span style={{ fontSize: 13, color: 'var(--text2)' }}>руб.</span>
+          {!isOwner && <span style={{ fontSize: 11 }}>🔒</span>}
         </div>
       </td>
 

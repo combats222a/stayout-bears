@@ -36,12 +36,14 @@ router.patch('/:id', auth, async (req, res) => {
   if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
   const { hearts, pelts, sold_for, finders, paid_out } = req.body;
 
-  // "Участники" и "Выплачено участникам" — редактировать может только тот,
-  // чей аккаунт привязан к нику в этой строке (user_id, колонка «НИК»).
-  // Если ник «гостевой» (вписан вручную, аккаунта нет) — доступ у того, кто
-  // добавил строку (created_by). Если и этого нет (старая запись без обеих
-  // привязок) — доступ у лидера/зама клана, чтобы строка не «зависла» навсегда.
-  if (finders !== undefined || paid_out !== undefined) {
+  // "Сердца", "Шкуры", "Продали за", "Участники" и "Выплачено участникам" —
+  // редактировать может только тот, чей аккаунт привязан к нику в этой строке
+  // (user_id, колонка «НИК»). Если ник «гостевой» (вписан вручную, аккаунта
+  // нет) — доступ у того, кто добавил строку (created_by). Если и этого нет
+  // (старая запись без обеих привязок) — доступ у лидера/зама клана, чтобы
+  // строка не «зависла» навсегда.
+  if (hearts !== undefined || pelts !== undefined || sold_for !== undefined ||
+      finders !== undefined || paid_out !== undefined) {
     const { rows: ownerRows } = await pool.query(
       'SELECT user_id, created_by FROM loot_participants WHERE id = $1 AND clan_id = $2',
       [req.params.id, req.user.clan_id]
