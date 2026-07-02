@@ -38,7 +38,7 @@ router.patch('/:id', auth, async (req, res) => {
 
   // "Участники" и "Выплачено участникам" — редактировать может только тот,
   // кто добавил эту строку (created_by). Если у старой строки нет created_by
-  // (создана до обновления), доступ не ограничиваем, чтобы не сломать старые записи.
+  // (создана до обновления) — доступ только у лидера/зама клана.
   if (finders !== undefined || paid_out !== undefined) {
     const { rows: ownerRows } = await pool.query(
       'SELECT created_by FROM loot_participants WHERE id = $1 AND clan_id = $2',
@@ -46,7 +46,17 @@ router.patch('/:id', auth, async (req, res) => {
     );
     if (!ownerRows.length) return res.status(404).json({ error: 'Не найден' });
     const createdBy = ownerRows[0].created_by;
-    if (createdBy != null && createdBy !== req.user.id) {
+    let allowed;
+    if (createdBy != null) {
+      allowed = createdBy === req.user.id;
+    } else {
+      const { rows: clanRows } = await pool.query(
+        'SELECT owner_id, deputy_id FROM clans WHERE id = $1', [req.user.clan_id]
+      );
+      const c = clanRows[0] || {};
+      allowed = c.owner_id === req.user.id || c.deputy_id === req.user.id;
+    }
+    if (!allowed) {
       return res.status(403).json({ error: 'Редактировать эту графу может только тот, кто добавил запись' });
     }
   }

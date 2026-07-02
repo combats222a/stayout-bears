@@ -258,14 +258,14 @@ function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
       {finders.map(f => {
         const paid = paidSet.has(f);
         return (
           <span
             key={f}
             onClick={() => toggle(f)}
-            title={isOwner ? (paid ? 'Отметить как невыплачено' : 'Отметить как выплачено') : (paid ? 'Выплачено' : 'Не выплачено')}
+            title={isOwner ? (paid ? 'Отметить как невыплачено' : 'Отметить как выплачено') : 'Редактировать может только тот, кто добавил запись'}
             style={{
               fontSize: 11, padding: '2px 7px', borderRadius: 8,
               background: paid ? 'rgba(63,185,80,.15)' : 'rgba(255,255,255,.05)',
@@ -273,16 +273,18 @@ function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }) {
               border: `1px solid ${paid ? 'rgba(63,185,80,.35)' : 'var(--border)'}`,
               cursor: isOwner ? 'pointer' : 'default',
               userSelect: 'none',
+              opacity: isOwner ? 1 : 0.75,
             }}
           >{paid ? '✓ ' : ''}{f}</span>
         );
       })}
+      {!isOwner && <span style={{ fontSize: 11, marginLeft: 2 }}>🔒</span>}
     </div>
   );
 }
 
 // ─── Строка участника ─────────────────────────────────────────────────
-function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUserId }) {
+function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUserId, canManageLegacy }) {
   const [soldInput, setSoldInput]     = useState(p.sold_for != null ? String(p.sold_for) : '');
   const [soldFocused, setSoldFocused] = useState(false);
   const [showFinders, setShowFinders] = useState(false);
@@ -291,8 +293,8 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
   const finders = Array.isArray(p.finders) ? p.finders : [];
   const paidOut = Array.isArray(p.paid_out) ? p.paid_out : [];
   // Редактировать «Участники» и «Выплачено» может только тот, кто добавил строку.
-  // Если created_by не задан (старая запись) — не ограничиваем.
-  const isOwner = p.created_by == null || p.created_by === currentUserId;
+  // Если created_by не задан (старая запись) — доступ только у лидера/зама клана.
+  const isOwner = p.created_by != null ? p.created_by === currentUserId : canManageLegacy;
 
   const dt = new Date(p.added_at);
   const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -546,6 +548,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
                     onUpdate={handleUpdate} onDelete={handleDelete}
                     members={members} canDelete={canDelete}
                     currentUserId={user && user.id}
+                    canManageLegacy={canDelete}
                   />
                 ))
               )}
