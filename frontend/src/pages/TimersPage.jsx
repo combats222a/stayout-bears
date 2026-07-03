@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../utils/api';
+import { playTimerDoneSound } from '../utils/sound';
 
 function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
 
@@ -21,12 +22,6 @@ function getRemaining(timer) {
   return remaining;
 }
 
-function getElapsed(timer) {
-  if (!timer.last_reset_at) return null;
-  const resetMs = new Date(timer.last_reset_at).getTime();
-  return (Date.now() - resetMs) / 1000;
-}
-
 function getForecast(timer) {
   if (!timer.last_reset_at) return null;
   const resetMs = new Date(timer.last_reset_at).getTime();
@@ -34,8 +29,83 @@ function getForecast(timer) {
   return new Date(expireMs);
 }
 
-function TimerRow({ timer, onReset, onClear, onDelete }) {
+// Инпут периода: клик/фокус выделяет значение целиком,
+// чтобы ввод любой цифры сразу заменял стоящий там 0
+function PeriodNumberInput({ value, onChange, max, className = 'input timer-period-num' }) {
+  return (
+    <input
+      className={className}
+      type="number"
+      min="0"
+      max={max}
+      value={value}
+      onFocus={e => e.target.select()}
+      onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0))}
+    />
+  );
+}
+
+// ── Модалка редактирования таймера (название + период) ─────────────────────
+function EditTimerModal({ timer, onCommit, onClose }) {
+  const [name, setName] = useState(timer.name);
+  const [days, setDays] = useState(Math.floor(timer.period_seconds / 86400));
+  const [hours, setHours] = useState(Math.floor((timer.period_seconds % 86400) / 3600));
+  const [minutes, setMinutes] = useState(Math.floor((timer.period_seconds % 3600) / 60));
+  const [error, setError] = useState('');
+
+  function handleSubmit() {
+    if (!name.trim()) { setError('Введите название таймера'); return; }
+    const totalSeconds = days * 86400 + hours * 3600 + minutes * 60;
+    if (totalSeconds < 60) { setError('Период должен быть не менее 1 минуты'); return; }
+    onCommit({ name: name.trim(), period_seconds: totalSeconds });
+    onClose();
+  }
+
+  function onKey(e) {
+    if (e.key === 'Enter') handleSubmit();
+    if (e.key === 'Escape') onClose();
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+        <div className="modal-title">✎ Изменить таймер</div>
+        <div className="modal-body">
+          <label className="modal-label">Название таймера</label>
+          <input
+            className="input"
+            value={name}
+            onChange={e => { setName(e.target.value); setError(''); }}
+            onKeyDown={onKey}
+            autoFocus
+          />
+          <label className="modal-label" style={{ marginTop: 8 }}>Период таймера</label>
+          <div className="timer-period-inputs">
+            <PeriodNumberInput value={days} onChange={setDays} />
+            <span className="timer-period-unit">д</span>
+            <PeriodNumberInput value={hours} onChange={setHours} max={23} />
+            <span className="timer-period-unit">ч</span>
+            <PeriodNumberInput value={minutes} onChange={setMinutes} max={59} />
+            <span className="timer-period-unit">м</span>
+          </div>
+          {error && <div className="modal-error">{error}</div>}
+        </div>
+        <div className="modal-footer">
+          <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
+          <button className="modal-btn-ok" onClick={handleSubmit}>Сохранить</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TimerRow({
+  timer, index, onReset, onEdit, onDelete, onToggleSound,
+  dragState, onDragStart, onDragOver, onDrop, onDragEnd,
+}) {
   const [, setTick] = useState(0);
+  const [showEdit, setShowEdit] = useState(false);
+  const wasExpiredRef = useRef(false);
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 1000);
@@ -43,20 +113,40 @@ function TimerRow({ timer, onReset, onClear, onDelete }) {
   }, []);
 
   const remaining = getRemaining(timer);
-  const elapsed = getElapsed(timer);
   const forecast = getForecast(timer);
   const isExpired = remaining !== null && remaining <= 0;
   const isEmpty = remaining === null;
+
+  // Проигрываем сигнал ровно один раз в момент истечения таймера, если звук включён
+  useEffect(() => {
+    if (isExpired && !wasExpiredRef.current) {
+      if (timer.sound_enabled) playTimerDoneSound();
+    }
+    wasExpiredRef.current = isExpired;
+  }, [isExpired, timer.sound_enabled]);
 
   const progressPct = remaining !== null
     ? Math.min(100, Math.max(0, (remaining / timer.period_seconds) * 100))
     : 0;
 
+  const isDragging = dragState?.draggedIndex === index;
+  const isDragOver = dragState?.overIndex === index && dragState?.draggedIndex !== index;
+
   return (
     <>
       {/* Desktop row */}
-      <div className="timer-row timer-row-desktop">
-        <div className="timer-row-drag">≡</div>
+      <div
+        className={`timer-row timer-row-desktop ${isDragging ? 'timer-row-dragging' : ''} ${isDragOver ? 'timer-row-dragover' : ''}`}
+        onDragOver={e => onDragOver(e, index)}
+        onDrop={e => onDrop(e, index)}
+      >
+        <div
+          className="timer-row-drag"
+          draggable
+          onDragStart={e => onDragStart(e, index)}
+          onDragEnd={onDragEnd}
+          title="Перетащи чтобы изменить порядок"
+        >≡</div>
         <div className="timer-row-name">{timer.name}</div>
         <div className="timer-row-period">{formatDuration(timer.period_seconds)}</div>
         <div className={`timer-row-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
@@ -67,17 +157,21 @@ function TimerRow({ timer, onReset, onClear, onDelete }) {
             </div>
           )}
         </div>
-        <div className="timer-row-elapsed">
-          {isEmpty ? '-- : -- : --' : formatDuration(elapsed > 0 ? elapsed : 0)}
-        </div>
         <div className="timer-row-forecast">
           {isEmpty ? '-- : -- : --' : isExpired ? 'Уже!' :
             forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
         <div className="timer-row-actions">
-          <button className="btn btn-sm btn-primary" onClick={() => onReset(timer.id)}>Обновить</button>
-          <button className="btn btn-sm btn-orange" onClick={() => onClear(timer.id)}>Очистить</button>
-          <button className="btn btn-sm btn-danger" onClick={() => onDelete(timer.id)}>Удалить</button>
+          <button className="btn btn-sm btn-primary btn-anim" onClick={() => onReset(timer.id)}>Обновить</button>
+          <button className="btn btn-sm btn-orange btn-anim" onClick={() => setShowEdit(true)}>Изменить</button>
+          <button className="btn btn-sm btn-danger btn-anim" onClick={() => onDelete(timer.id)}>Удалить</button>
+          <button
+            className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
+            onClick={() => onToggleSound(timer)}
+            title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
+          >
+            {timer.sound_enabled ? '🔊' : '🔇'}
+          </button>
         </div>
       </div>
 
@@ -96,15 +190,29 @@ function TimerRow({ timer, onReset, onClear, onDelete }) {
           </div>
         )}
         <div className="timer-card-meta">
-          <span>⏱ Прошло: {isEmpty ? '--' : formatDuration(elapsed > 0 ? elapsed : 0)}</span>
           <span>🎯 В {isEmpty ? '--' : isExpired ? 'Уже!' : forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         <div className="timer-card-actions">
-          <button className="btn btn-sm btn-primary" onClick={() => onReset(timer.id)}>Обновить</button>
-          <button className="btn btn-sm btn-orange" onClick={() => onClear(timer.id)}>Очистить</button>
-          <button className="btn btn-sm btn-danger" onClick={() => onDelete(timer.id)}>Удалить</button>
+          <button className="btn btn-sm btn-primary btn-anim" onClick={() => onReset(timer.id)}>Обновить</button>
+          <button className="btn btn-sm btn-orange btn-anim" onClick={() => setShowEdit(true)}>Изменить</button>
+          <button className="btn btn-sm btn-danger btn-anim" onClick={() => onDelete(timer.id)}>Удалить</button>
+          <button
+            className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
+            onClick={() => onToggleSound(timer)}
+            title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
+          >
+            {timer.sound_enabled ? '🔊' : '🔇'}
+          </button>
         </div>
       </div>
+
+      {showEdit && (
+        <EditTimerModal
+          timer={timer}
+          onCommit={changes => onEdit(timer.id, changes)}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
     </>
   );
 }
@@ -117,9 +225,12 @@ export default function TimersPage({ user }) {
   // Форма создания
   const [name, setName] = useState('');
   const [days, setDays] = useState(0);
-  const [hours, setHours] = useState(1);
+  const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [creating, setCreating] = useState(false);
+
+  // Drag & drop state
+  const [dragState, setDragState] = useState({ draggedIndex: null, overIndex: null });
 
   const load = useCallback(async () => {
     try {
@@ -151,7 +262,7 @@ export default function TimersPage({ user }) {
       setTimers(prev => [...prev, data.timer]);
       setName('');
       setDays(0);
-      setHours(1);
+      setHours(0);
       setMinutes(0);
     } catch (e) {
       setError(e.message);
@@ -167,10 +278,17 @@ export default function TimersPage({ user }) {
     } catch (e) { setError(e.message); }
   }
 
-  async function handleClear(id) {
+  async function handleEdit(id, changes) {
     try {
-      const data = await api.post(`/timers/${id}/clear`);
+      const data = await api.patch(`/timers/${id}`, changes);
       setTimers(prev => prev.map(t => t.id === id ? data.timer : t));
+    } catch (e) { setError(e.message); }
+  }
+
+  async function handleToggleSound(timer) {
+    try {
+      const data = await api.patch(`/timers/${timer.id}`, { sound_enabled: !timer.sound_enabled });
+      setTimers(prev => prev.map(t => t.id === timer.id ? data.timer : t));
     } catch (e) { setError(e.message); }
   }
 
@@ -179,6 +297,33 @@ export default function TimersPage({ user }) {
       await api.delete(`/timers/${id}`);
       setTimers(prev => prev.filter(t => t.id !== id));
     } catch (e) { setError(e.message); }
+  }
+
+  // ── Drag & drop reorder ──
+  function handleDragStart(e, index) {
+    setDragState({ draggedIndex: index, overIndex: index });
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function handleDragOver(e, index) {
+    e.preventDefault();
+    setDragState(prev => prev.draggedIndex === null ? prev : { ...prev, overIndex: index });
+  }
+  async function handleDrop(e, index) {
+    e.preventDefault();
+    const from = dragState.draggedIndex;
+    if (from === null || from === index) { setDragState({ draggedIndex: null, overIndex: null }); return; }
+    const next = [...timers];
+    const [moved] = next.splice(from, 1);
+    next.splice(index, 0, moved);
+    setTimers(next);
+    setDragState({ draggedIndex: null, overIndex: null });
+    try {
+      const data = await api.post('/timers/reorder', { order: next.map(t => t.id) });
+      if (data?.timers) setTimers(data.timers);
+    } catch (e) { setError(e.message); }
+  }
+  function handleDragEnd() {
+    setDragState({ draggedIndex: null, overIndex: null });
   }
 
   if (loading) return <div className="page"><div className="text-muted">Загрузка...</div></div>;
@@ -206,19 +351,25 @@ export default function TimersPage({ user }) {
               <div className="timer-row-name">Название таймера</div>
               <div className="timer-row-period">Период</div>
               <div className="timer-row-remaining">Оставшееся время</div>
-              <div className="timer-row-elapsed">Прошло времени</div>
               <div className="timer-row-forecast">Прогноз</div>
               <div className="timer-row-actions">Действия</div>
             </div>
           </div>
           <div className="timers-tbody">
-            {timers.map(t => (
+            {timers.map((t, i) => (
               <TimerRow
                 key={t.id}
+                index={i}
                 timer={t}
                 onReset={handleReset}
-                onClear={handleClear}
+                onEdit={handleEdit}
                 onDelete={handleDelete}
+                onToggleSound={handleToggleSound}
+                dragState={dragState}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
               />
             ))}
           </div>
@@ -242,36 +393,16 @@ export default function TimersPage({ user }) {
           <div className="timer-create-field timer-period-field">
             <label className="timer-field-label">Период таймера</label>
             <div className="timer-period-inputs">
-              <input
-                className="input timer-period-num"
-                type="number"
-                min="0"
-                value={days}
-                onChange={e => setDays(Math.max(0, parseInt(e.target.value) || 0))}
-              />
+              <PeriodNumberInput value={days} onChange={setDays} />
               <span className="timer-period-unit">д</span>
-              <input
-                className="input timer-period-num"
-                type="number"
-                min="0"
-                max="23"
-                value={hours}
-                onChange={e => setHours(Math.max(0, parseInt(e.target.value) || 0))}
-              />
+              <PeriodNumberInput value={hours} onChange={setHours} max={23} />
               <span className="timer-period-unit">ч</span>
-              <input
-                className="input timer-period-num"
-                type="number"
-                min="0"
-                max="59"
-                value={minutes}
-                onChange={e => setMinutes(Math.max(0, parseInt(e.target.value) || 0))}
-              />
+              <PeriodNumberInput value={minutes} onChange={setMinutes} max={59} />
               <span className="timer-period-unit">м</span>
             </div>
           </div>
           <button
-            className="btn btn-primary timer-create-btn"
+            className="btn btn-primary timer-create-btn btn-anim"
             onClick={handleCreate}
             disabled={creating}
             style={{ width: '100%' }}

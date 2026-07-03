@@ -127,6 +127,27 @@ async function initSchema() {
     DO $$ BEGIN
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
+        WHERE table_name='user_timers' AND column_name='sort_order'
+      ) THEN
+        ALTER TABLE user_timers ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+        -- Заполняем существующие таймеры порядком по created_at
+        UPDATE user_timers SET sort_order = sub.rn FROM (
+          SELECT id, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at ASC) AS rn
+          FROM user_timers
+        ) sub WHERE user_timers.id = sub.id;
+      END IF;
+    END $$;
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='user_timers' AND column_name='sound_enabled'
+      ) THEN
+        ALTER TABLE user_timers ADD COLUMN sound_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+      END IF;
+    END $$;
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
         WHERE table_name='users' AND column_name='game_nick'
       ) THEN
         ALTER TABLE users ADD COLUMN game_nick VARCHAR(32) NOT NULL DEFAULT '';

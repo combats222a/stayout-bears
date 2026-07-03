@@ -6,35 +6,30 @@ import {
   parseLocalTimeInput, killedAtFromSpawnAt
 } from '../utils/bears';
 import { playSpawnSound } from '../utils/sound';
+import { isBearsSoundEnabled, setBearsSoundEnabled } from '../utils/soundPrefs';
+import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 
 const WARN_BEFORE_SPAWN_MS = 5 * 60 * 1000;
 
 // ── Modal for entering kill time ─────────────────────────────────────────────
 function KillTimeModal({ bearName, onCommit, onClose }) {
-  const [value, setValue] = useState('');
-  const [error, setError]  = useState('');
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    // Pre-fill with current local time
+  const [digits, setDigits] = useState(() => {
+    // Pre-fill with current local time (только цифры)
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     const ss = String(now.getSeconds()).padStart(2, '0');
-    setValue(`${hh}:${mm}:${ss}`);
-    setTimeout(() => inputRef.current?.select(), 0);
-  }, []);
+    return `${hh}${mm}${ss}`;
+  });
+  const [error, setError] = useState('');
 
   function handleSubmit() {
-    const iso = parseLocalTimeInput(value);
-    if (!iso) { setError('Введи время в формате ЧЧ:ММ или ЧЧ:ММ:СС'); return; }
+    if (!digits) { setError('Введи время — просто цифры, например 093500'); return; }
+    const timeStr = digitsToTimeStr(digits, 3);
+    const iso = parseLocalTimeInput(timeStr);
+    if (!iso) { setError('Неверное время'); return; }
     onCommit(iso);
     onClose();
-  }
-
-  function onKey(e) {
-    if (e.key === 'Enter') handleSubmit();
-    if (e.key === 'Escape') onClose();
   }
 
   return (
@@ -42,18 +37,17 @@ function KillTimeModal({ bearName, onCommit, onClose }) {
       <div className="modal-box" onClick={e => e.stopPropagation()}>
         <div className="modal-title">⏱ Время смерти — <span className="modal-bear-name">{bearName}</span></div>
         <div className="modal-body">
-          <label className="modal-label">Введи время когда убили медведя</label>
-          <input
-            ref={inputRef}
-            className="modal-input"
-            value={value}
-            onChange={e => { setValue(e.target.value); setError(''); }}
-            onKeyDown={onKey}
+          <label className="modal-label">Введи время когда убили медведя (только цифры)</label>
+          <MaskedTimeInput
+            segments={3}
+            value={digits}
+            onChange={d => { setDigits(d); setError(''); }}
+            onEnter={handleSubmit}
             placeholder="09:35:00"
-            autoComplete="off"
+            autoFocus
           />
           {error && <div className="modal-error">{error}</div>}
-          <div className="modal-hint">Формат: ЧЧ:ММ или ЧЧ:ММ:СС · Время твоего часового пояса</div>
+          <div className="modal-hint">Просто вводи цифры — двоеточия расставятся сами · Время твоего часового пояса</div>
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
@@ -83,7 +77,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
       setElap(formatElapsed(bear.killed_at));
       if (bear.spawn_at && left > 0 && left <= WARN_BEFORE_SPAWN_MS && !warnedRef.current) {
         warnedRef.current = true;
-        playSpawnSound();
+        if (isBearsSoundEnabled()) playSpawnSound();
       }
     }, 500);
     return () => clearInterval(id);
@@ -225,7 +219,14 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function BearsPage({ bears, clan, onBearChange }) {
   const [error, setError] = useState('');
+  const [soundOn, setSoundOn] = useState(() => isBearsSoundEnabled());
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  function toggleSound() {
+    const next = !soundOn;
+    setSoundOn(next);
+    setBearsSoundEnabled(next);
+  }
 
   const mergedBears = BEARS_LIST.map(meta => {
     const found = bears.find(b => b.bear_index === meta.index);
@@ -277,6 +278,13 @@ export default function BearsPage({ bears, clan, onBearChange }) {
         <div className="stat-pills">
           {active > 0 && <span className="pill pill-blue">⏱ {active} таймер{active > 1 ? 'а' : ''}</span>}
           {ready  > 0 && <span className="pill pill-green">⚡ {ready} спавн!</span>}
+          <button
+            className={`rupor-btn ${soundOn ? 'rupor-on' : 'rupor-off'}`}
+            onClick={toggleSound}
+            title={soundOn ? 'Звук включён — нажми чтобы выключить' : 'Звук выключен — нажми чтобы включить'}
+          >
+            {soundOn ? '🔊' : '🔇'}
+          </button>
         </div>
       </div>
       {error && <div className="error-msg">{error}</div>}

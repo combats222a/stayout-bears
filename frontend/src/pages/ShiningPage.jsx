@@ -6,30 +6,23 @@ import {
   GAME_MINUTE_MS,
 } from '../utils/shining';
 import { playShiningWarningSound } from '../utils/sound';
+import { isShiningSoundEnabled, setShiningSoundEnabled } from '../utils/soundPrefs';
+import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import { api } from '../utils/api';
 
 // ─── Модалка ввода якорей Z и X ──────────────────────────────────
 function SetGameTimeModal({ onCommit, onClose }) {
-  const [timeVal, setTimeVal] = useState('');
-  const [error,   setError]   = useState('');
-  const inputRef = useRef(null);
-
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
+  const [digits, setDigits] = useState('');
+  const [error,  setError]  = useState('');
 
   function handleSubmit() {
-    if (!timeVal.trim()) { setError('Введи игровое время'); return; }
-    const parts = timeVal.trim().split(':').map(Number);
-    if (parts.length < 2 || parts.some(isNaN)) { setError('Неверный формат. Пример: 01:13'); return; }
-    const [gh, gm] = parts;
+    if (!digits) { setError('Введи игровое время — просто цифры, например 0113'); return; }
+    const timeStr = digitsToTimeStr(digits, 2);
+    const [gh, gm] = timeStr.split(':').map(Number);
     if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError('Неверное время'); return; }
     const anchorRealMs = Date.now();
-    onCommit({ gameTimeStr: timeVal, locationId: DEFAULT_LOCATION_ID, anchorRealMs });
+    onCommit({ gameTimeStr: timeStr, locationId: DEFAULT_LOCATION_ID, anchorRealMs });
     onClose();
-  }
-
-  function onKey(e) {
-    if (e.key === 'Enter') handleSubmit();
-    if (e.key === 'Escape') onClose();
   }
 
   return (
@@ -39,19 +32,18 @@ function SetGameTimeModal({ onCommit, onClose }) {
         <div className="modal-body" style={{ gap: 18 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label className="modal-label">
-              Якорь Z — игровое время которое ты видишь прямо сейчас в игре
+              Якорь Z — игровое время которое ты видишь прямо сейчас в игре (только цифры)
             </label>
-            <input
-              ref={inputRef}
-              className="modal-input"
-              value={timeVal}
-              onChange={e => { setTimeVal(e.target.value); setError(''); }}
-              onKeyDown={onKey}
+            <MaskedTimeInput
+              segments={2}
+              value={digits}
+              onChange={d => { setDigits(d); setError(''); }}
+              onEnter={handleSubmit}
               placeholder="01:13"
-              autoComplete="off"
+              autoFocus
             />
             <div className="modal-hint">
-              Любое текущее игровое время · Формат ЧЧ:ММ
+              Просто вводи цифры — двоеточие появится само · Любое текущее игровое время
             </div>
           </div>
 
@@ -229,13 +221,20 @@ function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anc
 export default function ShiningPage({ clan, shiningData, onShiningChange }) {
   const [showModal, setShowModal] = useState(false);
   const [now, setNow]             = useState(() => Date.now());
+  const [soundOn, setSoundOn]     = useState(() => isShiningSoundEnabled());
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(id);
   }, []);
 
-  function handleWarn() { playShiningWarningSound(); }
+  function toggleSound() {
+    const next = !soundOn;
+    setSoundOn(next);
+    setShiningSoundEnabled(next);
+  }
+
+  function handleWarn() { if (isShiningSoundEnabled()) playShiningWarningSound(); }
 
   async function handleCommit({ gameTimeStr, locationId, anchorRealMs }) {
     const data = {
@@ -298,6 +297,13 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
               {statusPill.text}
             </span>
           )}
+          <button
+            className={`rupor-btn ${soundOn ? 'rupor-on' : 'rupor-off'}`}
+            onClick={toggleSound}
+            title={soundOn ? 'Звук включён — нажми чтобы выключить' : 'Звук выключен — нажми чтобы включить'}
+          >
+            {soundOn ? '🔊' : '🔇'}
+          </button>
         </div>
       </div>
 

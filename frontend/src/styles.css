@@ -740,14 +740,17 @@ body {
 
 .timer-row {
   display: grid;
-  grid-template-columns: 32px 1fr 90px 160px 160px 100px 260px;
+  grid-template-columns: 32px 1fr 100px 180px 150px 300px;
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 15px;
+  transition: background 0.15s, opacity 0.15s;
 }
 .timer-row:last-child { border-bottom: none; }
+.timer-row-dragging { opacity: 0.35; }
+.timer-row-dragover { background: rgba(88,166,255,0.08); }
 
 .timer-row-header {
   background: var(--accent2);
@@ -764,10 +767,40 @@ body {
 
 .timer-row-drag {
   color: var(--text3);
-  font-size: 16px;
+  font-size: 18px;
   cursor: grab;
   user-select: none;
+  transition: color 0.15s;
 }
+.timer-row-drag:hover { color: var(--accent); }
+.timer-row-drag:active { cursor: grabbing; }
+
+/* === RUPOR (звук) кнопки === */
+.rupor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  cursor: pointer;
+  font-size: 15px;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+.rupor-btn:hover { transform: scale(1.1); }
+.rupor-btn:active { transform: scale(0.92); }
+.rupor-btn.rupor-on {
+  background: rgba(63,185,80,0.15);
+  border-color: var(--green);
+}
+.rupor-btn.rupor-off {
+  background: var(--bg3);
+  border-color: var(--border);
+  opacity: 0.6;
+}
+.rupor-btn-sm { width: 28px; height: 28px; font-size: 13px; flex-shrink: 0; }
 
 .timer-row-name {
   font-family: var(--font-body);
@@ -810,11 +843,6 @@ body {
   transition: width 1s linear;
 }
 
-.timer-row-elapsed {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  color: var(--green);
-}
 .timer-row-forecast {
   font-family: var(--font-mono);
   font-size: 14px;
@@ -825,6 +853,20 @@ body {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+/* === Анимация кнопок действий (Обновить/Изменить/Удалить/Создать) === */
+.btn-anim {
+  transition: transform 0.12s ease, background 0.15s, box-shadow 0.15s;
+}
+.btn-anim:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+.btn-anim:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: none;
 }
 
 .btn-orange {
