@@ -746,11 +746,48 @@ body {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 15px;
-  transition: background 0.15s, opacity 0.15s;
+  position: relative;
+  transition: background 0.15s;
 }
 .timer-row:last-child { border-bottom: none; }
-.timer-row-dragging { opacity: 0.35; }
-.timer-row-dragover { background: rgba(88,166,255,0.08); }
+
+.timer-row-dragging {
+  opacity: 0.55;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  transform: scale(0.99);
+  transition: opacity 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.timer-row-dragover { background: rgba(88,166,255,0.06); }
+/* Линия-индикатор места, куда встанет перетаскиваемый таймер */
+.timer-row-dragover::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: -1px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(88,166,255,0.7);
+  transform-origin: center;
+  animation: timer-dragline-in 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes timer-dragline-in {
+  from { transform: scaleX(0.2); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+/* Мягкая подсветка строки сразу после того, как её "отпустили" на новом месте */
+.timer-row-dropped {
+  animation: timer-row-flash 700ms ease;
+}
+@keyframes timer-row-flash {
+  0% { background: rgba(88,166,255,0.22); }
+  100% { background: transparent; }
+}
 
 .timer-row-header {
   background: var(--accent2);
@@ -770,10 +807,10 @@ body {
   font-size: 18px;
   cursor: grab;
   user-select: none;
-  transition: color 0.15s;
+  transition: color 0.15s, transform 0.15s;
 }
-.timer-row-drag:hover { color: var(--accent); }
-.timer-row-drag:active { cursor: grabbing; }
+.timer-row-drag:hover { color: var(--accent); transform: scale(1.15); }
+.timer-row-drag:active { cursor: grabbing; transform: scale(1.05); }
 
 /* === RUPOR (звук) кнопки === */
 .rupor-btn {

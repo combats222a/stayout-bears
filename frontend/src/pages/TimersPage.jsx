@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { api } from '../utils/api';
 import { playTimerDoneSound } from '../utils/sound';
 
@@ -102,6 +102,7 @@ function EditTimerModal({ timer, onCommit, onClose }) {
 function TimerRow({
   timer, index, onReset, onEdit, onDelete, onToggleSound,
   dragState, onDragStart, onDragOver, onDrop, onDragEnd,
+  registerRowRef, justDroppedId,
 }) {
   const [, setTick] = useState(0);
   const [showEdit, setShowEdit] = useState(false);
@@ -136,7 +137,8 @@ function TimerRow({
     <>
       {/* Desktop row */}
       <div
-        className={`timer-row timer-row-desktop ${isDragging ? 'timer-row-dragging' : ''} ${isDragOver ? 'timer-row-dragover' : ''}`}
+        ref={el => registerRowRef(timer.id, el)}
+        className={`timer-row timer-row-desktop ${isDragging ? 'timer-row-dragging' : ''} ${isDragOver ? 'timer-row-dragover' : ''} ${justDroppedId === timer.id ? 'timer-row-dropped' : ''}`}
         onDragOver={e => onDragOver(e, index)}
         onDrop={e => onDrop(e, index)}
       >
@@ -231,6 +233,43 @@ export default function TimersPage({ user }) {
 
   // Drag & drop state
   const [dragState, setDragState] = useState({ draggedIndex: null, overIndex: null });
+  const [justDroppedId, setJustDroppedId] = useState(null);
+  const rowRefs = useRef({});
+  const prevRectsRef = useRef({});
+
+  function registerRowRef(id, el) {
+    if (el) rowRefs.current[id] = el;
+    else delete rowRefs.current[id];
+  }
+
+  // FLIP-анимация: при изменении порядка таймеров плавно "довозим" каждую
+  // строку из её предыдущей позиции в новую (с лёгким пружинным доездом)
+  useLayoutEffect(() => {
+    const newRects = {};
+    for (const t of timers) {
+      const el = rowRefs.current[t.id];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      newRects[t.id] = rect;
+      const prev = prevRectsRef.current[t.id];
+      if (prev) {
+        const deltaY = prev.top - rect.top;
+        if (Math.abs(deltaY) > 0.5) {
+          el.style.transition = 'none';
+          el.style.transform = `translateY(${deltaY}px)`;
+          // форсируем reflow, чтобы браузер применил стартовое положение
+          // eslint-disable-next-line no-unused-expressions
+          el.getBoundingClientRect();
+          requestAnimationFrame(() => {
+            el.style.transition = 'transform 320ms cubic-bezier(0.34, 1.2, 0.4, 1)';
+            el.style.transform = '';
+            el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true });
+          });
+        }
+      }
+    }
+    prevRectsRef.current = newRects;
+  }, [timers]);
 
   const load = useCallback(async () => {
     try {
@@ -317,6 +356,8 @@ export default function TimersPage({ user }) {
     next.splice(index, 0, moved);
     setTimers(next);
     setDragState({ draggedIndex: null, overIndex: null });
+    setJustDroppedId(moved.id);
+    setTimeout(() => setJustDroppedId(id => (id === moved.id ? null : id)), 700);
     try {
       const data = await api.post('/timers/reorder', { order: next.map(t => t.id) });
       if (data?.timers) setTimers(data.timers);
@@ -370,6 +411,8 @@ export default function TimersPage({ user }) {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
+                registerRowRef={registerRowRef}
+                justDroppedId={justDroppedId}
               />
             ))}
           </div>
