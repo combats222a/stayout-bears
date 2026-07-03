@@ -13,19 +13,12 @@ const WARN_BEFORE_SPAWN_MS = 5 * 60 * 1000;
 
 // ── Modal for entering kill time ─────────────────────────────────────────────
 function KillTimeModal({ bearName, onCommit, onClose }) {
-  const [digits, setDigits] = useState(() => {
-    // Pre-fill with current local time (только цифры)
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    return `${hh}${mm}${ss}`;
-  });
+  const [digits, setDigits] = useState('');
   const [error, setError] = useState('');
 
   function handleSubmit() {
-    if (!digits) { setError('Введи время — просто цифры, например 093500'); return; }
-    const timeStr = digitsToTimeStr(digits, 3);
+    if (!digits) { setError('Введи время — просто цифры, например 0935'); return; }
+    const timeStr = digitsToTimeStr(digits, 2);
     const iso = parseLocalTimeInput(timeStr);
     if (!iso) { setError('Неверное время'); return; }
     onCommit(iso);
@@ -39,15 +32,15 @@ function KillTimeModal({ bearName, onCommit, onClose }) {
         <div className="modal-body">
           <label className="modal-label">Введи время когда убили медведя (только цифры)</label>
           <MaskedTimeInput
-            segments={3}
+            segments={2}
             value={digits}
             onChange={d => { setDigits(d); setError(''); }}
             onEnter={handleSubmit}
-            placeholder="09:35:00"
+            placeholder="09:35"
             autoFocus
           />
           {error && <div className="modal-error">{error}</div>}
-          <div className="modal-hint">Просто вводи цифры — двоеточия расставятся сами · Время твоего часового пояса</div>
+          <div className="modal-hint">Просто вводи цифры — двоеточие появится само · Время твоего часового пояса</div>
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
