@@ -236,21 +236,40 @@ export default function TimersPage({ user }) {
   const [justDroppedId, setJustDroppedId] = useState(null);
   const rowRefs = useRef({});
   const prevRectsRef = useRef({});
+  const prevOrderRef = useRef(null);
 
   function registerRowRef(id, el) {
     if (el) rowRefs.current[id] = el;
     else delete rowRefs.current[id];
   }
 
-  // FLIP-анимация: при изменении порядка таймеров плавно "довозим" каждую
-  // строку из её предыдущей позиции в новую (с лёгким пружинным доездом)
+  // FLIP-анимация: при изменении ПОРЯДКА таймеров (drag&drop) плавно "довозим"
+  // каждую строку из её предыдущей позиции в новую (с лёгким пружинным доездом).
+  //
+  // Важно: раньше эффект запускался при ЛЮБОМ изменении массива timers (обновление
+  // таймера, редактирование, автообновление раз в 30 сек и т.п.), а getBoundingClientRect()
+  // возвращает координаты относительно окна просмотра — они меняются при скролле
+  // колесом мыши или при сворачивании/разворачивании блоков на странице. Из-за этого
+  // строки "прыгали" даже без реального изменения порядка. Теперь анимация и замер
+  // позиций выполняются только тогда, когда порядок id действительно изменился.
   useLayoutEffect(() => {
+    const order = timers.map(t => t.id).join(',');
+    const orderChanged = prevOrderRef.current !== null && prevOrderRef.current !== order;
+    prevOrderRef.current = order;
+
+    if (!orderChanged) return;
+
     const newRects = {};
     for (const t of timers) {
       const el = rowRefs.current[t.id];
       if (!el) continue;
-      const rect = el.getBoundingClientRect();
-      newRects[t.id] = rect;
+      newRects[t.id] = el.getBoundingClientRect();
+    }
+
+    for (const t of timers) {
+      const el = rowRefs.current[t.id];
+      if (!el) continue;
+      const rect = newRects[t.id];
       const prev = prevRectsRef.current[t.id];
       if (prev) {
         const deltaY = prev.top - rect.top;
