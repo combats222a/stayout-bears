@@ -63,6 +63,20 @@ router.patch('/:id', auth, async (req, res) => {
   if (period_seconds !== undefined) {
     if (!period_seconds || period_seconds < 60) return res.status(400).json({ error: 'Период минимум 1 минута' });
     sets.push(`period_seconds = $${i++}`); values.push(period_seconds);
+
+    // Если период реально меняется — сбрасываем точку отсчёта на "сейчас".
+    // Иначе оставшееся время считалось бы как (старый last_reset_at + новый
+    // период), из-за чего после изменения периода на, скажем, 3 дня, таймер
+    // показывал не полные 72 часа, а "72 часа минус время, прошедшее с
+    // прошлого сброса" — то есть заметно меньше и как будто "не то" время.
+    const { rows: currentRows } = await pool.query(
+      `SELECT period_seconds FROM user_timers WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    const currentPeriod = currentRows[0]?.period_seconds;
+    if (currentPeriod !== undefined && currentPeriod !== period_seconds) {
+      sets.push(`last_reset_at = NOW()`);
+    }
   }
   if (sound_enabled !== undefined) {
     sets.push(`sound_enabled = $${i++}`); values.push(!!sound_enabled);
