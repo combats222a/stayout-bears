@@ -8,6 +8,7 @@ import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import HeartsPage from './pages/HeartsPage';
 import TimersPage from './pages/TimersPage';
+import PromoPage from './pages/PromoPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 
@@ -177,6 +178,9 @@ export default function App() {
         )}
         {page === 'timers' && (
           <TimersPage user={user} />
+        )}
+        {page === 'promo' && (
+          <PromoPage />
         )}
         {page === 'admin' && user.is_superadmin && (
           <AdminPage />

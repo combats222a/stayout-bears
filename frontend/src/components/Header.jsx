@@ -9,6 +9,7 @@ export default function Header({ user, page, onNavigate, onLogout }) {
     { key: 'hearts',  label: '🫀 Лут рейда' },
     { key: 'timers',  label: '⏱️ Таймеры' },
     { key: 'clan',    label: '🏕️ Клан' },
+    { key: 'promo',   label: '🎁 Промо' },
     { key: 'profile', label: '👤 Профиль' },
     ...(user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : []),
   ];
