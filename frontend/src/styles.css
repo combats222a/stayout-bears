@@ -1341,6 +1341,9 @@ body {
 }
 .promo-enc-link:hover { border-color: var(--accent); color: var(--accent); background: var(--bg3); }
 
+.promo-seo-block { display: flex; flex-direction: column; gap: 10px; }
+.promo-seo-text { font-size: 13px; color: var(--text2); line-height: 1.7; }
+
 .promo-footer {
   text-align: center;
   color: var(--text3);

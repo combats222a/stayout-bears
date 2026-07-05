@@ -43,22 +43,10 @@ const STEPS = [
   },
 ];
 
-const ENCYCLOPEDIA_LINKS = [
-  { label: 'Задания', href: 'https://combats222a.github.io/stayoutcodex/ru/zadaniya/zadaniya.html' },
-  { label: 'События', href: 'https://combats222a.github.io/stayoutcodex/ru/sobytiya/sobytiya.html' },
-  { label: 'Локации', href: 'https://combats222a.github.io/stayoutcodex/ru/lokacii/lokacii.html' },
-  { label: 'Персонажи', href: 'https://combats222a.github.io/stayoutcodex/ru/personazhi/personazhi.html' },
-  { label: 'Группировки', href: 'https://combats222a.github.io/stayoutcodex/ru/gruppirovki/gruppirovki.html' },
-  { label: 'Оружие', href: 'https://combats222a.github.io/stayoutcodex/ru/oruzhie/oruzhie.html' },
-  { label: 'Боеприпасы', href: 'https://combats222a.github.io/stayoutcodex/ru/boepripasy/boepripasy.html' },
-  { label: 'Экипировка', href: 'https://combats222a.github.io/stayoutcodex/ru/ekipirovka/ekipirovka.html' },
-  { label: 'Предметы', href: 'https://combats222a.github.io/stayoutcodex/ru/predmety/predmety.html' },
-  { label: 'Артефакты', href: 'https://combats222a.github.io/stayoutcodex/ru/artefakty/artefakty.html' },
-  { label: 'Аномалии', href: 'https://combats222a.github.io/stayoutcodex/ru/anomalii/anomalii.html' },
-  { label: 'Противники', href: 'https://combats222a.github.io/stayoutcodex/ru/protivniki/protivniki.html' },
-  { label: 'Тайники', href: 'https://combats222a.github.io/stayoutcodex/ru/tayniki/tayniki.html' },
-  { label: 'Магазин', href: 'https://combats222a.github.io/stayoutcodex/ru/magazin/magazin.html' },
-  { label: 'Полезная информация', href: 'https://combats222a.github.io/stayoutcodex/ru/info/info.html' },
+const SEO_PARAGRAPHS = [
+  'Stay Out — это популярная многопользовательская онлайн-игра на выживание в духе постапокалипсиса, где игрокам предстоит исследовать заражённую Зону, добывать ресурсы, крафтить снаряжение и противостоять как аномалиям, так и другим выжившим. Именно поэтому промокоды Stay Out так ценятся среди игроков — они дают заметное преимущество на старте прохождения.',
+  'Наш промокод Stay Out можно активировать при создании нового персонажа и получить стартовый набор снаряжения для выживания в Зоне: броню, аптечки, еду, воду и боеприпасы, а также 7 дней премиум-подписки с ускоренным получением опыта и другими бонусами. Актуальные промокоды Stay Out 2026 регулярно обновляются, поэтому загляните на эту страницу ещё раз, если старый код перестал работать.',
+  'Помимо промокодов, наше сообщество Bear Tracker ведёт учёт кланового прогресса Stay Out: отслеживание белых медведей и таймеров их возрождения, расчёт времени выхода Горы Сияния, распределение лута рейдовых боссов между участниками клана. Всё это помогает игрокам Stay Out эффективнее планировать вылазки в Зону и не терять драгоценное время впустую.',
 ];
 
 export default function PromoPage() {
@@ -135,26 +123,16 @@ export default function PromoPage() {
         </div>
       </div>
 
-      {/* Энциклопедия */}
-      <div className="card">
-        <h2 className="promo-section-title">📚 Энциклопедия</h2>
-        <div className="promo-encyclopedia-grid">
-          {ENCYCLOPEDIA_LINKS.map(l => (
-            <a
-              className="promo-enc-link"
-              key={l.href}
-              href={l.href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {l.label}
-            </a>
-          ))}
-        </div>
+      {/* SEO-текст */}
+      <div className="card promo-seo-block">
+        <h2 className="promo-section-title">🎮 Stay Out — промокоды и выживание в Зоне</h2>
+        {SEO_PARAGRAPHS.map((p, i) => (
+          <p className="promo-seo-text" key={i}>{p}</p>
+        ))}
       </div>
 
       <div className="promo-footer">
-        STAY OUT // WIKI · Данный ресурс является неофициальным фан-сайтом.
+        Bear Tracker — сообщество игроков Stay Out · Данный ресурс является неофициальным фан-проектом.
       </div>
     </div>
   );
