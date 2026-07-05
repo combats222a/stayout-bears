@@ -248,7 +248,7 @@ function Counter({ value, onChange, color, disabled }) {
           fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontWeight: 600,
         }}>+</button>
-      {disabled && <span style={{ fontSize: 11, marginLeft: 1 }}>🔒</span>}
+      <span style={{ fontSize: 11, marginLeft: 1, width: 13, display: 'inline-block', textAlign: 'center', visibility: disabled ? 'visible' : 'hidden' }}>🔒</span>
     </div>
   );
 }
@@ -288,7 +288,7 @@ function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }) {
           >{paid ? '✓ ' : ''}{f}</span>
         );
       })}
-      {!isOwner && <span style={{ fontSize: 11, marginLeft: 2 }}>🔒</span>}
+      <span style={{ fontSize: 11, marginLeft: 2, width: 13, display: 'inline-block', textAlign: 'center', visibility: !isOwner ? 'visible' : 'hidden' }}>🔒</span>
     </div>
   );
 }
@@ -401,8 +401,9 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
               }}>{f}</span>
             ))
           }
-          {isOwner && <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text3)', paddingLeft: 4 }}>▼</span>}
-          {!isOwner && <span style={{ marginLeft: 'auto', fontSize: 11, paddingLeft: 4 }}>🔒</span>}
+          <span style={{ marginLeft: 'auto', fontSize: 11, paddingLeft: 4, width: 13, textAlign: 'center', display: 'inline-block' }}>
+            {isOwner ? <span style={{ fontSize: 9, color: 'var(--text3)' }}>▼</span> : '🔒'}
+          </span>
         </div>
         {showFinders && isOwner && (
           <FindersDropdown
@@ -445,7 +446,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
             }}
           />
           <span style={{ fontSize: 13, color: 'var(--text2)' }}>руб.</span>
-          {!isOwner && <span style={{ fontSize: 11 }}>🔒</span>}
+          <span style={{ fontSize: 11, width: 13, display: 'inline-block', textAlign: 'center', visibility: !isOwner ? 'visible' : 'hidden' }}>🔒</span>
         </div>
       </td>
 
