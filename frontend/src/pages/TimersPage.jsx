@@ -106,7 +106,14 @@ function TimerRow({
 }) {
   const [, setTick] = useState(0);
   const [showEdit, setShowEdit] = useState(false);
-  const wasExpiredRef = useRef(false);
+  // Как у медведей: реф стартует с РЕАЛЬНОГО текущего состояния таймера,
+  // а не с false — иначе при заходе на вкладку "Таймеры" уже истёкший
+  // таймер ложно пикнет сразу, вместо того чтобы играть звук строго
+  // в момент истечения.
+  const wasExpiredRef = useRef((() => {
+    const r = getRemaining(timer);
+    return r !== null && r <= 0;
+  })());
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 1000);
@@ -118,7 +125,17 @@ function TimerRow({
   const isExpired = remaining !== null && remaining <= 0;
   const isEmpty = remaining === null;
 
-  // Проигрываем сигнал ровно один раз в момент истечения таймера, если звук включён
+  // Ресинхронизация рефа когда таймер обновили ("Обновить") или изменили период —
+  // аналог эффекта на [bear] у медведей. Без этого после сброса уже истёкшего
+  // таймера следующее истечение могло бы не проиграть звук (или сыграть лишний раз).
+  useEffect(() => {
+    const r = getRemaining(timer);
+    wasExpiredRef.current = r !== null && r <= 0;
+  }, [timer.last_reset_at, timer.period_seconds]);
+
+  // Проигрываем сигнал ровно один раз в момент истечения таймера (переход false → true),
+  // если звук включён — по абсолютному времени, как у медведей, поэтому переживает
+  // фон/сворачивание вкладки.
   useEffect(() => {
     if (isExpired && !wasExpiredRef.current) {
       if (timer.sound_enabled) playTimerDoneSound();

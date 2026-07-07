@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   DEFAULT_LOCATION_ID, getLocation,
   getLiveGameTime, isShiningActive, formatRealTime, formatCountdown,
@@ -106,12 +106,22 @@ function computeShiningSlots(anchorGameTimeStr, anchorRealMs, nowMs) {
 // ─── Карточка одного сияния ───────────────────────────────────────
 function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anchorRealMs, onWarn }) {
   const [now, setNow] = useState(() => Date.now());
-  const burningRef    = useRef(false);
+  // Как у медведей: реф инициализируем РЕАЛЬНЫМ текущим состоянием,
+  // а не false — иначе при заходе на вкладку/пересоздании карточки
+  // звук может ложно сыграть сразу вместо того чтобы сыграть строго
+  // в момент перехода "не горит" → "горит".
+  const burningRef = useRef(Date.now() >= realStartMs && Date.now() < realEndMs);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(id);
   }, []);
+
+  // Ресинхронизация рефа если слот сдвинулся (якорь Z/X переустановили) —
+  // аналог эффекта на [bear] у медведей.
+  useEffect(() => {
+    burningRef.current = Date.now() >= realStartMs && Date.now() < realEndMs;
+  }, [realStartMs, realEndMs]);
 
   // Текущее живое игровое время (одинаковое для всех карточек)
   const liveGameTime = getLiveGameTime(anchorGameTimeStr, anchorRealMs, 0, now);
@@ -123,7 +133,9 @@ function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anc
   const msUntilEnd   = realEndMs - now;
   const isWarn = !burning && msUntilStart <= WARN_BEFORE_SHINING_MS && msUntilStart > 0;
 
-  // Звук при начале сияния
+  // Звук ровно в момент достижения игрового времени 00:00/06:00/12:00/18:00
+  // (переход false → true), точно так же как у медведей — по абсолютному
+  // времени, а не по "тику" интервала, поэтому переживает фон/сворачивание вкладки.
   useEffect(() => {
     if (burning && !burningRef.current) onWarn?.();
     burningRef.current = burning;
@@ -234,7 +246,9 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
     setShiningSoundEnabled(next);
   }
 
-  function handleWarn() { if (isShiningSoundEnabled()) playShiningWarningSound(); }
+  const handleWarn = useCallback(() => {
+    if (isShiningSoundEnabled()) playShiningWarningSound();
+  }, []);
 
   async function handleCommit({ gameTimeStr, locationId, anchorRealMs }) {
     const data = {
