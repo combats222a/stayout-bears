@@ -21,6 +21,7 @@ export default function App() {
   const [bears, setBears]     = useState([]);
   const [bans, setBans]       = useState([]);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
 
   // Shining data — общее для клана, хранится в памяти + синхронизируется через сокет
   const [shiningData, setShiningData] = useState(null);
@@ -28,13 +29,45 @@ export default function App() {
   // Колбэк для перезагрузки сердец (устанавливается из HeartsPage)
   const [heartsReloader, setHeartsReloader] = useState(null);
 
-  // Load user on mount
+  // Load user on mount. При холодном старте хостинга бэкенд может не успеть
+  // ответить вовремя — в этом случае токен НЕ трогаем и пробуем ещё раз,
+  // а не кидаем игрока обратно на экран логина.
   useEffect(() => {
     if (!token) { setLoading(false); return; }
-    api.get('/auth/me')
-      .then(({ user }) => { setUser(user); })
-      .catch(() => { localStorage.removeItem('token'); setToken(null); })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    async function loadUser(attempt = 1) {
+      try {
+        const { user } = await api.get('/auth/me');
+        if (cancelled) return;
+        setUser(user);
+        setConnectionError(false);
+        setLoading(false);
+      } catch (err) {
+        if (cancelled) return;
+        const isAuthFailure = err.status === 401 || err.status === 403;
+        if (isAuthFailure) {
+          // Токен реально невалиден/просрочен — только тогда разлогиниваем
+          localStorage.removeItem('token');
+          setToken(null);
+          setConnectionError(false);
+          setLoading(false);
+          return;
+        }
+        // Сеть/сервер ещё не готов (холодный старт хостинга и т.п.) — повторяем,
+        // не удаляя токен, чтобы не заставлять вводить логин/пароль заново
+        if (attempt < 5) {
+          setTimeout(() => loadUser(attempt + 1), 2000);
+        } else {
+          // Сервер так и не ответил — оставляем токен, показываем "повтори попытку"
+          setConnectionError(true);
+          setLoading(false);
+        }
+      }
+    }
+
+    loadUser();
+    return () => { cancelled = true; };
   }, [token]);
 
   // Load clan data (включая shining если бэкенд поддерживает)
@@ -135,11 +168,30 @@ export default function App() {
     setShiningData(data);
   }
 
+  function retryConnection() {
+    window.location.reload();
+  }
+
   if (loading) {
     return (
       <div className="splash">
         <div className="splash-icon">🐻‍❄️</div>
         <div className="splash-text">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (connectionError && token) {
+    return (
+      <div className="splash">
+        <div className="splash-icon">🐻‍❄️</div>
+        <div className="splash-text">Не удалось связаться с сервером</div>
+        <div className="splash-text" style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>
+          Сервер, вероятно, ещё запускается. Вход не потребуется — просто попробуй ещё раз.
+        </div>
+        <button className="modal-btn-ok" style={{ marginTop: 16 }} onClick={retryConnection}>
+          Повторить
+        </button>
       </div>
     );
   }
