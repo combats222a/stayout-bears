@@ -1355,3 +1355,57 @@ body {
   .promo-hero-title { font-size: 19px; }
   .promo-codes-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Публичный лендинг для гостей ─────────────────────────────── */
+.public-landing {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 0 20px;
+}
+.public-landing-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.public-landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--text);
+}
+.public-landing-logo { font-size: 20px; }
+.public-landing-name { font-size: 16px; }
+.public-landing-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 28px 20px 8px;
+}
+.public-landing-cta-text {
+  color: var(--text2);
+  font-size: 14px;
+  max-width: 480px;
+}
+
+/* ── Ссылка "назад" на экране входа ───────────────────────────── */
+.auth-back-link {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 0 8px;
+}
+.auth-back-link:hover { color: var(--accent); }
+

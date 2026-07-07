@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import AuthPage from './pages/AuthPage';
+import PublicLandingPage from './pages/PublicLandingPage';
 import BearsPage from './pages/BearsPage';
 import ShiningPage from './pages/ShiningPage';
 import ClanPage from './pages/ClanPage';
@@ -16,6 +17,7 @@ export default function App() {
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(() => localStorage.getItem('token'));
   const [page, setPage]       = useState('bears');
+  const [showAuth, setShowAuth] = useState(false);
   const [clan, setClan]       = useState(null);
   const [members, setMembers] = useState([]);
   const [bears, setBears]     = useState([]);
@@ -158,6 +160,7 @@ export default function App() {
     setBans([]);
     setShiningData(null);
     setPage('bears');
+    setShowAuth(false);
   }
 
   function onUserUpdate(updatedUser) { setUser(updatedUser); }
@@ -197,7 +200,9 @@ export default function App() {
   }
 
   if (!user) {
-    return <AuthPage onAuth={onAuth} />;
+    return showAuth
+      ? <AuthPage onAuth={onAuth} onBack={() => setShowAuth(false)} />
+      : <PublicLandingPage onLoginClick={() => setShowAuth(true)} />;
   }
 
   return (

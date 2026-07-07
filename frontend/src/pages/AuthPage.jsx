@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../utils/api';
 
-export default function AuthPage({ onAuth }) {
+export default function AuthPage({ onAuth, onBack }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [form, setForm] = useState({ game_nick: '', email: '', password: '' });
   const [error, setError] = useState('');
@@ -41,6 +41,11 @@ export default function AuthPage({ onAuth }) {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        {onBack && (
+          <button type="button" className="auth-back-link" onClick={onBack}>
+            ← На главную
+          </button>
+        )}
         <div className="auth-logo">🐻‍❄️</div>
         <h1 className="auth-title">Bear Tracker</h1>
         <p className="auth-sub">Stay Out · Новая Земля</p>
