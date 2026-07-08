@@ -6,10 +6,10 @@ export default function Header({ user, page, onNavigate, onLogout }) {
   const navItems = [
     { key: 'bears',   label: '🐻 Медведи' },
     { key: 'shining', label: '✨ Сияние' },
-    { key: 'hearts',  label: '🫀 Лут рейда' },
+    { key: 'hearts',  label: '🫀 Учёт лута' },
     { key: 'timers',  label: '⏱️ Таймеры' },
     { key: 'clan',    label: '🏕️ Клан' },
-    { key: 'promo',   label: '🎁 Промо' },
+    { key: 'promo',   label: '🎁 Промокод' },
     { key: 'profile', label: '👤 Профиль' },
     ...(user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : []),
   ];
