@@ -44,7 +44,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Где взять калькулятор уровней Stay Out?',
-    a: 'Отдельного калькулятора не требуется — таблица на этой странице уже выполняет его функцию: введите нужный уровень в поиск и сразу увидите, сколько всего опыта (EXP) для него нужно и сколько опыта нужно добрать сверх предыдущего уровня.',
+    a: 'Калькулятор находится прямо на этой странице, над таблицей: укажите начальный и конечный уровень (например, с 115 по 142) — и сразу увидите, сколько всего опыта нужно набрать персонажу, чтобы прокачаться между ними. А в самой таблице можно найти данные по каждому отдельному уровню через поиск.',
   },
 ];
 
@@ -102,8 +102,12 @@ function nf(n) {
 // standalone — рендерится как самостоятельная страница (со своей топбаром
 // и SEO-метатегами), иначе — как раздел внутри авторизованного приложения
 // (там уже есть общий Header).
+const MAX_LEVEL = TOTAL_EXP_BY_LEVEL.length - 1;
+
 export default function LevelPage({ standalone = false }) {
   const [search, setSearch] = useState('');
+  const [calcFrom, setCalcFrom] = useState('');
+  const [calcTo, setCalcTo] = useState('');
 
   const rows = useMemo(() => LEVELS, []);
   const filteredRows = useMemo(() => {
@@ -111,6 +115,25 @@ export default function LevelPage({ standalone = false }) {
     if (!q) return rows;
     return rows.filter(row => String(row.level) === q || String(row.level).startsWith(q));
   }, [search, rows]);
+
+  const calcResult = useMemo(() => {
+    if (calcFrom === '' || calcTo === '') return null;
+    const from = Number(calcFrom);
+    const to = Number(calcTo);
+    if (!Number.isInteger(from) || !Number.isInteger(to)) {
+      return { error: 'Введите целые числа' };
+    }
+    if (from < 0 || to < 0 || from > MAX_LEVEL || to > MAX_LEVEL) {
+      return { error: `Уровни должны быть от 0 до ${MAX_LEVEL}` };
+    }
+    if (from === to) {
+      return { error: 'Выберите два разных уровня' };
+    }
+    const lo = Math.min(from, to);
+    const hi = Math.max(from, to);
+    const exp = TOTAL_EXP_BY_LEVEL[hi] - TOTAL_EXP_BY_LEVEL[lo];
+    return { from: lo, to: hi, exp, reversed: from > to };
+  }, [calcFrom, calcTo]);
 
   useEffect(() => {
     if (!standalone) return;
@@ -165,6 +188,63 @@ export default function LevelPage({ standalone = false }) {
           сколько опыта нужно до следующего уровня и общий опыт для достижения любого уровня.
           Подходит для быстрого расчёта прокачки персонажа.
         </p>
+      </div>
+
+      <div className="card level-calc-card">
+        <h2 className="level-table-footnote-title level-calc-title">
+          Калькулятор опыта между уровнями
+        </h2>
+        <p className="level-calc-sub">
+          Укажите начальный и конечный уровень — калькулятор посчитает, сколько всего опыта (EXP)
+          нужно набрать персонажу, чтобы прокачаться с одного уровня до другого.
+        </p>
+        <div className="level-calc-row">
+          <label className="level-calc-field">
+            <span className="level-calc-label">С уровня</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max={MAX_LEVEL}
+              placeholder="115"
+              className="level-search-input level-calc-input"
+              value={calcFrom}
+              onChange={e => setCalcFrom(e.target.value)}
+            />
+          </label>
+          <span className="level-calc-arrow">→</span>
+          <label className="level-calc-field">
+            <span className="level-calc-label">До уровня</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max={MAX_LEVEL}
+              placeholder="142"
+              className="level-search-input level-calc-input"
+              value={calcTo}
+              onChange={e => setCalcTo(e.target.value)}
+            />
+          </label>
+        </div>
+
+        {calcResult && calcResult.error && (
+          <div className="level-calc-result level-calc-error">{calcResult.error}</div>
+        )}
+
+        {calcResult && !calcResult.error && (
+          <div className="level-calc-result">
+            <span className="level-calc-result-label">
+              Опыт с {calcResult.from} до {calcResult.to} уровня:
+            </span>
+            <span className="level-calc-result-value">{nf(calcResult.exp)} EXP</span>
+            {calcResult.reversed && (
+              <span className="level-calc-note">
+                (уровни переставлены местами — расчёт всегда идёт от меньшего к большему)
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="card level-table-card">
