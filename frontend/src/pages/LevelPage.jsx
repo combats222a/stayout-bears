@@ -29,16 +29,40 @@ const LEVELS = TOTAL_EXP_BY_LEVEL.map((total, i) => ({
   needed: i === 0 ? 0 : total - TOTAL_EXP_BY_LEVEL[i - 1],
 }));
 
-const LEVEL_JSON_LD = {
-  '@context': 'https://schema.org',
-  '@type': 'Table',
-  about: 'Опыт, необходимый для повышения уровня персонажа в Stay Out',
-};
+const LEVEL_JSON_LD = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Table',
+    about: 'Опыт, необходимый для повышения уровня персонажа в Stay Out',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Bear Tracker', item: 'https://stayout-bears.vercel.app/' },
+      { '@type': 'ListItem', position: 2, name: 'Уровень персонажа', item: 'https://stayout-bears.vercel.app/level' },
+    ],
+  },
+];
 
-const PAGE_TITLE = 'Уровень персонажа и опыт — таблица | Bear Tracker Stay Out';
+const PAGE_TITLE = 'Уровень персонажа и опыт — таблица 0–150 | Bear Tracker Stay Out';
 const PAGE_DESCRIPTION =
-  'Таблица уровней персонажа Stay Out: всего опыта и опыт, необходимый для перехода на следующий уровень — посчитано без Premium-заглушек.';
+  'Сколько опыта нужно для каждого уровня персонажа в Stay Out: полная таблица 0–150 без Premium-заглушек — с готовой разницей опыта между уровнями.';
 const PAGE_URL = 'https://stayout-bears.vercel.app/level';
+
+// Мета-теги, которые нужно подменить на время показа этой страницы
+// (страница живёт на том же index.html, что и остальные роуты, поэтому
+// по умолчанию там теги для главной — их нужно временно переопределить
+// и вернуть обратно при уходе со страницы).
+const META_OVERRIDES = [
+  { tag: 'meta', match: { name: 'description' }, contentAttr: 'content', value: PAGE_DESCRIPTION },
+  { tag: 'link', match: { rel: 'canonical' }, contentAttr: 'href', value: PAGE_URL },
+  { tag: 'meta', match: { property: 'og:title' }, contentAttr: 'content', value: PAGE_TITLE },
+  { tag: 'meta', match: { property: 'og:description' }, contentAttr: 'content', value: PAGE_DESCRIPTION },
+  { tag: 'meta', match: { property: 'og:url' }, contentAttr: 'content', value: PAGE_URL },
+  { tag: 'meta', match: { name: 'twitter:title' }, contentAttr: 'content', value: PAGE_TITLE },
+  { tag: 'meta', match: { name: 'twitter:description' }, contentAttr: 'content', value: PAGE_DESCRIPTION },
+];
 
 function nf(n) {
   return n.toLocaleString('ru-RU');
@@ -63,29 +87,40 @@ export default function LevelPage({ standalone = false }) {
     const prevTitle = document.title;
     document.title = PAGE_TITLE;
 
-    const setMeta = (selector, attr, value) => {
-      let el = document.head.querySelector(selector);
+    // Для каждого тега запоминаем: нашёлся ли он уже в <head> (тогда просто
+    // подменяем значение и возвращаем прежнее на выходе) или его пришлось
+    // создать с нуля (тогда на выходе просто удаляем).
+    const restoreFns = META_OVERRIDES.map(({ tag, match, contentAttr, value }) => {
+      const attrSelector = Object.entries(match).map(([k, v]) => `[${k}="${v}"]`).join('');
+      let el = document.head.querySelector(`${tag}${attrSelector}`);
+      const existed = !!el;
+      const prevValue = existed ? el.getAttribute(contentAttr) : null;
+
       if (!el) {
-        el = document.createElement(selector.startsWith('link') ? 'link' : 'meta');
-        if (selector.includes('name="description"')) el.setAttribute('name', 'description');
-        if (selector.includes('rel="canonical"')) el.setAttribute('rel', 'canonical');
+        el = document.createElement(tag);
+        Object.entries(match).forEach(([k, v]) => el.setAttribute(k, v));
         document.head.appendChild(el);
       }
-      el.setAttribute(attr, value);
-      return el;
-    };
+      el.setAttribute(contentAttr, value);
 
-    setMeta('meta[name="description"]', 'content', PAGE_DESCRIPTION);
-    setMeta('link[rel="canonical"]', 'href', PAGE_URL);
+      return () => {
+        if (existed) el.setAttribute(contentAttr, prevValue);
+        else el.remove();
+      };
+    });
 
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.text = JSON.stringify(LEVEL_JSON_LD);
-    document.head.appendChild(script);
+    const ldScripts = LEVEL_JSON_LD.map(obj => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.text = JSON.stringify(obj);
+      document.head.appendChild(script);
+      return script;
+    });
 
     return () => {
       document.title = prevTitle;
-      document.head.removeChild(script);
+      restoreFns.forEach(fn => fn());
+      ldScripts.forEach(s => document.head.removeChild(s));
     };
   }, [standalone]);
 
@@ -148,11 +183,24 @@ export default function LevelPage({ standalone = false }) {
         </div>
 
         <div className="level-table-footnote">
-          «Опыт для уровня» — это разница между «Всего опыта» текущего и предыдущего уровня
-          (сколько нужно набрать, чтобы перейти именно на этот уровень). Таблица содержит все уровни
-          персонажа в Stay Out — от 0 до 150.
+          <h2 className="level-table-footnote-title">Как считается «Опыт для уровня»</h2>
+          <p>
+            Официально на вики Stay Out эта колонка скрыта за подпиской Premium начиная со 2 уровня.
+            Но её легко посчитать самим: это разница между «Всего опыта» текущего и предыдущего уровня —
+            то есть именно то количество очков опыта, которое нужно набрать, чтобы перейти с уровня N&nbsp;−&nbsp;1
+            на уровень N. Таблица выше считает эту разницу автоматически для всех 151 уровня персонажа
+            (0–150), поэтому доплачивать за неё не нужно.
+          </p>
         </div>
       </div>
+
+      {standalone && (
+        <p className="level-page-seo-footer">
+          Bear Tracker — бесплатный трекер клана Stay Out: респауны белых медведей, расчёт Горы Сияния,
+          учёт лута рейдов и персональные таймеры. Раздел «Уровень персонажа» доступен без регистрации —
+          загляни также в <a href="/faq">FAQ</a>, если остались вопросы.
+        </p>
+      )}
     </div>
   );
 
