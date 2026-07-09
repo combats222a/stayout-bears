@@ -29,25 +29,56 @@ const LEVELS = TOTAL_EXP_BY_LEVEL.map((total, i) => ({
   needed: i === 0 ? 0 : total - TOTAL_EXP_BY_LEVEL[i - 1],
 }));
 
+const FAQ_ITEMS = [
+  {
+    q: 'Сколько опыта нужно для 20 уровня в Stay Out?',
+    a: 'Воспользуйтесь поиском по таблице выше — введите номер уровня в поле «Найти уровень…», и таблица сразу покажет строку с 20 уровнем: сколько всего опыта нужно накопить и сколько EXP требуется именно на этот уровень. Так же можно найти данные для любого уровня с 0 по 150, например для 30, 50 или 100.',
+  },
+  {
+    q: 'Как рассчитывается опыт для уровня?',
+    a: 'Столбец «Опыт для уровня» показывает разницу между общим (накопленным) опытом текущего уровня и общим опытом предыдущего уровня. Проще говоря — сколько EXP нужно набрать дополнительно, уже имея опыт предыдущего уровня, чтобы поднять уровень персонажа на один пункт.',
+  },
+  {
+    q: 'До какого уровня есть таблица опыта Stay Out?',
+    a: 'Таблица уровней и опыта содержит все значения с 0 по 150 уровень — это полный диапазон уровней персонажа в игре Stay Out на данный момент, без каких-либо ограничений или платных заглушек.',
+  },
+  {
+    q: 'Где взять калькулятор уровней Stay Out?',
+    a: 'Отдельного калькулятора не требуется — таблица на этой странице уже выполняет его функцию: введите нужный уровень в поиск и сразу увидите, сколько всего опыта (EXP) для него нужно и сколько опыта нужно добрать сверх предыдущего уровня.',
+  },
+];
+
 const LEVEL_JSON_LD = [
   {
     '@context': 'https://schema.org',
     '@type': 'Table',
-    about: 'Опыт, необходимый для повышения уровня персонажа в Stay Out',
+    about: 'Таблица опыта (EXP) и уровней персонажа Stay Out, уровни 0–150',
   },
   {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Bear Tracker', item: 'https://stayout-bears.vercel.app/' },
-      { '@type': 'ListItem', position: 2, name: 'Уровень персонажа', item: 'https://stayout-bears.vercel.app/level' },
+      { '@type': 'ListItem', position: 2, name: 'Таблица уровней и опыта', item: 'https://stayout-bears.vercel.app/level' },
     ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ_ITEMS.map(item => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a,
+      },
+    })),
   },
 ];
 
-const PAGE_TITLE = 'Уровень персонажа и опыт — таблица 0–150 | Bear Tracker Stay Out';
+const PAGE_TITLE = 'Таблица опыта и уровней Stay Out (0–150) — сколько опыта нужно';
 const PAGE_DESCRIPTION =
-  'Сколько опыта нужно для каждого уровня персонажа в Stay Out: полная таблица 0–150 без Premium-заглушек — с готовой разницей опыта между уровнями.';
+  'Таблица опыта и уровней Stay Out: сколько EXP нужно для каждого уровня персонажа с 0 по 150, сколько опыта до следующего уровня и общий опыт для любого уровня. Быстрый расчёт прокачки персонажа.';
 const PAGE_URL = 'https://stayout-bears.vercel.app/level';
 
 // Мета-теги, которые нужно подменить на время показа этой страницы
@@ -128,10 +159,11 @@ export default function LevelPage({ standalone = false }) {
     <div className="page level-page">
       <div className="promo-hero">
         <div className="promo-hero-icon">📈</div>
-        <h1 className="promo-hero-title">Уровень <span className="promo-accent">персонажа</span></h1>
+        <h1 className="promo-hero-title">Таблица опыта персонажа <span className="promo-accent">Stay Out</span></h1>
         <p className="promo-hero-sub">
-          Сколько опыта нужно набрать, чтобы поднять уровень персонажа в Stay Out — без Premium-заглушек,
-          сразу с посчитанной разницей между уровнями.
+          Здесь можно узнать, сколько опыта (EXP) требуется для каждого уровня персонажа с 0 по 150,
+          сколько опыта нужно до следующего уровня и общий опыт для достижения любого уровня.
+          Подходит для быстрого расчёта прокачки персонажа.
         </p>
       </div>
 
@@ -194,11 +226,22 @@ export default function LevelPage({ standalone = false }) {
         </div>
       </div>
 
+      <div className="card faq-list level-faq">
+        <h2 className="level-table-footnote-title">Частые вопросы об опыте и уровнях Stay Out</h2>
+        {FAQ_ITEMS.map(item => (
+          <div className="faq-item" key={item.q}>
+            <h3 className="faq-question">{item.q}</h3>
+            <p className="faq-answer">{item.a}</p>
+          </div>
+        ))}
+      </div>
+
       {standalone && (
         <p className="level-page-seo-footer">
-          Bear Tracker — бесплатный трекер клана Stay Out: респауны белых медведей, расчёт Горы Сияния,
-          учёт лута рейдов и персональные таймеры. Раздел «Уровень персонажа» доступен без регистрации —
-          загляни также в <a href="/faq">FAQ</a>, если остались вопросы.
+          Это была таблица уровней Stay Out с полным расчётом опыта (EXP) по каждому уровню — от подготовки
+          к 20-му уровню до прокачки персонажа на 150-й. Bear Tracker — ещё и бесплатный трекер клана Stay Out:
+          респауны белых медведей, расчёт Горы Сияния, учёт лута рейдов и персональные таймеры. Раздел с таблицей
+          опыта доступен без регистрации — загляни также в <a href="/faq">FAQ</a>, если остались вопросы.
         </p>
       )}
     </div>
