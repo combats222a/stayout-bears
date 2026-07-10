@@ -14,6 +14,7 @@ import PromoPage from './pages/PromoPage';
 import LevelPage from './pages/LevelPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
+import { useGlobalSoundWatcher } from './hooks/useGlobalSoundWatcher';
 
 // Разделы приложения и их адреса — каждый пункт меню Header теперь
 // соответствует отдельному пути в адресной строке.
@@ -136,6 +137,11 @@ export default function App() {
   }, [heartsReloader]);
 
   useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate, handleHeartsUpdate);
+
+  // Живёт на уровне App (не размонтируется при переключении вкладок) —
+  // поэтому звуки медведей/сияния/таймеров теперь играют независимо от того,
+  // какой раздел сайта сейчас открыт.
+  useGlobalSoundWatcher({ token, bears, shiningData });
 
   useEffect(() => {
     if (!token || !clan) return;

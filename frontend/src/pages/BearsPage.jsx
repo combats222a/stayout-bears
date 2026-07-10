@@ -3,13 +3,11 @@ import { api } from '../utils/api';
 import {
   BEARS_LIST, getBearMeta, getBearStatus,
   getTimeLeftMs, formatCountdown, formatClock, formatElapsed, getProgress,
-  parseLocalTimeInput, killedAtFromSpawnAt
+  parseLocalTimeInput, killedAtFromSpawnAt, WARN_BEFORE_SPAWN_MS
 } from '../utils/bears';
 import { playSpawnSound } from '../utils/sound';
 import { isBearsSoundEnabled, setBearsSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
-
-const WARN_BEFORE_SPAWN_MS = 5 * 60 * 1000;
 
 // ── Modal for entering kill time ─────────────────────────────────────────────
 function KillTimeModal({ bearName, onCommit, onClose }) {

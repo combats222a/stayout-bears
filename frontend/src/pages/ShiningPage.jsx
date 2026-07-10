@@ -3,7 +3,7 @@ import {
   DEFAULT_LOCATION_ID, getLocation,
   getLiveGameTime, isShiningActive, formatRealTime, formatCountdown,
   SHINING_INTERVAL_MS, SHINING_DURATION_MS, WARN_BEFORE_SHINING_MS,
-  GAME_MINUTE_MS,
+  computeShiningSlots,
 } from '../utils/shining';
 import { playShiningWarningSound } from '../utils/sound';
 import { isShiningSoundEnabled, setShiningSoundEnabled } from '../utils/soundPrefs';
@@ -56,51 +56,6 @@ function SetGameTimeModal({ onCommit, onClose }) {
       </div>
     </div>
   );
-}
-
-/**
- * Вычисляет 4 последовательных сияния начиная с текущего (или ближайшего).
- * Возвращает массив из 4 объектов:
- *   { realStartMs, realEndMs }
- *
- * Алгоритм:
- * 1. Текущее игровое время → в минутах
- * 2. Находим последний старт сияния (кратный 360 мин, <= текущих минут)
- * 3. realStart этого сияния = nowMs - (прошло игровых минут с последнего старта) * GAME_MINUTE_MS
- * 4. Если текущее сияние уже закончилось (прошло >= 60 игровых минут) → берём следующее
- * 5. Карточки 2-4 = карточка1.realStart + 1,2,3 * SHINING_INTERVAL_MS
- */
-function computeShiningSlots(anchorGameTimeStr, anchorRealMs, nowMs) {
-  const parts = (anchorGameTimeStr || '00:00').trim().split(':').map(Number);
-  const [gh = 0, gm = 0] = parts;
-  const Z_minutes = gh * 60 + gm;
-
-  // Текущие игровые минуты (без wrap, чтобы не терять направление)
-  const elapsedRealMs = nowMs - anchorRealMs;
-  const elapsedGameMinutes = elapsedRealMs / GAME_MINUTE_MS;
-  const totalGameMinutes = Z_minutes + elapsedGameMinutes;
-  const wrapped = ((totalGameMinutes % 1440) + 1440) % 1440;
-
-  // Последний старт сияния (ближайший кратный 360 мин, <= wrapped)
-  const lastShiningStartMin = Math.floor(wrapped / 360) * 360;
-  const minutesSinceLastStart = wrapped - lastShiningStartMin;
-
-  let slot0RealStart;
-  if (minutesSinceLastStart < 60) {
-    // Сияние сейчас активно — слот 0 = текущее сияние
-    slot0RealStart = nowMs - minutesSinceLastStart * GAME_MINUTE_MS;
-  } else {
-    // Сияние не активно — слот 0 = следующее сияние
-    const nextShiningStartMin = lastShiningStartMin + 360;
-    const minutesUntilNext = nextShiningStartMin - wrapped;
-    slot0RealStart = nowMs + minutesUntilNext * GAME_MINUTE_MS;
-  }
-
-  return Array.from({ length: 4 }, (_, i) => {
-    const realStartMs = slot0RealStart + i * SHINING_INTERVAL_MS;
-    const realEndMs = realStartMs + SHINING_DURATION_MS;
-    return { realStartMs, realEndMs };
-  });
 }
 
 // ─── Карточка одного сияния ───────────────────────────────────────
