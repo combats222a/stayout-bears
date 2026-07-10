@@ -9,6 +9,7 @@ import { playShiningWarningSound } from '../utils/sound';
 import { isShiningSoundEnabled, setShiningSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
+import GuestLock from '../components/GuestLock';
 import { SHINING_SPOILER } from '../content/spoilerContent';
 import { api } from '../utils/api';
 
@@ -187,7 +188,7 @@ function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anc
 }
 
 // ─── Основная страница ───────────────────────────────────────────
-export default function ShiningPage({ clan, shiningData, onShiningChange }) {
+export default function ShiningPage({ clan, shiningData, onShiningChange, isGuest, onLoginClick }) {
   const [showModal, setShowModal] = useState(false);
   const [now, setNow]             = useState(() => Date.now());
   const [soundOn, setSoundOn]     = useState(() => isShiningSoundEnabled());
@@ -249,7 +250,16 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
       <div className="page">
         <h2 className="page-title">✨ Гора Сияния</h2>
         <InfoSpoiler {...SHINING_SPOILER} storageKey="spoiler_shining" />
-        <div className="empty-state"><p>Вступи в клан чтобы отслеживать Сияния</p></div>
+        {isGuest ? (
+          <GuestLock
+            icon="✨"
+            title="Не пропускай Сияние на Горе"
+            text="Точный отсчёт до ближайшего цикла и звуковое уведомление доступны кланам Bear Tracker — зарегистрируйся, чтобы подключиться."
+            onLoginClick={onLoginClick}
+          />
+        ) : (
+          <div className="empty-state"><p>Вступи в клан чтобы отслеживать Сияния</p></div>
+        )}
       </div>
     );
   }

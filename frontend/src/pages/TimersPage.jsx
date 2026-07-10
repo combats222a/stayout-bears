@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react
 import { api } from '../utils/api';
 import { playTimerDoneSound } from '../utils/sound';
 import InfoSpoiler from '../components/InfoSpoiler';
+import GuestLock from '../components/GuestLock';
 import { TIMERS_SPOILER } from '../content/spoilerContent';
 
 function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
@@ -238,7 +239,7 @@ function TimerRow({
   );
 }
 
-export default function TimersPage({ user }) {
+export default function TimersPage({ user, onLoginClick }) {
   const [timers, setTimers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -310,6 +311,7 @@ export default function TimersPage({ user }) {
   }, [timers]);
 
   const load = useCallback(async () => {
+    if (!user) { setLoading(false); return; }
     try {
       const data = await api.get('/timers');
       setTimers(data.timers);
@@ -318,7 +320,7 @@ export default function TimersPage({ user }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -406,6 +408,21 @@ export default function TimersPage({ user }) {
   }
 
   if (loading) return <div className="page"><div className="text-muted">Загрузка...</div></div>;
+
+  if (!user) {
+    return (
+      <div className="page">
+        <div className="page-title">⏱️ Мои таймеры</div>
+        <InfoSpoiler {...TIMERS_SPOILER} storageKey="spoiler_timers" />
+        <GuestLock
+          icon="⏱"
+          title="Личные таймеры — только твои"
+          text="Таймеры видит и настраивает только их создатель. Зарегистрируйся, чтобы завести свои — под откаты заданий, ресурсов или чего угодно ещё."
+          onLoginClick={onLoginClick}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="page">

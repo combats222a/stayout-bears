@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../utils/api';
 import InfoSpoiler from '../components/InfoSpoiler';
+import GuestLock from '../components/GuestLock';
 import { CLAN_SPOILER } from '../content/spoilerContent';
 
 // ── Роли ────────────────────────────────────────────────────────────────────
@@ -60,7 +61,7 @@ function TransferModal({ members, clan, onConfirm, onClose }) {
 }
 
 // ── Страница ─────────────────────────────────────────────────────────────────
-export default function ClanPage({ user, clan, members, bans = [], onClanChange }) {
+export default function ClanPage({ user, clan, members, bans = [], onClanChange, isGuest, onLoginClick }) {
   const [createName,    setCreateName]    = useState('');
   const [joinCode,      setJoinCode]      = useState('');
   const [error,         setError]         = useState('');
@@ -148,6 +149,14 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange 
       <div className="page">
         <h2 className="page-title">🐻 Группировка</h2>
         <InfoSpoiler {...CLAN_SPOILER} storageKey="spoiler_clan" />
+        {isGuest ? (
+          <GuestLock
+            icon="👥"
+            title="Создай клан или вступи по коду"
+            text="Создание группировки и вступление по коду приглашения доступны после регистрации — это займёт меньше минуты."
+            onLoginClick={onLoginClick}
+          />
+        ) : (
         <div className="clan-actions">
           <div className="card">
             <div className="clan-join-title">🏔️ Создать группировку</div>
@@ -168,6 +177,7 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange 
             </form>
           </div>
         </div>
+        )}
         {error && <div className="error-msg">{error}</div>}
       </div>
     );

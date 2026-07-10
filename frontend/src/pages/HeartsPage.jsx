@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../utils/api';
 import InfoSpoiler from '../components/InfoSpoiler';
+import GuestLock from '../components/GuestLock';
 import { HEARTS_SPOILER } from '../content/spoilerContent';
 
 // ─── Портал-дропдаун (рендерится в body, не обрезается таблицей) ──────
@@ -469,7 +470,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
 }
 
 // ─── Основная страница ────────────────────────────────────────────────
-export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
+export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGuest, onLoginClick }) {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading]           = useState(true);
   const [showAdd, setShowAdd]           = useState(false);
@@ -477,12 +478,13 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
   const addBtnRef = useRef(null);
 
   const load = useCallback(async () => {
+    if (!clan) { setLoading(false); return; }
     try {
       const data = await api.get('/hearts');
       setParticipants(data.participants || []);
     } catch { setError('Ошибка загрузки'); }
     finally { setLoading(false); }
-  }, []);
+  }, [clan]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (onHeartsUpdate) onHeartsUpdate(load); }, [onHeartsUpdate, load]);
@@ -521,7 +523,16 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
       <div className="page">
         <h2 className="page-title">🫀 Учёт лута</h2>
         <InfoSpoiler {...HEARTS_SPOILER} storageKey="spoiler_hearts" />
-        <div className="empty-state"><p>Вступи в клан чтобы вести учёт</p></div>
+        {isGuest ? (
+          <GuestLock
+            icon="❤️"
+            title="Веди учёт добычи вместе с кланом"
+            text="Автоматический расчёт долей и история добычи доступны после регистрации и вступления в клан."
+            onLoginClick={onLoginClick}
+          />
+        ) : (
+          <div className="empty-state"><p>Вступи в клан чтобы вести учёт</p></div>
+        )}
       </div>
     );
   }

@@ -21,6 +21,12 @@ import { useGlobalSoundWatcher } from './hooks/useGlobalSoundWatcher';
 // соответствует отдельному пути в адресной строке.
 const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin'];
 
+// Разделы, которые гость (без входа) может открыть и увидеть их устройство —
+// просто с заглушкой вместо реальных данных и действий (см. GuestLock).
+// «Профиль» и «Админ» сюда не входят: профиль требует конкретного аккаунта,
+// админка — доступ суперадмина, показывать их «превью» гостю смысла нет.
+const GUEST_PREVIEW_PAGES = ['bears', 'shining', 'hearts', 'timers', 'clan'];
+
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -268,6 +274,37 @@ export default function App() {
           <div className="public-landing">
             <FaqPage />
           </div>
+        </>
+      );
+    }
+    // Разделы, привязанные к клану/аккаунту (Медведи, Сияние, Учёт лута,
+    // Таймеры, Клан), гость тоже видит — с тем же общим Header и с той же
+    // структурой страницы (пояснение + таблица/форма), просто вместо
+    // реальных данных и действий показывается GuestLock с призывом войти
+    // или зарегистрироваться. Раньше клик по этим пунктам меню сразу вёл
+    // на форму входа — это было неожиданно и не давало понять, что вообще
+    // есть в разделе.
+    if (GUEST_PREVIEW_PAGES.includes(page) && !showAuth) {
+      return (
+        <>
+          <Header user={null} page={page} onNavigate={setPage} onLoginClick={() => setShowAuth(true)} />
+          <main className="main">
+            {page === 'bears' && (
+              <BearsPage bears={[]} clan={null} onBearChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+            )}
+            {page === 'shining' && (
+              <ShiningPage clan={null} shiningData={null} onShiningChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+            )}
+            {page === 'hearts' && (
+              <HeartsPage clan={null} members={[]} user={null} onHeartsUpdate={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+            )}
+            {page === 'timers' && (
+              <TimersPage user={null} onLoginClick={() => setShowAuth(true)} />
+            )}
+            {page === 'clan' && (
+              <ClanPage user={null} clan={null} members={[]} bans={[]} onClanChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+            )}
+          </main>
         </>
       );
     }

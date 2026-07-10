@@ -9,6 +9,7 @@ import { playSpawnSound } from '../utils/sound';
 import { isBearsSoundEnabled, setBearsSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
+import GuestLock from '../components/GuestLock';
 import { BEARS_SPOILER } from '../content/spoilerContent';
 
 // ── Modal for entering kill time ─────────────────────────────────────────────
@@ -225,7 +226,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
-export default function BearsPage({ bears, clan, onBearChange }) {
+export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginClick }) {
   const [error, setError] = useState('');
   const [soundOn, setSoundOn] = useState(() => isBearsSoundEnabled());
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -275,7 +276,16 @@ export default function BearsPage({ bears, clan, onBearChange }) {
       <div className="page">
         <h2 className="page-title">Медведи</h2>
         <InfoSpoiler {...BEARS_SPOILER} storageKey="spoiler_bears" />
-        <div className="empty-state"><p>Вступи в клан чтобы отслеживать медведей</p></div>
+        {isGuest ? (
+          <GuestLock
+            icon="🐻‍❄️"
+            title="Отслеживай спавны медведей вместе с кланом"
+            text="Тайминги медведей и синхронизация с кланом доступны после регистрации — это займёт меньше минуты."
+            onLoginClick={onLoginClick}
+          />
+        ) : (
+          <div className="empty-state"><p>Вступи в клан чтобы отслеживать медведей</p></div>
+        )}
       </div>
     );
   }

@@ -11,11 +11,12 @@ function SteamIcon() {
 }
 
 // Один и тот же полный список разделов для всех — и авторизованных, и
-// гостей. Гость видит точно ту же шапку, просто клик по разделу, которого
-// без входа не существует, открывает форму входа вместо перехода.
-// Разделы, доступные и без регистрации (Промокод, Уровень), у гостя
-// остаются обычной ссылкой — те страницы рендерятся вне авторизованного
-// приложения (см. main.jsx).
+// гостей. Гость видит те же разделы и может их открыть — Медведи, Сияние,
+// Учёт лута, Таймеры и Клан рендерятся с заглушкой вместо реальных данных
+// (см. GuestLock на самих страницах и GUEST_PREVIEW_PAGES в App.jsx).
+// Раздел «Профиль» смысла превьюшить нет — по клику сразу открывается
+// форма входа. «Уровень» и «Промокод» и так публичные, рендерятся вне
+// авторизованного приложения (см. main.jsx).
 const NAV_ITEMS = [
   { key: 'bears',   label: '🐻 Медведи' },
   { key: 'shining', label: '✨ Сияние' },
@@ -24,7 +25,7 @@ const NAV_ITEMS = [
   { key: 'level',   label: '📈 Уровень',  guestHref: '/level' },
   { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
   { key: 'clan',    label: '🏕️ Клан' },
-  { key: 'profile', label: '👤 Профиль' },
+  { key: 'profile', label: '👤 Профиль', guestLoginOnly: true },
 ];
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
@@ -46,8 +47,9 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
     if (isGuest && item.guestHref) {
       return <a key={item.key} className={cls} href={item.guestHref}>{item.label}</a>;
     }
-    if (isGuest) {
-      // Раздел не открыт гостям — по клику предлагаем войти/зарегистрироваться.
+    if (isGuest && item.guestLoginOnly) {
+      // Раздел не имеет смысла показывать гостю (например, личный профиль) —
+      // по клику сразу предлагаем войти/зарегистрироваться.
       return (
         <button key={item.key} className={cls} onClick={onLoginClick}>
           {item.label}
