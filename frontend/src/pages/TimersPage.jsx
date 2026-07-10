@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { api } from '../utils/api';
 import { playTimerDoneSound } from '../utils/sound';
+import InfoSpoiler from '../components/InfoSpoiler';
+import { TIMERS_SPOILER } from '../content/spoilerContent';
 
 function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
 
@@ -411,6 +413,8 @@ export default function TimersPage({ user }) {
       <div className="timer-owner-note">
         🔒 Таймеры видит только их создатель — <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
       </div>
+
+      <InfoSpoiler {...TIMERS_SPOILER} storageKey="spoiler_timers" />
 
       {error && <div className="error-banner">{error}</div>}
 

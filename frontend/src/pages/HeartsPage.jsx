@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../utils/api';
+import InfoSpoiler from '../components/InfoSpoiler';
+import { HEARTS_SPOILER } from '../content/spoilerContent';
 
 // ─── Портал-дропдаун (рендерится в body, не обрезается таблицей) ──────
 function Portal({ children }) {
@@ -472,7 +474,6 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
   const [loading, setLoading]           = useState(true);
   const [showAdd, setShowAdd]           = useState(false);
   const [error, setError]               = useState('');
-  const [infoOpen, setInfoOpen]         = useState(false);
   const addBtnRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -519,6 +520,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
     return (
       <div className="page">
         <h2 className="page-title">🫀 Учёт лута</h2>
+        <InfoSpoiler {...HEARTS_SPOILER} storageKey="spoiler_hearts" />
         <div className="empty-state"><p>Вступи в клан чтобы вести учёт</p></div>
       </div>
     );
@@ -542,50 +544,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate }) {
       )}
 
       {/* Пояснение как пользоваться таблицей и как работает защита строк — сворачиваемый спойлер */}
-      <div style={{
-        fontSize: 13, lineHeight: 1.6, color: 'var(--text2)',
-        background: 'var(--bg2)',
-        border: '1px solid var(--border)', borderRadius: 10,
-        overflow: 'hidden',
-      }}>
-        <div
-          onClick={() => setInfoOpen(o => !o)}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            fontWeight: 600, color: 'var(--text)', cursor: 'pointer',
-            padding: '12px 14px', userSelect: 'none',
-          }}
-        >
-          <span>ℹ️ Как пользоваться таблицей</span>
-          <span style={{
-            fontSize: 12, color: 'var(--text2)', transition: 'transform .15s ease',
-            transform: infoOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-          }}>▼</span>
-        </div>
-        {infoOpen && (
-          <div style={{ padding: '0 14px 12px' }}>
-            <div>
-              Каждая строка — это один «улов»: жми <b>«+ Добавить участника»</b> внизу таблицы, выбери участника
-              клана из списка или впиши ник вручную. Дальше в строке указывается сколько досталось
-              ❤️ сердец и 🧥 шкур, кто нашёл добычу (<b>«Участники»</b>), за сколько её продали (<b>«Продали за»</b>) —
-              и 💰 <b>«Доля»</b> посчитается автоматически (сумма продажи ÷ число участников из графы «Участники»).
-              В графе <b>«Выплачено участникам»</b> отмечается, кому из участников уже отдали его долю.
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <b>🔒 Кто может редактировать строку.</b> Графы ❤️ Сердца, 🧥 Шкуры, 👥 Участники,
-              💸 Выплачено участникам и 💵 Продали за — редактирует только тот, чей аккаунт привязан
-              к нику, указанному в колонке «Ник» этой строки. У остальных эти поля заблокированы (🔒) —
-              так никто не может случайно или специально исправить чужую запись.
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <b>👤 Гостевые ники.</b> Если ник вписан вручную и помечен как «гость» — то есть за него
-              нет привязанного аккаунта в клане — редактировать такую строку может <b>любой участник клана</b>.
-              Это сделано специально: за «гостя» некому зайти и подтвердить свои данные, поэтому строка
-              не блокируется навсегда, а остаётся открытой для всех.
-            </div>
-          </div>
-        )}
-      </div>
+      <InfoSpoiler {...HEARTS_SPOILER} storageKey="spoiler_hearts" />
 
       {/* Таблица — без overflow:hidden чтобы дропдауны (порталы) не обрезались */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10 }}>

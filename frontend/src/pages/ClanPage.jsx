@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { api } from '../utils/api';
+import InfoSpoiler from '../components/InfoSpoiler';
+import { CLAN_SPOILER } from '../content/spoilerContent';
 
 // ── Роли ────────────────────────────────────────────────────────────────────
 function getRole(member, clan) {
@@ -145,6 +147,7 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange 
     return (
       <div className="page">
         <h2 className="page-title">🐻 Группировка</h2>
+        <InfoSpoiler {...CLAN_SPOILER} storageKey="spoiler_clan" />
         <div className="clan-actions">
           <div className="card">
             <div className="clan-join-title">🏔️ Создать группировку</div>
@@ -179,6 +182,8 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange 
   return (
     <div className="page">
       <h2 className="page-title">🐻 Группировка</h2>
+
+      <InfoSpoiler {...CLAN_SPOILER} storageKey="spoiler_clan" />
 
       {/* Clan card */}
       <div className="clan-card">

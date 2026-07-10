@@ -8,6 +8,8 @@ import {
 import { playShiningWarningSound } from '../utils/sound';
 import { isShiningSoundEnabled, setShiningSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
+import InfoSpoiler from '../components/InfoSpoiler';
+import { SHINING_SPOILER } from '../content/spoilerContent';
 import { api } from '../utils/api';
 
 // ─── Модалка ввода якорей Z и X ──────────────────────────────────
@@ -246,6 +248,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
     return (
       <div className="page">
         <h2 className="page-title">✨ Гора Сияния</h2>
+        <InfoSpoiler {...SHINING_SPOILER} storageKey="spoiler_shining" />
         <div className="empty-state"><p>Вступи в клан чтобы отслеживать Сияния</p></div>
       </div>
     );
@@ -275,6 +278,8 @@ export default function ShiningPage({ clan, shiningData, onShiningChange }) {
           </button>
         </div>
       </div>
+
+      <InfoSpoiler {...SHINING_SPOILER} storageKey="spoiler_shining" />
 
       {/* Инфо-панель */}
       <div style={{

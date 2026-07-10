@@ -8,6 +8,8 @@ import {
 import { playSpawnSound } from '../utils/sound';
 import { isBearsSoundEnabled, setBearsSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
+import InfoSpoiler from '../components/InfoSpoiler';
+import { BEARS_SPOILER } from '../content/spoilerContent';
 
 // ── Modal for entering kill time ─────────────────────────────────────────────
 function KillTimeModal({ bearName, onCommit, onClose }) {
@@ -272,6 +274,7 @@ export default function BearsPage({ bears, clan, onBearChange }) {
     return (
       <div className="page">
         <h2 className="page-title">Медведи</h2>
+        <InfoSpoiler {...BEARS_SPOILER} storageKey="spoiler_bears" />
         <div className="empty-state"><p>Вступи в клан чтобы отслеживать медведей</p></div>
       </div>
     );
@@ -293,6 +296,7 @@ export default function BearsPage({ bears, clan, onBearChange }) {
           </button>
         </div>
       </div>
+      <InfoSpoiler {...BEARS_SPOILER} storageKey="spoiler_bears" />
       {error && <div className="error-msg">{error}</div>}
 
       <div className="tbl-wrap">
