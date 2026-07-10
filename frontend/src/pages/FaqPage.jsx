@@ -71,38 +71,31 @@ export default function FaqPage() {
     };
   }, []);
 
+  // Своей шапки у страницы больше нет — она встраивается внутрь App
+  // (см. main.jsx / App.jsx) и получает тот же общий <Header>, что и все
+  // остальные разделы, у авторизованных и у гостей одинаково.
   return (
-    <div className="public-landing">
-      <div className="public-landing-topbar">
-        <a className="public-landing-brand" href="/" style={{ textDecoration: 'none' }}>
-          <span className="public-landing-logo">🐻‍❄️</span>
-          <span className="public-landing-name">Bear Tracker</span>
-        </a>
-        <a className="btn btn-ghost btn-sm" href="/">← На главную</a>
+    <div className="page promo-page">
+      <div className="promo-hero">
+        <div className="promo-hero-icon">❓</div>
+        <h1 className="promo-hero-title">Часто задаваемые <span className="promo-accent">вопросы</span></h1>
+        <p className="promo-hero-sub">
+          Всё, что нужно знать о Bear Tracker — трекере клана Stay Out
+        </p>
       </div>
 
-      <div className="page promo-page">
-        <div className="promo-hero">
-          <div className="promo-hero-icon">❓</div>
-          <h1 className="promo-hero-title">Часто задаваемые <span className="promo-accent">вопросы</span></h1>
-          <p className="promo-hero-sub">
-            Всё, что нужно знать о Bear Tracker — трекере клана Stay Out
-          </p>
-        </div>
+      <div className="card faq-list">
+        {FAQ_ITEMS.map(item => (
+          <div className="faq-item" key={item.q}>
+            <h2 className="faq-question">{item.q}</h2>
+            <p className="faq-answer">{item.a}</p>
+          </div>
+        ))}
+      </div>
 
-        <div className="card faq-list">
-          {FAQ_ITEMS.map(item => (
-            <div className="faq-item" key={item.q}>
-              <h2 className="faq-question">{item.q}</h2>
-              <p className="faq-answer">{item.a}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="promo-footer">
-          Не нашёл ответ? Загляни в раздел «Промокод» на главной странице или зарегистрируйся, чтобы
-          пользоваться трекером медведей, Горы Сияния и таймеров.
-        </div>
+      <div className="promo-footer">
+        Не нашёл ответ? Загляни в раздел «Промокод» на главной странице или зарегистрируйся, чтобы
+        пользоваться трекером медведей, Горы Сияния и таймеров.
       </div>
     </div>
   );

@@ -71,6 +71,9 @@ body {
   cursor: pointer;
   font-size: 13px;
   font-family: var(--font-body);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
   transition: background 0.15s, color 0.15s;
 }
 .nav-btn:hover { background: var(--bg3); color: var(--text); }
@@ -1081,6 +1084,8 @@ body {
   font-family: var(--font-body);
   padding: 12px 20px;
   text-align: left;
+  text-decoration: none;
+  display: block;
   cursor: pointer;
   transition: background 0.15s;
 }

@@ -12,13 +12,14 @@ import HeartsPage from './pages/HeartsPage';
 import TimersPage from './pages/TimersPage';
 import PromoPage from './pages/PromoPage';
 import LevelPage from './pages/LevelPage';
+import FaqPage from './pages/FaqPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 import { useGlobalSoundWatcher } from './hooks/useGlobalSoundWatcher';
 
 // Разделы приложения и их адреса — каждый пункт меню Header теперь
 // соответствует отдельному пути в адресной строке.
-const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'admin'];
+const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin'];
 
 export default function App() {
   const navigate = useNavigate();
@@ -250,6 +251,19 @@ export default function App() {
     if (page === 'level' && !showAuth) {
       return <LevelPage standalone />;
     }
+    // FAQ гостю тоже доступна напрямую и должна выглядеть так же, как для
+    // авторизованных — с тем же общим Header (просто в режиме гостя),
+    // а не отдельной урезанной шапкой.
+    if (page === 'faq' && !showAuth) {
+      return (
+        <>
+          <Header user={null} page="faq" onLoginClick={() => setShowAuth(true)} />
+          <div className="public-landing">
+            <FaqPage />
+          </div>
+        </>
+      );
+    }
     return showAuth
       ? <AuthPage onAuth={onAuth} onBack={() => setShowAuth(false)} />
       : <PublicLandingPage onLoginClick={() => setShowAuth(true)} />;
@@ -291,6 +305,9 @@ export default function App() {
         )}
         {page === 'level' && (
           <LevelPage />
+        )}
+        {page === 'faq' && (
+          <FaqPage />
         )}
         {page === 'admin' && user.is_superadmin && (
           <AdminPage />
