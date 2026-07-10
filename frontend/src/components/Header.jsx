@@ -38,7 +38,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
   ];
 
   function handleNav(key) {
-    onNavigate(key);
+    if (onNavigate) onNavigate(key);
     setMenuOpen(false);
   }
 
