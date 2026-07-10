@@ -235,6 +235,15 @@ export default function App() {
   }
 
   if (!user) {
+    // Гость на /level должен видеть ту же публичную SEO-страницу уровней,
+    // что и при заходе напрямую (main.jsx это делал раньше жёсткой
+    // проверкой pathname до монтирования роутера — но так же ловили
+    // авторизованных пользователей, у которых при обновлении страницы на
+    // /level слетал весь интерфейс приложения). Теперь решение принимается
+    // здесь, где уже точно известно, есть пользователь или нет.
+    if (page === 'level' && !showAuth) {
+      return <LevelPage standalone />;
+    }
     return showAuth
       ? <AuthPage onAuth={onAuth} onBack={() => setShowAuth(false)} />
       : <PublicLandingPage onLoginClick={() => setShowAuth(true)} />;

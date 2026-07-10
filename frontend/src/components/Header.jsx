@@ -10,10 +10,24 @@ function SteamIcon() {
   );
 }
 
-export default function Header({ user, page, onNavigate, onLogout }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+// user === null -> гость (незарегистрированный/неавторизованный посетитель).
+// Хедер выглядит и ведёт себя так же, как у авторизованных (те же табы,
+// та же сетка), но в меню только те разделы, что доступны без входа —
+// остальные (Медведи, Сияние, Клан и т.д.) появятся только после логина.
+// Переходы у гостя — обычные ссылки (полная перезагрузка на /level, /faq),
+// а не SPA-навигация, т.к. эти страницы рендерятся вне авторизованного
+// приложения (см. main.jsx).
+const GUEST_NAV_ITEMS = [
+  { key: 'promo', label: '🎁 Промокод', href: '/' },
+  { key: 'level', label: '📈 Уровень', href: '/level' },
+  { key: 'faq',   label: '📖 FAQ',      href: '/faq' },
+];
 
-  const navItems = [
+export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isGuest = !user;
+
+  const navItems = isGuest ? GUEST_NAV_ITEMS : [
     { key: 'bears',   label: '🐻 Медведи' },
     { key: 'shining', label: '✨ Сияние' },
     { key: 'hearts',  label: '🫀 Учёт лута' },
@@ -30,28 +44,40 @@ export default function Header({ user, page, onNavigate, onLogout }) {
     setMenuOpen(false);
   }
 
+  function renderNavItem(item, className) {
+    const cls = `${className} ${page === item.key ? 'active' : ''}`;
+    if (item.href) {
+      return <a key={item.key} className={cls} href={item.href}>{item.label}</a>;
+    }
+    return (
+      <button key={item.key} className={cls} onClick={() => handleNav(item.key)}>
+        {item.label}
+      </button>
+    );
+  }
+
   return (
     <>
       <header className="header">
-        <div className="header-logo" onClick={() => handleNav('bears')} style={{ cursor: 'pointer' }}>
-          🐻‍❄️ <span className="header-title">Bear Tracker</span>
-        </div>
+        {isGuest ? (
+          <a className="header-logo" href="/" style={{ textDecoration: 'none' }}>
+            🐻‍❄️ <span className="header-title">Bear Tracker</span>
+          </a>
+        ) : (
+          <div className="header-logo" onClick={() => handleNav('bears')} style={{ cursor: 'pointer' }}>
+            🐻‍❄️ <span className="header-title">Bear Tracker</span>
+          </div>
+        )}
 
         {/* Desktop nav */}
         <nav className="header-nav header-nav-desktop">
-          {navItems.map(item => (
-            <button
-              key={item.key}
-              className={`nav-btn ${page === item.key ? 'active' : ''}`}
-              onClick={() => handleNav(item.key)}
-            >
-              {item.label}
-            </button>
-          ))}
+          {navItems.map(item => renderNavItem(item, 'nav-btn'))}
         </nav>
 
         <div className="header-user">
-          <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
+          {!isGuest && (
+            <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
+          )}
           <a
             className="header-steam-link"
             href={STEAM_URL}
@@ -62,8 +88,16 @@ export default function Header({ user, page, onNavigate, onLogout }) {
           >
             <SteamIcon />
           </a>
-          <span className="user-nick">{user?.game_nick || user?.nick}</span>
-          <button className="btn btn-sm btn-ghost header-logout-desktop" onClick={onLogout}>Выйти</button>
+          {isGuest ? (
+            <button className="btn btn-primary btn-sm header-login-btn" onClick={onLoginClick}>
+              Войти / Зарегистрироваться
+            </button>
+          ) : (
+            <>
+              <span className="user-nick">{user?.game_nick || user?.nick}</span>
+              <button className="btn btn-sm btn-ghost header-logout-desktop" onClick={onLogout}>Выйти</button>
+            </>
+          )}
           {/* Hamburger — mobile only */}
           <button
             className="hamburger-btn"
@@ -80,10 +114,21 @@ export default function Header({ user, page, onNavigate, onLogout }) {
         <div className="mobile-nav-overlay" onClick={() => setMenuOpen(false)}>
           <div className="mobile-nav-menu" onClick={e => e.stopPropagation()}>
             <div className="mobile-nav-user">
-              <span style={{ fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>
-                {user?.game_nick || user?.nick}
-              </span>
-              <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
+              {isGuest ? (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => { onLoginClick(); setMenuOpen(false); }}
+                >
+                  Войти / Зарегистрироваться
+                </button>
+              ) : (
+                <span style={{ fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>
+                  {user?.game_nick || user?.nick}
+                </span>
+              )}
+              {!isGuest && (
+                <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
+              )}
               <a
                 className="header-steam-link"
                 href={STEAM_URL}
@@ -95,19 +140,15 @@ export default function Header({ user, page, onNavigate, onLogout }) {
                 <SteamIcon />
               </a>
             </div>
-            {navItems.map(item => (
-              <button
-                key={item.key}
-                className={`mobile-nav-btn ${page === item.key ? 'active' : ''}`}
-                onClick={() => handleNav(item.key)}
-              >
-                {item.label}
-              </button>
-            ))}
-            <div className="mobile-nav-divider" />
-            <button className="mobile-nav-btn mobile-nav-logout" onClick={() => { onLogout(); setMenuOpen(false); }}>
-              🚪 Выйти
-            </button>
+            {navItems.map(item => renderNavItem(item, 'mobile-nav-btn'))}
+            {!isGuest && (
+              <>
+                <div className="mobile-nav-divider" />
+                <button className="mobile-nav-btn mobile-nav-logout" onClick={() => { onLogout(); setMenuOpen(false); }}>
+                  🚪 Выйти
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
