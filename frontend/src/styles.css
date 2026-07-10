@@ -1271,7 +1271,20 @@ body {
   align-items: center;
   gap: 10px;
 }
-.promo-hero-icon { font-size: 40px; }
+.promo-hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  color: var(--text2);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.promo-hero-icon:hover {
+  color: #66c0f4;
+  transform: translateY(-1px) scale(1.08);
+}
 .promo-hero-title {
   font-family: var(--font-display);
   font-size: 24px;

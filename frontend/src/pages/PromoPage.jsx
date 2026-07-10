@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { STEAM_URL, SteamIcon } from '../components/SteamIcon';
+import CollapsibleSection from '../components/CollapsibleSection';
 
 const PROMO_CODES = [
   { code: 'PGYXTB4N', label: 'Промокод #1', hint: 'Для нового аккаунта' },
@@ -71,7 +73,16 @@ export default function PromoPage() {
   return (
     <div className="page promo-page">
       <div className="promo-hero">
-        <div className="promo-hero-icon">🎁</div>
+        <a
+          className="promo-hero-icon"
+          href={STEAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Stay Out в Steam"
+          aria-label="Stay Out в Steam"
+        >
+          <SteamIcon size={30} />
+        </a>
         <h1 className="promo-hero-title">Начни путь в <span className="promo-accent">Stay Out</span></h1>
         <p className="promo-hero-sub">
           Введи промокод при создании персонажа и получи снаряжение для выживания + 7 дней премиум-подписки
@@ -92,9 +103,16 @@ export default function PromoPage() {
         ))}
       </div>
 
+      {/* SEO-текст — виден сразу, без спойлера */}
+      <div className="card promo-seo-block">
+        <h2 className="promo-section-title">🎮 Stay Out — промокоды и выживание в Зоне</h2>
+        {SEO_PARAGRAPHS.map((p, i) => (
+          <p className="promo-seo-text" key={i}>{p}</p>
+        ))}
+      </div>
+
       {/* Что в наборе */}
-      <div className="card">
-        <h2 className="promo-section-title">🎒 Что в наборе</h2>
+      <CollapsibleSection title="🎒 Что в наборе" storageKey="spoiler_promo_kit">
         <div className="promo-kit-grid">
           {KIT_ITEMS.map(item => (
             <div className="promo-kit-item" key={item.name}>
@@ -103,21 +121,19 @@ export default function PromoPage() {
             </div>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Бонусы */}
-      <div className="card">
-        <h2 className="promo-section-title">⭐ Бонусы премиум (7 дней)</h2>
+      <CollapsibleSection title="⭐ Бонусы премиум (7 дней)" storageKey="spoiler_promo_bonus">
         <ul className="promo-bonus-list">
           {BONUSES.map(b => (
             <li key={b}>{b}</li>
           ))}
         </ul>
-      </div>
+      </CollapsibleSection>
 
       {/* Как активировать */}
-      <div className="card">
-        <h2 className="promo-section-title">📋 Как активировать</h2>
+      <CollapsibleSection title="📋 Как активировать" storageKey="spoiler_promo_steps">
         <div className="promo-steps">
           {STEPS.map((s, i) => (
             <div className="promo-step" key={s.title}>
@@ -129,23 +145,19 @@ export default function PromoPage() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* SEO-текст */}
-      <div className="card promo-seo-block">
-        <h2 className="promo-section-title">🎮 Stay Out — промокоды и выживание в Зоне</h2>
-        {SEO_PARAGRAPHS.map((p, i) => (
-          <p className="promo-seo-text" key={i}>{p}</p>
-        ))}
-      </div>
+      </CollapsibleSection>
 
       {/* SEO-текст про сам трекер (медведи / Гора Сияния / таймеры) */}
-      <div className="card promo-seo-block">
-        <h2 className="promo-section-title">🧭 Bear Tracker — трекер респауна медведей, Горы Сияния и таймеров</h2>
-        {TRACKER_SEO_PARAGRAPHS.map((p, i) => (
-          <p className="promo-seo-text" key={i}>{p}</p>
-        ))}
-      </div>
+      <CollapsibleSection
+        title="🧭 Bear Tracker — трекер респауна медведей, Горы Сияния и таймеров"
+        storageKey="spoiler_promo_tracker_seo"
+      >
+        <div className="promo-seo-block">
+          {TRACKER_SEO_PARAGRAPHS.map((p, i) => (
+            <p className="promo-seo-text" key={i}>{p}</p>
+          ))}
+        </div>
+      </CollapsibleSection>
 
       <div className="promo-footer">
         Bear Tracker — сообщество игроков Stay Out · Данный ресурс является неофициальным фан-проектом.
