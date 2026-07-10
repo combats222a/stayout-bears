@@ -340,23 +340,17 @@ export default function LevelPage({ standalone = false }) {
 
   if (!standalone) return content;
 
+  // Своей шапки здесь больше нет — как и на /faq, гостю показывается общий
+  // <Header> (см. App.jsx). Раньше здесь рисовался отдельный урезанный
+  // топбар («лого + На главную»), из-за чего шапка на /level для гостя
+  // не совпадала с шапкой на остальных страницах — тот же баг, что был на /faq.
   return (
-    <div className="public-landing">
-      <div className="public-landing-topbar">
-        <a className="public-landing-brand" href="/" style={{ textDecoration: 'none' }}>
-          <span className="public-landing-logo">🐻‍❄️</span>
-          <span className="public-landing-name">Bear Tracker</span>
-        </a>
-        <a className="btn btn-ghost btn-sm" href="/">← На главную</a>
-      </div>
+    <div className="promo-page">
+      {content}
 
-      <div className="promo-page">
-        {content}
-
-        <div className="promo-footer">
-          Хочешь ещё и отслеживать медведей, Гору Сияния и таймеры клана? Загляни на главную и зарегистрируйся —
-          это бесплатно.
-        </div>
+      <div className="promo-footer">
+        Хочешь ещё и отслеживать медведей, Гору Сияния и таймеры клана? Загляни на главную и зарегистрируйся —
+        это бесплатно.
       </div>
     </div>
   );
