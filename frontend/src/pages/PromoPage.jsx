@@ -95,7 +95,6 @@ export default function PromoPage() {
           <div className="card promo-code-card" key={p.code}>
             <div className="promo-code-label">{p.label}</div>
             <div className="promo-code-value">{p.code}</div>
-            <div className="promo-code-hint">{p.hint}</div>
             <button className="btn btn-primary promo-copy-btn" onClick={() => copy(p.code)}>
               {copiedCode === p.code ? '✓ Скопировано' : 'Скопировать'}
             </button>
@@ -112,7 +111,7 @@ export default function PromoPage() {
       </div>
 
       {/* Что в наборе */}
-      <CollapsibleSection title="🎒 Что в наборе" storageKey="spoiler_promo_kit">
+      <CollapsibleSection title="🎒 Что получаешь введя промокод" storageKey="spoiler_promo_kit">
         <div className="promo-kit-grid">
           {KIT_ITEMS.map(item => (
             <div className="promo-kit-item" key={item.name}>
