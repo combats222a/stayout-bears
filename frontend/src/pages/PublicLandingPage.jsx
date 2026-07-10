@@ -24,11 +24,11 @@ export default function PublicLandingPage({ onLoginClick }) {
         </div>
 
         <div className="public-landing-topbar-links">
-          <a className="public-landing-icon-link" href="/faq" title="Часто задаваемые вопросы">
-            FAQ
-          </a>
           <a className="public-landing-icon-link" href="/level" title="Таблица уровней и опыта">
             Уровни
+          </a>
+          <a className="public-landing-icon-link" href="/faq" title="Часто задаваемые вопросы">
+            FAQ
           </a>
           <a
             className="public-landing-icon-link public-landing-steam-link"
