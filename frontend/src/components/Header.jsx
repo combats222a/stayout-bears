@@ -10,32 +10,29 @@ function SteamIcon() {
   );
 }
 
-// user === null -> гость (незарегистрированный/неавторизованный посетитель).
-// Хедер выглядит и ведёт себя так же, как у авторизованных (те же табы,
-// та же сетка), но в меню только те разделы, что доступны без входа —
-// остальные (Медведи, Сияние, Клан и т.д.) появятся только после логина.
-// Переходы у гостя — обычные ссылки (полная перезагрузка на /level, /faq),
-// а не SPA-навигация, т.к. эти страницы рендерятся вне авторизованного
+// Один и тот же полный список разделов для всех — и авторизованных, и
+// гостей. Гость видит точно ту же шапку, просто клик по разделу, которого
+// без входа не существует, открывает форму входа вместо перехода.
+// Разделы, доступные и без регистрации (Промокод, Уровень), у гостя
+// остаются обычной ссылкой — те страницы рендерятся вне авторизованного
 // приложения (см. main.jsx).
-const GUEST_NAV_ITEMS = [
-  { key: 'promo', label: '🎁 Промокод', href: '/' },
-  { key: 'level', label: '📈 Уровень', href: '/level' },
-  { key: 'faq',   label: '📖 FAQ',      href: '/faq' },
+const NAV_ITEMS = [
+  { key: 'bears',   label: '🐻 Медведи' },
+  { key: 'shining', label: '✨ Сияние' },
+  { key: 'hearts',  label: '🫀 Учёт лута' },
+  { key: 'timers',  label: '⏱️ Таймеры' },
+  { key: 'level',   label: '📈 Уровень',  guestHref: '/level' },
+  { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
+  { key: 'clan',    label: '🏕️ Клан' },
+  { key: 'profile', label: '👤 Профиль' },
 ];
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const isGuest = !user;
 
-  const navItems = isGuest ? GUEST_NAV_ITEMS : [
-    { key: 'bears',   label: '🐻 Медведи' },
-    { key: 'shining', label: '✨ Сияние' },
-    { key: 'hearts',  label: '🫀 Учёт лута' },
-    { key: 'timers',  label: '⏱️ Таймеры' },
-    { key: 'level',   label: '📈 Уровень' },
-    { key: 'promo',   label: '🎁 Промокод' },
-    { key: 'clan',    label: '🏕️ Клан' },
-    { key: 'profile', label: '👤 Профиль' },
+  const navItems = [
+    ...NAV_ITEMS,
     ...(user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : []),
   ];
 
@@ -46,8 +43,16 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
 
   function renderNavItem(item, className) {
     const cls = `${className} ${page === item.key ? 'active' : ''}`;
-    if (item.href) {
-      return <a key={item.key} className={cls} href={item.href}>{item.label}</a>;
+    if (isGuest && item.guestHref) {
+      return <a key={item.key} className={cls} href={item.guestHref}>{item.label}</a>;
+    }
+    if (isGuest) {
+      // Раздел не открыт гостям — по клику предлагаем войти/зарегистрироваться.
+      return (
+        <button key={item.key} className={cls} onClick={onLoginClick}>
+          {item.label}
+        </button>
+      );
     }
     return (
       <button key={item.key} className={cls} onClick={() => handleNav(item.key)}>
@@ -75,9 +80,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
         </nav>
 
         <div className="header-user">
-          {!isGuest && (
-            <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
-          )}
+          <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
           <a
             className="header-steam-link"
             href={STEAM_URL}
@@ -126,9 +129,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
                   {user?.game_nick || user?.nick}
                 </span>
               )}
-              {!isGuest && (
-                <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
-              )}
+              <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
               <a
                 className="header-steam-link"
                 href={STEAM_URL}
