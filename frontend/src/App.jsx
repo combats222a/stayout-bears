@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import AuthPage from './pages/AuthPage';
 import PublicLandingPage from './pages/PublicLandingPage';
@@ -14,10 +15,16 @@ import LevelPage from './pages/LevelPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 
+// Разделы приложения и их адреса — каждый пункт меню Header теперь
+// соответствует отдельному пути в адресной строке.
+const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'admin'];
+
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(() => localStorage.getItem('token'));
-  const [page, setPage]       = useState('bears');
   const [showAuth, setShowAuth] = useState(false);
   const [clan, setClan]       = useState(null);
   const [members, setMembers] = useState([]);
@@ -160,8 +167,8 @@ export default function App() {
     setBears([]);
     setBans([]);
     setShiningData(null);
-    setPage('bears');
     setShowAuth(false);
+    navigate('/');
   }
 
   function onUserUpdate(updatedUser) { setUser(updatedUser); }
@@ -175,6 +182,33 @@ export default function App() {
   function retryConnection() {
     window.location.reload();
   }
+
+  // Текущий раздел вычисляется из адресной строки (а не из внутреннего
+  // состояния) — так у каждого блока есть свой путь, кнопка «назад»
+  // браузера работает, а обновление страницы (F5) остаётся на том же
+  // разделе, где был игрок.
+  const rawSegment = location.pathname.replace(/^\/+/, '').split('/')[0];
+  const page = APP_PAGES.includes(rawSegment) ? rawSegment : 'bears';
+
+  function setPage(key) {
+    navigate(`/${key}`);
+  }
+
+  // Если игрок авторизован, но открыл корень сайта ("/") — переводим на
+  // /bears, чтобы адрес всегда отражал реальный активный раздел.
+  useEffect(() => {
+    if (user && location.pathname === '/') {
+      navigate('/bears', { replace: true });
+    }
+  }, [user, location.pathname, navigate]);
+
+  // Раздел «Админ» доступен только суперадмину — если обычный игрок
+  // каким-то образом окажется на /admin, аккуратно возвращаем на /bears.
+  useEffect(() => {
+    if (user && page === 'admin' && !user.is_superadmin) {
+      navigate('/bears', { replace: true });
+    }
+  }, [user, page, navigate]);
 
   if (loading) {
     return (
