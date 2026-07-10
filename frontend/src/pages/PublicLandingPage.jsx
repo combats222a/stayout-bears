@@ -10,10 +10,10 @@ import PromoPage from './PromoPage';
 // то же меню целиком (в режиме гостя, user=null, клик по закрытому
 // разделу просто открывает форму входа), а вместо ника/кнопки «Выйти» —
 // кнопка «Войти/Зарегистрироваться».
-export default function PublicLandingPage({ onLoginClick }) {
+export default function PublicLandingPage({ onLoginClick, onNavigate }) {
   return (
     <>
-      <Header user={null} page="promo" onLoginClick={onLoginClick} />
+      <Header user={null} page="promo" onNavigate={onNavigate} onLoginClick={onLoginClick} />
 
       <div className="public-landing">
         <PromoPage />
