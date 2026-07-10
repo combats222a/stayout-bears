@@ -284,7 +284,13 @@ export default function App() {
     // или зарегистрироваться. Раньше клик по этим пунктам меню сразу вёл
     // на форму входа — это было неожиданно и не давало понять, что вообще
     // есть в разделе.
-    if (GUEST_PREVIEW_PAGES.includes(page) && !showAuth) {
+    //
+    // Важно: проверяем именно rawSegment (адрес как он есть), а не `page` —
+    // `page` подставляет 'bears' по умолчанию для ЛЮБОГО непонятного пути,
+    // включая корень "/". Если бы условие ниже смотрело на `page`, гость на
+    // корне сайта (где должна быть страница Промокода/лендинг) вместо неё
+    // видел бы страницу «Медведи».
+    if (GUEST_PREVIEW_PAGES.includes(rawSegment) && !showAuth) {
       return (
         <>
           <Header user={null} page={page} onNavigate={setPage} onLoginClick={() => setShowAuth(true)} />
