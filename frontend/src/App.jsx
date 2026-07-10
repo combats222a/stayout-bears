@@ -257,7 +257,7 @@ export default function App() {
     if (page === 'level' && !showAuth) {
       return (
         <>
-          <Header user={null} page="level" onLoginClick={() => setShowAuth(true)} />
+          <Header user={null} page="level" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} />
           <div className="public-landing">
             <LevelPage standalone />
           </div>
@@ -270,7 +270,7 @@ export default function App() {
     if (page === 'faq' && !showAuth) {
       return (
         <>
-          <Header user={null} page="faq" onLoginClick={() => setShowAuth(true)} />
+          <Header user={null} page="faq" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} />
           <div className="public-landing">
             <FaqPage />
           </div>
@@ -316,7 +316,7 @@ export default function App() {
     }
     return showAuth
       ? <AuthPage onAuth={onAuth} onBack={() => setShowAuth(false)} />
-      : <PublicLandingPage onLoginClick={() => setShowAuth(true)} />;
+      : <PublicLandingPage onLoginClick={() => setShowAuth(true)} onNavigate={setPage} />;
   }
 
   return (
