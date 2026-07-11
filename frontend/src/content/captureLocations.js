@@ -1,0 +1,52 @@
+// Справочник точек захвата в Stay Out (Базы и Укрепточки).
+//
+// Время (hour/minute) — это ЕЖЕДНЕВНОЕ игровое время сервера захвата,
+// зафиксированное в часовом поясе Europe/Kiev (UTC+3, без перевода на
+// летнее/зимнее время — так же, как отображает сама игра). Bear Tracker
+// на основе этого рассчитывает ближайшее наступление события и конвертирует
+// его в часовой пояс, установленный на устройстве конкретного игрока
+// (см. utils/captures.js).
+//
+// DURATION_MIN — предполагаемая длительность окна захвата в минутах.
+// Это единственное число, которое стоит поправить, если у точек в игре
+// другая длительность.
+export const DURATION_MIN = 60;
+
+// Смещение "игрового" часового пояса точек ниже относительно UTC, в часах.
+export const SERVER_UTC_OFFSET = 3; // Europe/Kiev, UTC+3
+
+export const CAPTURE_LOCATIONS = [
+  { name: 'Заброшенный рудник',              type: 'База',        location: 'Окрестности Любеча',     coords: 'H3-2', hour: 19, minute: 0 },
+  { name: 'Деревня на холме',                type: 'База',        location: 'Окрестности Любеча',     coords: 'G7-3', hour: 19, minute: 0 },
+  { name: 'Автостанция Новиково',            type: 'База',        location: 'Везувий',                coords: 'F3-2', hour: 17, minute: 0 },
+  { name: 'Рыбхоз',                          type: 'База',        location: 'Везувий',                coords: 'C7-4', hour: 17, minute: 0 },
+  { name: 'Тунгуска',                        type: 'База',        location: 'Тунгуска',               coords: 'F4-1', hour: 17, minute: 0 },
+  { name: 'Песчаный карьер',                 type: 'База',        location: 'Черный лес',             coords: 'K3-1', hour: 19, minute: 0 },
+  { name: 'Пожарная станция',                type: 'База',        location: 'Черный лес',             coords: 'Q4-2', hour: 19, minute: 0 },
+  { name: 'СЕЛЬХОЗСНАБ',                     type: 'База',        location: 'Черный лес',             coords: 'S7-4', hour: 19, minute: 0 },
+  { name: 'ДПУ-7',                           type: 'База',        location: 'Черный лес',             coords: 'L8-1', hour: 19, minute: 0 },
+  { name: 'Подстанция',                      type: 'База',        location: 'Черный лес',             coords: 'H8-2', hour: 19, minute: 0 },
+  { name: 'Задорожье',                       type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'F6-2', hour: 13, minute: 0 },
+  { name: 'Заброшенная автостоянка',         type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'J3-3', hour: 16, minute: 0 },
+  { name: 'Лесопилка',                       type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'E2-2', hour: 19, minute: 0 },
+  { name: 'Очистная станция',                type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'H9-4', hour: 19, minute: 0 },
+  { name: 'Радиостанция',                    type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'C6-3', hour: 20, minute: 30 },
+  { name: 'Лодочное производство',           type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'J5-3', hour: 21, minute: 0 },
+  { name: 'Дорога к д.Выселки',               type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'B3-4', hour: 23, minute: 0 },
+  { name: 'д. Конуковка',                    type: 'Укрепточка',  location: 'Аэропорт',               coords: 'A2-2', hour: 18, minute: 30 },
+  { name: 'База отдыха',                     type: 'Укрепточка',  location: 'Везувий',                coords: 'F9-2', hour: 9,  minute: 0 },
+  { name: 'Железнодорожная станция Хворостовка', type: 'Укрепточка', location: 'Везувий',             coords: 'I6-3', hour: 14, minute: 0 },
+  { name: 'Пост ГАИ',                        type: 'Укрепточка',  location: 'Везувий',                coords: 'C5-2', hour: 18, minute: 0 },
+  { name: 'СНТ Озеро',                       type: 'Укрепточка',  location: 'Везувий',                coords: 'C4-2', hour: 20, minute: 30 },
+  { name: 'Заброшенное бомбоубежище',        type: 'Укрепточка',  location: 'Везувий',                coords: 'D10-2', hour: 20, minute: 30 },
+  { name: '66 км',                           type: 'Укрепточка',  location: 'Везувий',                coords: 'H4-4', hour: 21, minute: 0 },
+  { name: 'Гора сияния - юг',                type: 'Укрепточка',  location: 'Новая Земля о. Южный',   coords: 'C4-3', hour: 15, minute: 0 },
+  { name: 'Гора сияния - восток',            type: 'Укрепточка',  location: 'Новая Земля о. Южный',   coords: 'C4-2', hour: 16, minute: 0 },
+  { name: 'Гора сияния - запад',             type: 'Укрепточка',  location: 'Новая Земля о. Южный',   coords: 'B4-2', hour: 17, minute: 0 },
+  { name: 'Станция',                         type: 'Укрепточка',  location: 'Новая Земля о. Южный',   coords: 'C3-2', hour: 21, minute: 0 },
+  { name: 'Блокпост Красно',                 type: 'Укрепточка',  location: 'Черный лес',             coords: 'N9-2', hour: 13, minute: 0 },
+  { name: 'Рыбацкая хижина',                 type: 'Укрепточка',  location: 'Черный лес',             coords: 'E4-1', hour: 15, minute: 0 },
+  { name: 'Окраина с.Красно',                type: 'Укрепточка',  location: 'Черный лес',             coords: 'R8-3', hour: 16, minute: 0 },
+  { name: 'Дачный кооператив',                type: 'Укрепточка',  location: 'Черный лес',             coords: 'O5-1', hour: 17, minute: 0 },
+  { name: 'Охотничья заимка',                type: 'Укрепточка',  location: 'Черный лес',             coords: 'N3-1', hour: 21, minute: 0 },
+];
