@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { ACHIEVEMENTS } from '../content/achievementsData';
 import AchievementIcon from '../components/AchievementIcon';
+import InfoSpoiler from '../components/InfoSpoiler';
+import { ACHIEVEMENTS_SPOILER } from '../content/spoilerContent';
 
 // Только 3 колонки кликабельны/сортируемы — Наименование, Описание, Опыт,
 // как отмечено в референсе (красные стрелки на скриншоте). "Категория" и
@@ -60,6 +62,8 @@ export default function AchievementsPage() {
           <span className="pill">📋 Показано: {sorted.length} из {ACHIEVEMENTS.length}</span>
         </div>
       </div>
+
+      <InfoSpoiler {...ACHIEVEMENTS_SPOILER} storageKey="spoiler_achievements" />
 
       <input
         className="input captures-search"
