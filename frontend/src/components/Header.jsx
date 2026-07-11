@@ -67,7 +67,10 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
           </div>
         )}
 
-        {/* Единая кнопка-триггер меню разделов — одинаковая на десктопе и телефоне */}
+        {/* Единая кнопка-триггер — на телефоне это единственный вход в разделы,
+            на десктопе через неё будут открываться отдельные/новые пункты
+            (сейчас список пуст под будущее). Сами разделы на десктопе видны
+            всегда — строкой ниже. */}
         <button
           className={`menu-trigger-btn ${menuOpen ? 'active' : ''}`}
           onClick={() => setMenuOpen(o => !o)}
@@ -77,6 +80,12 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
           <span className="menu-trigger-icon">{menuOpen ? '✕' : '☰'}</span>
           <span className="menu-trigger-label">Разделы</span>
         </button>
+
+        {/* Разделы всегда видны в шапке на десктопе; на телефоне скрыты —
+            там для них не хватает места, доступ через кнопку выше. */}
+        <nav className="header-nav-desktop">
+          {navItems.map(item => renderNavItem(item, 'header-nav-btn'))}
+        </nav>
 
         <div className="header-user">
           <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
