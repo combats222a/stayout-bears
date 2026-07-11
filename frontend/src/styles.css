@@ -1837,32 +1837,10 @@ body {
 .capture-time-soon {
   color: var(--orange);
   font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.capture-time-soon::before {
-  content: '';
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--orange);
-  box-shadow: 0 0 6px var(--orange);
-  animation: sdot-pulse 1.5s infinite;
 }
 .capture-time-active {
   color: var(--red);
   font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.capture-time-active::before {
-  content: '';
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--red);
-  box-shadow: 0 0 6px var(--red);
-  animation: sdot-pulse 1.5s infinite;
 }
 
 .captures-legend {
