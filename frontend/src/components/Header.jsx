@@ -67,10 +67,16 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
           </div>
         )}
 
-        {/* Desktop nav */}
-        <nav className="header-nav header-nav-desktop">
-          {navItems.map(item => renderNavItem(item, 'nav-btn'))}
-        </nav>
+        {/* Единая кнопка-триггер меню разделов — одинаковая на десктопе и телефоне */}
+        <button
+          className={`menu-trigger-btn ${menuOpen ? 'active' : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Открыть меню разделов"
+          aria-expanded={menuOpen}
+        >
+          <span className="menu-trigger-icon">{menuOpen ? '✕' : '☰'}</span>
+          <span className="menu-trigger-label">Разделы</span>
+        </button>
 
         <div className="header-user">
           <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
@@ -94,22 +100,14 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
               <button className="btn btn-sm btn-ghost header-logout-desktop" onClick={onLogout}>Выйти</button>
             </>
           )}
-          {/* Hamburger — mobile only */}
-          <button
-            className="hamburger-btn"
-            onClick={() => setMenuOpen(o => !o)}
-            aria-label="Меню"
-          >
-            {menuOpen ? '✕' : '☰'}
-          </button>
         </div>
       </header>
 
-      {/* Mobile dropdown menu */}
+      {/* Панель разделов — «продолжение» шапки, открывается и на десктопе, и на телефоне */}
       {menuOpen && (
-        <div className="mobile-nav-overlay" onClick={() => setMenuOpen(false)}>
-          <div className="mobile-nav-menu" onClick={e => e.stopPropagation()}>
-            <div className="mobile-nav-user">
+        <div className="nav-panel-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="nav-panel" onClick={e => e.stopPropagation()}>
+            <div className="nav-panel-user">
               {isGuest ? (
                 <button
                   className="btn btn-primary btn-sm"
@@ -118,9 +116,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
                   Войти / Зарегистрироваться
                 </button>
               ) : (
-                <span style={{ fontSize: 13, color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>
-                  {user?.game_nick || user?.nick}
-                </span>
+                <span className="nav-panel-nick">{user?.game_nick || user?.nick}</span>
               )}
               <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
               <a
@@ -134,11 +130,13 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
                 <SteamIcon />
               </a>
             </div>
-            {navItems.map(item => renderNavItem(item, 'mobile-nav-btn'))}
+            <div className="nav-panel-list">
+              {navItems.map(item => renderNavItem(item, 'nav-panel-btn'))}
+            </div>
             {!isGuest && (
               <>
-                <div className="mobile-nav-divider" />
-                <button className="mobile-nav-btn mobile-nav-logout" onClick={() => { onLogout(); setMenuOpen(false); }}>
+                <div className="nav-panel-divider" />
+                <button className="nav-panel-btn nav-panel-logout" onClick={() => { onLogout(); setMenuOpen(false); }}>
                   🚪 Выйти
                 </button>
               </>
