@@ -61,23 +61,29 @@ body {
   font-size: 16px;
   color: var(--text);
 }
-.header-nav { display: flex; gap: 4px; flex: 1; }
-.nav-btn {
+.menu-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   background: none;
-  border: none;
-  color: var(--text2);
-  padding: 6px 12px;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  color: var(--text);
+  height: 36px;
+  padding: 0 14px;
   cursor: pointer;
   font-size: 13px;
   font-family: var(--font-body);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  transition: background 0.15s, color 0.15s;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.nav-btn:hover { background: var(--bg3); color: var(--text); }
-.nav-btn.active { background: var(--bg3); color: var(--accent); }
+.menu-trigger-btn:hover { background: var(--bg3); }
+.menu-trigger-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(88,166,255,0.08);
+}
+.menu-trigger-icon { font-size: 15px; line-height: 1; }
 .header-user { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .user-nick { font-size: 13px; color: var(--text2); font-family: var(--font-mono); }
 
@@ -114,14 +120,10 @@ body {
   color: #66c0f4;
   transform: translateY(-1px) scale(1.08);
 }
-.mobile-nav-user {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
 @media (max-width: 700px) {
-  .header-faq-link, .header-steam-link { display: none; }
+  /* Прячем FAQ/Steam именно в шапке (там не хватает места) — в панели разделов
+     их копия остаётся видимой на телефоне. */
+  .header-user > .header-faq-link, .header-user > .header-steam-link { display: none; }
 }
 
 /* === CARDS === */
@@ -441,7 +443,7 @@ body {
 @media (max-width: 600px) {
   .header { padding: 0 12px; gap: 8px; }
   .header-title { display: none; }
-  .nav-btn { padding: 6px 8px; font-size: 12px; }
+  .nav-panel-btn { padding: 8px 12px; font-size: 12px; }
   .main { padding: 16px 10px; }
   .bears-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .admin-table-header, .admin-table-row { grid-template-columns: 1fr 1fr; }
@@ -1038,61 +1040,62 @@ body {
    МОБИЛЬНАЯ АДАПТАЦИЯ — все правки ниже
    ============================================================ */
 
-/* === HAMBURGER / МОБИЛЬНОЕ МЕНЮ === */
-.hamburger-btn {
-  display: none;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 18px;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-.hamburger-btn:hover { background: var(--bg3); }
+/* === ПАНЕЛЬ РАЗДЕЛОВ — «продолжение» шапки, единая для десктопа и телефона === */
 
-.mobile-nav-overlay {
-  display: none;
+/* Прозрачный перехватчик кликов вне панели, чтобы закрыть её по клику снаружи.
+   Без затемнения фона — панель не модалка, а визуальное продолжение шапки. */
+.nav-panel-overlay {
   position: fixed;
   inset: 56px 0 0 0;
   z-index: 200;
-  background: rgba(0,0,0,0.5);
+  background: transparent;
 }
-.mobile-nav-menu {
-  display: flex;
-  flex-direction: column;
+.nav-panel {
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
-  padding: 8px 0;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  padding: 10px 20px 14px;
+  animation: nav-panel-in 0.15s ease-out;
 }
-.mobile-nav-user {
-  padding: 8px 16px 10px;
+@keyframes nav-panel-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Блок с ником/входом и FAQ/Steam внутри панели — виден только на телефоне,
+   на десктопе эти элементы и так постоянно видны в шапке справа. */
+.nav-panel-user {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 0 10px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
-.mobile-nav-btn {
+.nav-panel-nick { font-size: 13px; color: var(--text2); font-family: var(--font-mono); }
+
+.nav-panel-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.nav-panel-btn {
   background: none;
   border: none;
   color: var(--text);
-  font-size: 15px;
+  font-size: 14px;
   font-family: var(--font-body);
-  padding: 12px 20px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
   text-align: left;
   text-decoration: none;
-  display: block;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.mobile-nav-btn:hover { background: var(--bg3); }
-.mobile-nav-btn.active { color: var(--accent); background: rgba(88,166,255,0.07); }
-.mobile-nav-divider { height: 1px; background: var(--border); margin: 4px 0; }
-.mobile-nav-logout { color: var(--red); }
+.nav-panel-btn:hover { background: var(--bg3); }
+.nav-panel-btn.active { color: var(--accent); background: rgba(88,166,255,0.07); }
+.nav-panel-divider { display: none; }
+/* Кнопка «Выйти» внутри панели дублирует ту, что справа в шапке — нужна
+   только на телефоне, где шапка её скрывает (см. мобильный медиа-запрос). */
+.nav-panel-logout { display: none; color: var(--red); }
 
 /* === MODAL — корректный размер на мобиле === */
 @media (max-width: 480px) {
@@ -1109,12 +1112,16 @@ body {
 
   /* --- Header --- */
   .header { padding: 0 12px; gap: 8px; height: 56px; }
-  .header-nav-desktop { display: none !important; }
   .header-title { display: none; }
   .header-logout-desktop { display: none !important; }
-  .hamburger-btn { display: inline-flex; }
-  .mobile-nav-overlay { display: block; }
+  .menu-trigger-label { display: none; }
+  .menu-trigger-btn { padding: 0 10px; }
   .user-nick { display: none; }
+  /* На телефоне ник/вход и FAQ/Steam скрыты справа в шапке — показываем их внутри панели */
+  .nav-panel-user { display: flex; }
+  .nav-panel-divider { display: block; height: 1px; background: var(--border); margin: 8px 0; }
+  .nav-panel-list { flex-direction: column; flex-wrap: nowrap; }
+  .nav-panel-logout { display: block; }
 
   /* --- Main layout --- */
   .main { padding: 12px 10px; }
@@ -1254,9 +1261,6 @@ body {
 @media (min-width: 641px) {
   .bear-row-mobile { display: none !important; }
   .timer-card-mobile { display: none !important; }
-  .mobile-nav-overlay { display: none !important; }
-  .hamburger-btn { display: none !important; }
-  .header-nav-desktop { display: flex !important; }
   .header-logout-desktop { display: inline-flex !important; }
 }
 
