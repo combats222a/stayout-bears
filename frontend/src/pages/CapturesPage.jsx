@@ -147,7 +147,7 @@ export default function CapturesPage() {
                     <td>
                       {status.isActive ? (
                         <span className="capture-time capture-time-active">
-                          Идёт захват — до конца {formatDuration(status.msToEnd)}
+                          {formatDuration(status.msToEnd)}
                         </span>
                       ) : (
                         <span className={`capture-time ${status.isSoon ? 'capture-time-soon' : ''}`}>
