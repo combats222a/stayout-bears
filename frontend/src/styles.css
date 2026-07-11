@@ -1828,15 +1828,15 @@ body {
 .captures-table td:first-child { text-align: left; }
 .captures-table th:first-child { text-align: left; }
 
-.capture-row-active { background: rgba(63,185,80,.08); }
-.capture-row-active:hover { background: rgba(63,185,80,.13); }
-.capture-row-soon { background: rgba(248,81,73,.06); }
-.capture-row-soon:hover { background: rgba(248,81,73,.11); }
+.capture-row-active { background: rgba(248,81,73,.09); }
+.capture-row-active:hover { background: rgba(248,81,73,.15); }
+.capture-row-soon { background: rgba(210,153,34,.08); }
+.capture-row-soon:hover { background: rgba(210,153,34,.14); }
 
 .capture-time { font-family: var(--font-mono); font-size: 13px; color: var(--text2); }
-.capture-time-soon { color: var(--red); font-weight: 600; }
+.capture-time-soon { color: var(--orange); font-weight: 600; }
 .capture-time-active {
-  color: var(--green);
+  color: var(--red);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -1846,8 +1846,8 @@ body {
   content: '';
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
   animation: sdot-pulse 1.5s infinite;
 }
 
@@ -1859,9 +1859,14 @@ body {
   color: var(--text3);
 }
 .captures-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sortable-th { cursor: pointer; user-select: none; white-space: nowrap; }
+.sortable-th:hover { color: var(--text1); }
+.sort-arrow { font-size: 11px; opacity: .45; margin-left: 2px; }
+.sortable-th-active .sort-arrow { opacity: 1; color: var(--accent); }
+
 .legend-swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
-.legend-swatch-active { background: rgba(63,185,80,.35); border: 1px solid rgba(63,185,80,.6); }
-.legend-swatch-soon { background: rgba(248,81,73,.3); border: 1px solid rgba(248,81,73,.55); }
+.legend-swatch-active { background: rgba(248,81,73,.3); border: 1px solid rgba(248,81,73,.55); }
+.legend-swatch-soon { background: rgba(210,153,34,.3); border: 1px solid rgba(210,153,34,.55); }
 
 @media (max-width: 640px) {
   .captures-search { max-width: none; }

@@ -4,9 +4,33 @@ import { CAPTURES_SPOILER } from '../content/spoilerContent';
 import { CAPTURE_LOCATIONS } from '../content/captureLocations';
 import { getCaptureStatus, formatDuration, getViewerTimezoneLabel } from '../utils/captures';
 
+// Значение для сортировки колонки "До начала / до конца захвата":
+// активные точки всегда идут первыми (по возрастанию времени до конца),
+// затем остальные — по возрастанию времени до начала.
+function countdownSortValue(status) {
+  return status.isActive ? status.msToEnd - 1e13 : status.msToStart;
+}
+
+const COLUMNS = [
+  { key: 'name', label: 'Наименование', getValue: r => r.loc.name },
+  { key: 'type', label: 'Тип', getValue: r => r.loc.type },
+  { key: 'location', label: 'Локация', getValue: r => r.loc.location },
+  { key: 'coords', label: 'Координаты', getValue: r => r.loc.coords },
+  { key: 'date', label: 'Дата захвата', getValue: r => r.status.start.getTime() },
+  { key: 'countdown', label: 'До начала / до конца захвата', getValue: r => countdownSortValue(r.status) },
+];
+
 export default function CapturesPage() {
   const [now, setNow] = useState(() => new Date());
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState({ key: null, dir: 'asc' });
+
+  const handleSort = (key) => {
+    setSort(prev => {
+      if (prev.key !== key) return { key, dir: 'asc' };
+      return { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+    });
+  };
 
   // Тикаем раз в секунду — таймеры "до начала"/"до конца" в таблице живые
   useEffect(() => {
@@ -35,6 +59,22 @@ export default function CapturesPage() {
     );
   }, [rows, search]);
 
+  const sorted = useMemo(() => {
+    if (!sort.key) return filtered;
+    const col = COLUMNS.find(c => c.key === sort.key);
+    if (!col) return filtered;
+    const list = [...filtered];
+    list.sort((a, b) => {
+      const va = col.getValue(a);
+      const vb = col.getValue(b);
+      let cmp;
+      if (typeof va === 'string') cmp = va.localeCompare(vb, 'ru');
+      else cmp = va - vb;
+      return sort.dir === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }, [filtered, sort]);
+
   const activeCount = rows.filter(r => r.status.isActive).length;
   const soonCount = rows.filter(r => r.status.isSoon).length;
 
@@ -43,11 +83,11 @@ export default function CapturesPage() {
       <div className="bears-hdr">
         <h2 className="page-title">🚩 Захваты</h2>
         <div className="stat-pills">
-          <span className="pill" style={{ color: 'var(--green)', borderColor: 'rgba(63,185,80,.4)', background: 'rgba(63,185,80,.1)' }}>
-            🟢 Идёт сейчас: {activeCount}
-          </span>
           <span className="pill" style={{ color: 'var(--red)', borderColor: 'rgba(248,81,73,.4)', background: 'rgba(248,81,73,.1)' }}>
-            🔴 Скоро: {soonCount}
+            🔴 Идёт сейчас: {activeCount}
+          </span>
+          <span className="pill" style={{ color: 'var(--orange)', borderColor: 'rgba(210,153,34,.4)', background: 'rgba(210,153,34,.1)' }}>
+            🟡 Скоро: {soonCount}
           </span>
           <span className="pill">📍 Всего точек: {CAPTURE_LOCATIONS.length}</span>
         </div>
@@ -71,16 +111,24 @@ export default function CapturesPage() {
           <table className="bears-table captures-table">
             <thead>
               <tr>
-                <th>Наименование</th>
-                <th>Тип</th>
-                <th>Локация</th>
-                <th>Координаты</th>
-                <th>Дата захвата</th>
-                <th>До начала захвата</th>
+                {COLUMNS.map(col => {
+                  const isSorted = sort.key === col.key;
+                  const arrow = isSorted ? (sort.dir === 'asc' ? '▲' : '▼') : '⇅';
+                  return (
+                    <th
+                      key={col.key}
+                      className={`sortable-th${isSorted ? ' sortable-th-active' : ''}`}
+                      onClick={() => handleSort(col.key)}
+                      title="Нажмите, чтобы отсортировать"
+                    >
+                      {col.label} <span className="sort-arrow">{arrow}</span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(({ loc, status }) => {
+              {sorted.map(({ loc, status }) => {
                 const rowClass = status.isActive
                   ? 'capture-row-active'
                   : status.isSoon
@@ -110,7 +158,7 @@ export default function CapturesPage() {
                   </tr>
                 );
               })}
-              {filtered.length === 0 && (
+              {sorted.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text3)', padding: 20 }}>
                     Ничего не найдено
