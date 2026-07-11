@@ -113,10 +113,6 @@ export default function AchievementsPage() {
           </table>
         </div>
       </div>
-
-      <div className="captures-legend" style={{ marginTop: 12 }}>
-        <span>🖼️ Иконки — свои, по категориям достижения (не с чужого сайта)</span>
-      </div>
     </div>
   );
 }
