@@ -1784,3 +1784,141 @@ body {
 }
 .auth-back-link:hover { color: var(--accent); }
 
+/* ============================================================
+   БОКОВАЯ ПАНЕЛЬ НАВИГАЦИИ (десктоп) — доп. способ навигации,
+   дублирует пункты верхней шапки. На мобильном не показывается,
+   там навигация не меняется (см. .hamburger-btn / .mobile-nav-*).
+   ============================================================ */
+.side-nav-tab {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  z-index: 320;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 64px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  transition: left 0.25s ease, background 0.15s;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.25);
+}
+.side-nav-tab:hover { background: var(--accent-hover, var(--accent)); }
+.side-nav-tab.open { left: 280px; }
+.side-nav-tab-arrow { display: block; }
+
+.side-nav-tab-tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1c1c1c;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.side-nav-tab:hover .side-nav-tab-tooltip { opacity: 1; }
+
+.side-nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.5);
+}
+
+.side-nav-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 280px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  box-shadow: 8px 0 32px rgba(0,0,0,0.5);
+  z-index: 310;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+}
+.side-nav-panel.open { transform: translateX(0); }
+
+.side-nav-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.side-nav-panel-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.side-nav-close-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.side-nav-close-btn:hover { color: var(--text); }
+
+.side-nav-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.side-nav-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font-body);
+  padding: 12px 20px;
+  text-align: left;
+  text-decoration: none;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.side-nav-btn:hover { background: var(--bg3); }
+.side-nav-btn.active { color: var(--accent); background: rgba(88,166,255,0.07); }
+
+.side-nav-panel-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.side-nav-panel-footer .user-nick { font-size: 13px; }
+
+/* Показываем вкладку и панель только на десктопе — на мобильном
+   навигация остаётся прежней (выпадающее меню под бургером). */
+@media (min-width: 641px) {
+  .side-nav-tab { display: inline-flex; }
+}
+@media (max-width: 640px) {
+  .side-nav-tab,
+  .side-nav-overlay,
+  .side-nav-panel { display: none !important; }
+}
