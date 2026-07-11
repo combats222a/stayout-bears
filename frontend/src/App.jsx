@@ -13,19 +13,22 @@ import TimersPage from './pages/TimersPage';
 import PromoPage from './pages/PromoPage';
 import LevelPage from './pages/LevelPage';
 import FaqPage from './pages/FaqPage';
+import CapturesPage from './pages/CapturesPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 import { useGlobalSoundWatcher } from './hooks/useGlobalSoundWatcher';
 
 // Разделы приложения и их адреса — каждый пункт меню Header теперь
 // соответствует отдельному пути в адресной строке.
-const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin'];
+const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin', 'captures'];
 
 // Разделы, которые гость (без входа) может открыть и увидеть их устройство —
 // просто с заглушкой вместо реальных данных и действий (см. GuestLock).
 // «Профиль» и «Админ» сюда не входят: профиль требует конкретного аккаунта,
 // админка — доступ суперадмина, показывать их «превью» гостю смысла нет.
-const GUEST_PREVIEW_PAGES = ['bears', 'shining', 'hearts', 'timers', 'clan'];
+// «Захваты» не завязаны на клан или аккаунт вообще — это просто справочная
+// таблица с расписанием, поэтому гость видит её без каких-либо ограничений.
+const GUEST_PREVIEW_PAGES = ['bears', 'shining', 'hearts', 'timers', 'clan', 'captures'];
 
 export default function App() {
   const navigate = useNavigate();
@@ -310,6 +313,7 @@ export default function App() {
             {page === 'clan' && (
               <ClanPage user={null} clan={null} members={[]} bans={[]} onClanChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
             )}
+            {page === 'captures' && <CapturesPage />}
           </main>
         </>
       );
@@ -362,6 +366,7 @@ export default function App() {
         {page === 'admin' && user.is_superadmin && (
           <AdminPage />
         )}
+        {page === 'captures' && <CapturesPage />}
       </main>
     </div>
   );
