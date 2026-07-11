@@ -75,6 +75,7 @@ export default function CapturesPage() {
                 <th>Тип</th>
                 <th>Локация</th>
                 <th>Координаты</th>
+                <th>Дата захвата</th>
                 <th>До начала захвата</th>
               </tr>
             </thead>
@@ -92,6 +93,10 @@ export default function CapturesPage() {
                     <td>{loc.location}</td>
                     <td><span className="square-badge">{loc.coords}</span></td>
                     <td>
+                      {status.start.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })},{' '}
+                      {status.start.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td>
                       {status.isActive ? (
                         <span className="capture-time capture-time-active">
                           Идёт захват — до конца {formatDuration(status.msToEnd)}
@@ -107,7 +112,7 @@ export default function CapturesPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text3)', padding: 20 }}>
+                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text3)', padding: 20 }}>
                     Ничего не найдено
                   </td>
                 </tr>

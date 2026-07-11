@@ -1,4 +1,9 @@
-import { SERVER_UTC_OFFSET, DURATION_MIN } from '../content/captureLocations';
+import { SERVER_UTC_OFFSET, DURATION_BY_TYPE, DEFAULT_DURATION_MIN } from '../content/captureLocations';
+
+// Длительность окна захвата для конкретной точки (зависит от её типа).
+function durationMinFor(location) {
+  return DURATION_BY_TYPE[location.type] ?? DEFAULT_DURATION_MIN;
+}
 
 // Расписание точек хранится как "ежедневное игровое время сервера"
 // (час:минута в Europe/Kiev, UTC+3). Отображать его нужно всегда в
@@ -23,12 +28,13 @@ function serverTimeOnDate(baseUtcDate, hour, minute) {
 // Ближайшее наступление точки: если сегодняшнее окно (начало+длительность)
 // уже прошло — берём завтрашнее.
 export function getNextOccurrence(location, now = new Date()) {
+  const durationMin = durationMinFor(location);
   let start = serverTimeOnDate(now, location.hour, location.minute);
-  let end = new Date(start.getTime() + DURATION_MIN * 60000);
+  let end = new Date(start.getTime() + durationMin * 60000);
   if (end.getTime() <= now.getTime()) {
     const nextDay = new Date(now.getTime() + 24 * 3600000);
     start = serverTimeOnDate(nextDay, location.hour, location.minute);
-    end = new Date(start.getTime() + DURATION_MIN * 60000);
+    end = new Date(start.getTime() + durationMin * 60000);
   }
   return { start, end };
 }
