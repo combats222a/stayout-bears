@@ -21,10 +21,6 @@ const NAV_ITEMS = [
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  // Боковая панель-дублёр навигации для десктопа — открывается по клику на
-  // вкладку у левого края экрана (см. .side-nav-tab в styles.css). Строка
-  // вкладок в шапке при этом остаётся как есть, это доп. способ навигации.
-  const [sideNavOpen, setSideNavOpen] = useState(false);
   const isGuest = !user;
 
   const navItems = [
@@ -35,7 +31,6 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
   function handleNav(key) {
     if (onNavigate) onNavigate(key);
     setMenuOpen(false);
-    setSideNavOpen(false);
   }
 
   function renderNavItem(item, className) {
@@ -151,64 +146,6 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
           </div>
         </div>
       )}
-
-      {/* Side nav tab — desktop only, дублирует навигацию в верхней шапке */}
-      <button
-        className={`side-nav-tab ${sideNavOpen ? 'open' : ''}`}
-        onClick={() => setSideNavOpen(o => !o)}
-        aria-label="Открыть меню"
-      >
-        <span className="side-nav-tab-arrow">{sideNavOpen ? '‹' : '›'}</span>
-        {!sideNavOpen && <span className="side-nav-tab-tooltip">Открыть меню</span>}
-      </button>
-
-      {sideNavOpen && (
-        <div className="side-nav-overlay" onClick={() => setSideNavOpen(false)} />
-      )}
-
-      <div className={`side-nav-panel ${sideNavOpen ? 'open' : ''}`}>
-        <div className="side-nav-panel-header">
-          <span className="side-nav-panel-title">🐻‍❄️ Bear Tracker</span>
-          <button
-            className="side-nav-close-btn"
-            onClick={() => setSideNavOpen(false)}
-            aria-label="Закрыть меню"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="side-nav-panel-body">
-          {navItems.map(item => renderNavItem(item, 'side-nav-btn'))}
-        </div>
-        <div className="side-nav-panel-footer">
-          <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
-          <a
-            className="header-steam-link"
-            href={STEAM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Stay Out в Steam"
-            aria-label="Stay Out в Steam"
-          >
-            <SteamIcon />
-          </a>
-          {isGuest ? (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => { onLoginClick(); setSideNavOpen(false); }}
-            >
-              Войти / Зарегистрироваться
-            </button>
-          ) : (
-            <>
-              <span className="user-nick">{user?.game_nick || user?.nick}</span>
-              <button className="btn btn-sm btn-ghost" onClick={() => { onLogout(); setSideNavOpen(false); }}>
-                Выйти
-              </button>
-            </>
-          )}
-        </div>
-      </div>
     </>
   );
 }
