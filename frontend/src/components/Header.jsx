@@ -15,8 +15,8 @@ const NAV_ITEMS = [
   { key: 'timers',  label: '⏱️ Таймеры' },
   { key: 'level',   label: '📈 Уровень',  guestHref: '/level' },
   { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
-  { key: 'clan',     label: '🏕️ Клан' },
   { key: 'captures', label: '🚩 Захваты' },
+  { key: 'clan',     label: '🏕️ Клан' },
   { key: 'profile',  label: '👤 Профиль', guestLoginOnly: true },
 ];
 
