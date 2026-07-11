@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { key: 'level',   label: '📈 Уровень',  guestHref: '/level' },
   { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
   { key: 'captures', label: '🚩 Захваты' },
+  { key: 'achievements', label: '🏆 Достижения' },
   { key: 'clan',     label: '🏕️ Клан' },
   { key: 'profile',  label: '👤 Профиль', guestLoginOnly: true },
 ];

@@ -14,13 +14,14 @@ import PromoPage from './pages/PromoPage';
 import LevelPage from './pages/LevelPage';
 import FaqPage from './pages/FaqPage';
 import CapturesPage from './pages/CapturesPage';
+import AchievementsPage from './pages/AchievementsPage';
 import { api } from './utils/api';
 import { useSocket } from './hooks/useSocket';
 import { useGlobalSoundWatcher } from './hooks/useGlobalSoundWatcher';
 
 // Разделы приложения и их адреса — каждый пункт меню Header теперь
 // соответствует отдельному пути в адресной строке.
-const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin', 'captures'];
+const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin', 'captures', 'achievements'];
 
 // Разделы, которые гость (без входа) может открыть и увидеть их устройство —
 // просто с заглушкой вместо реальных данных и действий (см. GuestLock).
@@ -28,7 +29,7 @@ const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'p
 // админка — доступ суперадмина, показывать их «превью» гостю смысла нет.
 // «Захваты» не завязаны на клан или аккаунт вообще — это просто справочная
 // таблица с расписанием, поэтому гость видит её без каких-либо ограничений.
-const GUEST_PREVIEW_PAGES = ['bears', 'shining', 'hearts', 'timers', 'clan', 'captures'];
+const GUEST_PREVIEW_PAGES = ['bears', 'shining', 'hearts', 'timers', 'clan', 'captures', 'achievements'];
 
 export default function App() {
   const navigate = useNavigate();
@@ -314,6 +315,7 @@ export default function App() {
               <ClanPage user={null} clan={null} members={[]} bans={[]} onClanChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
             )}
             {page === 'captures' && <CapturesPage />}
+            {page === 'achievements' && <AchievementsPage />}
           </main>
         </>
       );
@@ -367,6 +369,7 @@ export default function App() {
           <AdminPage />
         )}
         {page === 'captures' && <CapturesPage />}
+        {page === 'achievements' && <AchievementsPage />}
       </main>
     </div>
   );
