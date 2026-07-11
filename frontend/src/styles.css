@@ -85,6 +85,25 @@ body {
 }
 .menu-trigger-icon { font-size: 15px; line-height: 1; }
 .header-user { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+/* Разделы, видимые прямо в шапке на десктопе (на телефоне скрыты — см. медиа-запрос) */
+.header-nav-desktop { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+.header-nav-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-body);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+.header-nav-btn:hover { background: var(--bg3); color: var(--text); }
+.header-nav-btn.active { background: var(--bg3); color: var(--accent); }
 .user-nick { font-size: 13px; color: var(--text2); font-family: var(--font-mono); }
 
 .header-faq-link {
@@ -1112,6 +1131,7 @@ body {
 
   /* --- Header --- */
   .header { padding: 0 12px; gap: 8px; height: 56px; }
+  .header-nav-desktop { display: none !important; }
   .header-title { display: none; }
   .header-logout-desktop { display: none !important; }
   .menu-trigger-label { display: none; }
@@ -1262,6 +1282,9 @@ body {
   .bear-row-mobile { display: none !important; }
   .timer-card-mobile { display: none !important; }
   .header-logout-desktop { display: inline-flex !important; }
+  /* Разделы уже видны в шапке — панель на десктопе оставляем свободной под
+     новые/дополнительные пункты, которые будут добавлены позже. */
+  .nav-panel-list { display: none; }
 }
 
 /* === PROMO PAGE === */
