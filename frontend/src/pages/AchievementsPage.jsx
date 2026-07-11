@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ACHIEVEMENTS } from '../content/achievementsData';
 import AchievementIcon from '../components/AchievementIcon';
-import InfoSpoiler from '../components/InfoSpoiler';
-import { ACHIEVEMENTS_SPOILER } from '../content/spoilerContent';
 
 // Только 3 колонки кликабельны/сортируемы — Наименование, Описание, Опыт,
 // как отмечено в референсе (красные стрелки на скриншоте). "Категория" и
@@ -63,8 +61,6 @@ export default function AchievementsPage() {
         </div>
       </div>
 
-      <InfoSpoiler {...ACHIEVEMENTS_SPOILER} storageKey="spoiler_achievements" />
-
       <input
         className="input captures-search"
         placeholder="Поиск по названию, описанию или категории..."
@@ -120,7 +116,6 @@ export default function AchievementsPage() {
 
       <div className="captures-legend" style={{ marginTop: 12 }}>
         <span>🖼️ Иконки — свои, по категориям достижения (не с чужого сайта)</span>
-        <span>📄 Список пока неполный ({ACHIEVEMENTS.length} из 304) — добавляется по частям</span>
       </div>
     </div>
   );

@@ -23,6 +23,9 @@ const CATEGORY_STYLE = {
   'Зарядка':              { bg: '#30300f', fg: '#d9d13b', glyph: 'bolt' },
   'Смерть':               { bg: '#181818', fg: '#6e7681', glyph: 'skull2' },
   'Страдания':            { bg: '#2a2010', fg: '#c99a4e', glyph: 'egg' },
+  'Добыча':               { bg: '#1c2818', fg: '#7fb84f', glyph: 'claw' },
+  'Охота за головами':    { bg: '#2a1414', fg: '#d1584a', glyph: 'skull' },
+  'Соревнования':         { bg: '#2a2410', fg: '#e0b83b', glyph: 'star' },
 };
 
 const DEFAULT_STYLE = { bg: '#20242c', fg: '#8b93a1', glyph: 'star' };
