@@ -1,64 +1,21 @@
-// Разбор и расчёт выражений вида "02:01 +35", "14:20-1:30", "+45", "-90".
-// Формат специально сделан гибким — игрок может писать почти как угодно:
-// с пробелами и без, дельту минутами или через двоеточие, базовое время
-// можно не указывать вообще (тогда берётся текущее реальное время).
+// Расчёт "время + смещение" для калькулятора времени. Раньше здесь был
+// парсер свободного текста ("02:01 +35" одной строкой) — его заменили на
+// структурированный ввод (маска ЧЧ:ММ + отдельное поле дельты), поэтому
+// расчёт теперь принимает уже готовые числа, без разбора строк.
 
 export function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
-// Приводим разные виды тире/дефиса к обычному "-" и схлопываем пробелы —
-// люди часто копируют текст с "красивым" минусом или лишними пробелами.
-function normalize(str) {
-  return String(str || '')
-    .replace(/[–—−]/g, '-')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const TIME_RE = '(\\d{1,2}):([0-5]?\\d)';
-
 /**
- * Разбирает выражение и считает результат.
- * @param {string} raw   — то, что ввёл игрок
- * @param {Date}   now    — текущий момент (для "+35" без базы и кнопки «Сейчас»)
- * @returns {null | { error: true } | ResultObject}
- *   null — строка пустая (нечего считать, но это не ошибка).
+ * @param {number|null} baseH — час базового времени, null если используем "сейчас"
+ * @param {number|null} baseM — минута базового времени
+ * @param {'+'|'-'} sign
+ * @param {number} deltaMin — смещение в минутах (неотрицательное)
+ * @param {boolean} usedNow — база не указана явно, взято текущее время
  */
-export function parseTimeExpr(raw, now = new Date()) {
-  const str = normalize(raw);
-  if (!str) return null;
-
-  let m;
-
-  // "02:01 +35" / "02:01+1:20" — база + знак + дельта (минуты или чч:мм)
-  m = str.match(new RegExp(`^${TIME_RE}\\s*([+-])\\s*(?:${TIME_RE}|(\\d{1,4}))$`));
-  if (m) {
-    const baseH = +m[1], baseM = +m[2], sign = m[3];
-    const deltaMin = m[4] !== undefined ? (+m[4]) * 60 + (+m[5]) : +m[6];
-    return build({ baseH, baseM, sign, deltaMin, usedNow: false });
-  }
-
-  // "+35" / "-1:20" — без базы, дельта от текущего момента
-  m = str.match(new RegExp(`^([+-])\\s*(?:${TIME_RE}|(\\d{1,4}))$`));
-  if (m) {
-    const sign = m[1];
-    const deltaMin = m[2] !== undefined ? (+m[2]) * 60 + (+m[3]) : +m[4];
-    return build({ baseH: now.getHours(), baseM: now.getMinutes(), sign, deltaMin, usedNow: true });
-  }
-
-  // просто время без операции — "14:20" (полезно как быстрый способ
-  // проверить/поправить опечатку перед тем, как дописать дельту)
-  m = str.match(new RegExp(`^${TIME_RE}$`));
-  if (m) {
-    return build({ baseH: +m[1], baseM: +m[2], sign: '+', deltaMin: 0, usedNow: false });
-  }
-
-  return { error: true };
-}
-
-function build({ baseH, baseM, sign, deltaMin, usedNow }) {
-  if (baseH > 23 || baseM > 59 || deltaMin == null || Number.isNaN(deltaMin)) {
+export function computeTimeResult({ baseH, baseM, sign, deltaMin, usedNow }) {
+  if (baseH == null || baseM == null || baseH > 23 || baseM > 59 || Number.isNaN(deltaMin)) {
     return { error: true };
   }
   const baseTotal = baseH * 60 + baseM;

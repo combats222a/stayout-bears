@@ -1885,7 +1885,7 @@ body {
   background: linear-gradient(160deg, var(--bg2) 0%, var(--bg) 130%);
 }
 
-.timecalc-input-row {
+.timecalc-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1895,7 +1895,7 @@ body {
   padding: 6px 8px 6px 14px;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
-.timecalc-input-row:focus-within {
+.timecalc-row:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
 }
@@ -1913,17 +1913,6 @@ body {
   padding: 8px 0;
 }
 .timecalc-input::placeholder { color: var(--text3); }
-.timecalc-clear-btn {
-  background: none;
-  border: none;
-  color: var(--text3);
-  cursor: pointer;
-  font-size: 15px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  line-height: 1;
-}
-.timecalc-clear-btn:hover { color: var(--text); background: var(--bg3); }
 .timecalc-now-btn {
   background: rgba(74,158,221,.1);
   border-color: rgba(74,158,221,.35);
@@ -1931,6 +1920,43 @@ body {
   flex-shrink: 0;
 }
 .timecalc-now-btn:hover { background: rgba(74,158,221,.2); }
+
+.timecalc-row-delta { padding-left: 8px; }
+.timecalc-sign-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.timecalc-sign-toggle button {
+  width: 38px;
+  height: 34px;
+  background: var(--bg3);
+  border: none;
+  color: var(--text2);
+  font-size: 18px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.timecalc-sign-toggle button:first-child { border-right: 1px solid var(--border); }
+.timecalc-sign-toggle button:hover { background: #2d333b; color: var(--text); }
+.timecalc-sign-toggle button.active { background: var(--accent2); color: #fff; }
+.timecalc-delta-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 1px;
+  padding: 8px 0;
+}
+.timecalc-delta-input::placeholder { color: var(--text3); }
+.timecalc-delta-suffix { color: var(--text3); font-size: 13px; flex-shrink: 0; }
 
 .timecalc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .timecalc-chip {
@@ -2011,29 +2037,8 @@ body {
 .timecalc-result-phrase { font-size: 13px; color: var(--text2); margin-top: 10px; line-height: 1.6; }
 .timecalc-result-phrase b { font-family: var(--font-mono); color: var(--text); }
 
-.timecalc-history-card { display: flex; flex-direction: column; gap: 10px; }
-.timecalc-history-title { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
-.timecalc-history-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.timecalc-history-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 6px 10px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text2);
-  cursor: pointer;
-  transition: border-color .15s ease, color .15s ease;
-}
-.timecalc-history-item:hover { border-color: var(--accent); color: var(--text); }
-.timecalc-history-arrow { color: var(--text3); }
-.timecalc-history-result { color: var(--green); }
-
 @media (max-width: 640px) {
   .timecalc-result-value { font-size: 32px; }
-  .timecalc-input { font-size: 18px; }
+  .timecalc-input, .timecalc-delta-input { font-size: 18px; }
   .timecalc-copy-btn { margin-left: 0; }
 }
