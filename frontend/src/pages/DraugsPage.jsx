@@ -5,7 +5,7 @@ import {
   getTimeLeftMs, formatCountdown, formatClock, formatElapsed, getProgress,
   parseLocalTimeInput, killedAtFromSpawnAt, WARN_BEFORE_SPAWN_MS
 } from '../utils/draugs';
-import { isDraugsSoundEnabled, setDraugsSoundEnabled } from '../utils/soundPrefs';
+import { isDraugSoundEnabled, setDraugSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
 import GuestLock from '../components/GuestLock';
@@ -63,7 +63,14 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
   const [ms, setMs]     = useState(() => getTimeLeftMs(draug));
   const [elap, setElap] = useState('--:--:--');
   const [showModal, setShowModal] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => isDraugSoundEnabled(draug.draug_index));
   const warnedRef = useRef(getTimeLeftMs(draug) <= WARN_BEFORE_SPAWN_MS);
+
+  function toggleSound() {
+    const next = !soundOn;
+    setSoundOn(next);
+    setDraugSoundEnabled(draug.draug_index, next);
+  }
 
   useEffect(() => {
     setMs(getTimeLeftMs(draug));
@@ -143,6 +150,13 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
                 </>
               : <button className="btn-reset-row" onClick={() => onReset(draug.draug_index)}>✕ Сброс</button>
             }
+            <button
+              className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
+              onClick={toggleSound}
+              title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
+            >
+              {soundOn ? '🔊' : '🔇'}
+            </button>
           </div>
         </td>
         <td className="td-clock">{isActive ? spawnDisplay : '--:--:--'}</td>
@@ -209,6 +223,13 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
                   </>
                 : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(draug.draug_index)}>✕ Сброс</button>
               }
+              <button
+                className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
+                onClick={toggleSound}
+                title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
+              >
+                {soundOn ? '🔊' : '🔇'}
+              </button>
             </div>
           </div>
         </td>
@@ -228,14 +249,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLoginClick }) {
   const [error, setError] = useState('');
-  const [soundOn, setSoundOn] = useState(() => isDraugsSoundEnabled());
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  function toggleSound() {
-    const next = !soundOn;
-    setSoundOn(next);
-    setDraugsSoundEnabled(next);
-  }
 
   const mergedDraugs = DRAUGS_LIST.map(meta => {
     const found = draugs.find(d => d.draug_index === meta.index);
@@ -297,13 +311,6 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
         <div className="stat-pills">
           {active > 0 && <span className="pill pill-blue">⏱ {active} таймер{active > 1 ? 'а' : ''}</span>}
           {ready  > 0 && <span className="pill pill-green">⚡ {ready} спавн!</span>}
-          <button
-            className={`rupor-btn ${soundOn ? 'rupor-on' : 'rupor-off'}`}
-            onClick={toggleSound}
-            title={soundOn ? 'Звук включён — нажми чтобы выключить' : 'Звук выключен — нажми чтобы включить'}
-          >
-            {soundOn ? '🔊' : '🔇'}
-          </button>
         </div>
       </div>
       <InfoSpoiler {...DRAUGS_SPOILER} storageKey="spoiler_draugs" />

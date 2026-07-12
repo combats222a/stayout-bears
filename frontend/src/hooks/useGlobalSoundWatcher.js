@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { api } from '../utils/api';
 import { playSpawnSound, playShiningWarningSound, playTimerDoneSound } from '../utils/sound';
-import { isBearsSoundEnabled, isDraugsSoundEnabled, isShiningSoundEnabled } from '../utils/soundPrefs';
+import { isBearSoundEnabled, isDraugSoundEnabled, isShiningSoundEnabled } from '../utils/soundPrefs';
 import { getTimeLeftMs, WARN_BEFORE_SPAWN_MS } from '../utils/bears';
 import { getTimeLeftMs as getDraugTimeLeftMs, WARN_BEFORE_SPAWN_MS as DRAUG_WARN_BEFORE_SPAWN_MS } from '../utils/draugs';
 import { computeShiningSlots } from '../utils/shining';
@@ -72,7 +72,7 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
           }
           if (msLeft > 0 && msLeft <= WARN_BEFORE_SPAWN_MS && !entry.warned) {
             entry.warned = true;
-            if (isBearsSoundEnabled()) playSpawnSound();
+            if (isBearSoundEnabled(bear.bear_index)) playSpawnSound();
           }
         }
       }
@@ -90,7 +90,7 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
           }
           if (msLeft > 0 && msLeft <= DRAUG_WARN_BEFORE_SPAWN_MS && !entry.warned) {
             entry.warned = true;
-            if (isDraugsSoundEnabled()) playSpawnSound();
+            if (isDraugSoundEnabled(draug.draug_index)) playSpawnSound();
           }
         }
       }

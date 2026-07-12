@@ -1,9 +1,11 @@
 // Настройки звука хранятся локально в браузере игрока.
-// Медведи и Сияние — по умолчанию ВКЛЮЧЕНО (как было раньше).
+// Медведи и Драуги — теперь звук настраивается ОТДЕЛЬНО для каждого
+// медведя/драуга (как у Таймеров), и по умолчанию ВЫКЛЮЧЕН для каждого.
+// Сияние — общий переключатель на всю вкладку, по умолчанию ВЫКЛЮЧЕН.
 // Таймеры — по умолчанию ВЫКЛЮЧЕНО для каждого таймера отдельно.
 
-const KEY_BEARS = 'sound_bears_enabled';
-const KEY_DRAUGS = 'sound_draugs_enabled';
+const KEY_BEAR_PREFIX = 'sound_bear_';
+const KEY_DRAUG_PREFIX = 'sound_draug_';
 const KEY_SHINING = 'sound_shining_enabled';
 const KEY_TIMER_PREFIX = 'sound_timer_';
 
@@ -21,13 +23,13 @@ function writeBool(key, val) {
   try { localStorage.setItem(key, val ? '1' : '0'); } catch {}
 }
 
-export function isBearsSoundEnabled() { return readBool(KEY_BEARS, true); }
-export function setBearsSoundEnabled(val) { writeBool(KEY_BEARS, val); }
+export function isBearSoundEnabled(bearIndex) { return readBool(KEY_BEAR_PREFIX + bearIndex, false); }
+export function setBearSoundEnabled(bearIndex, val) { writeBool(KEY_BEAR_PREFIX + bearIndex, val); }
 
-export function isDraugsSoundEnabled() { return readBool(KEY_DRAUGS, true); }
-export function setDraugsSoundEnabled(val) { writeBool(KEY_DRAUGS, val); }
+export function isDraugSoundEnabled(draugIndex) { return readBool(KEY_DRAUG_PREFIX + draugIndex, false); }
+export function setDraugSoundEnabled(draugIndex, val) { writeBool(KEY_DRAUG_PREFIX + draugIndex, val); }
 
-export function isShiningSoundEnabled() { return readBool(KEY_SHINING, true); }
+export function isShiningSoundEnabled() { return readBool(KEY_SHINING, false); }
 export function setShiningSoundEnabled(val) { writeBool(KEY_SHINING, val); }
 
 export function isTimerSoundEnabled(timerId) { return readBool(KEY_TIMER_PREFIX + timerId, false); }
