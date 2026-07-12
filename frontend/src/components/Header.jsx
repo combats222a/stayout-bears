@@ -8,27 +8,35 @@ import { STEAM_URL, SteamIcon } from './SteamIcon';
 // Раздел «Профиль» смысла превьюшить нет — по клику сразу открывается
 // форма входа. «Уровень» и «Промокод» и так публичные, рендерятся вне
 // авторизованного приложения (см. main.jsx).
+// Основные разделы — видны прямо в шапке на десктопе всегда.
 const NAV_ITEMS = [
   { key: 'bears',   label: '🐻 Медведи' },
   { key: 'shining', label: '✨ Сияние' },
   { key: 'hearts',  label: '🫀 Учёт лута' },
   { key: 'timers',  label: '⏱️ Таймеры' },
-  { key: 'level',   label: '📈 Уровень',  guestHref: '/level' },
   { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
   { key: 'captures', label: '🚩 Захваты' },
-  { key: 'achievements', label: '🏆 Достижения' },
   { key: 'clan',     label: '🏕️ Клан' },
   { key: 'profile',  label: '👤 Профиль', guestLoginOnly: true },
+];
+
+// Второстепенные разделы — убраны из верхней строки, доступны только через
+// кнопку «☰ Разделы» (и на десктопе, и на телефоне).
+const MENU_ONLY_ITEMS = [
+  { key: 'level',        label: '📈 Уровень',     guestHref: '/level' },
+  { key: 'achievements', label: '🏆 Достижения' },
 ];
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const isGuest = !user;
+  const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
-  const navItems = [
-    ...NAV_ITEMS,
-    ...(user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : []),
-  ];
+  const adminItems = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
+  // Показывается всегда в верхней строке на десктопе.
+  const navItems = [...NAV_ITEMS, ...adminItems];
+  // Показывается в выпадающей панели «Разделы» — основные + второстепенные разделы.
+  const panelItems = [...NAV_ITEMS, ...MENU_ONLY_ITEMS, ...adminItems];
 
   function handleNav(key) {
     if (onNavigate) onNavigate(key);
@@ -70,11 +78,11 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
         )}
 
         {/* Единая кнопка-триггер — на телефоне это единственный вход в разделы,
-            на десктопе через неё будут открываться отдельные/новые пункты
-            (сейчас список пуст под будущее). Сами разделы на десктопе видны
+            на десктопе через неё открываются второстепенные разделы
+            («Уровень», «Достижения»). Основные разделы на десктопе видны
             всегда — строкой ниже. */}
         <button
-          className={`menu-trigger-btn ${menuOpen ? 'active' : ''}`}
+          className={`menu-trigger-btn ${menuOpen || isMenuOnlyPage ? 'active' : ''}`}
           onClick={() => setMenuOpen(o => !o)}
           aria-label="Открыть меню разделов"
           aria-expanded={menuOpen}
@@ -142,7 +150,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
               </a>
             </div>
             <div className="nav-panel-list">
-              {navItems.map(item => renderNavItem(item, 'nav-panel-btn'))}
+              {panelItems.map(item => renderNavItem(item, 'nav-panel-btn'))}
             </div>
             {!isGuest && (
               <>
