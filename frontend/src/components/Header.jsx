@@ -66,6 +66,17 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
   return (
     <>
       <header className="header">
+        {/* Кнопка-триггер панели разделов — квадратная, только иконка,
+            стоит перед логотипом (по аналогии с гамбургером Википедии). */}
+        <button
+          className={`menu-trigger-btn ${menuOpen || isMenuOnlyPage ? 'active' : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Открыть меню разделов"
+          aria-expanded={menuOpen}
+        >
+          <span className="menu-trigger-icon">{menuOpen ? '✕' : '☰'}</span>
+        </button>
+
         {isGuest ? (
           <a className="header-logo" href="/" style={{ textDecoration: 'none' }}>
             🐻‍❄️ <span className="header-title">Bear Tracker</span>
@@ -75,20 +86,6 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
             🐻‍❄️ <span className="header-title">Bear Tracker</span>
           </div>
         )}
-
-        {/* Единая кнопка-триггер — на телефоне это единственный вход в разделы,
-            на десктопе через неё открываются второстепенные разделы
-            («Уровень», «Достижения»). Основные разделы на десктопе видны
-            всегда — строкой ниже. */}
-        <button
-          className={`menu-trigger-btn ${menuOpen || isMenuOnlyPage ? 'active' : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label="Открыть меню разделов"
-          aria-expanded={menuOpen}
-        >
-          <span className="menu-trigger-icon">{menuOpen ? '✕' : '☰'}</span>
-          <span className="menu-trigger-label">Разделы</span>
-        </button>
 
         {/* Разделы всегда видны в шапке на десктопе; на телефоне скрыты —
             там для них не хватает места, доступ через кнопку выше. */}
