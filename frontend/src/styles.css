@@ -1865,3 +1865,175 @@ body {
   .captures-search { max-width: none; }
   .captures-table th, .captures-table td { padding: 8px 8px; font-size: 12px; }
 }
+
+/* ── КАЛЬКУЛЯТОР ВРЕМЕНИ ──────────────────────────────────────── */
+.timecalc-sub { color: var(--text2); font-size: 13px; line-height: 1.6; max-width: 720px; }
+.timecalc-code {
+  font-family: var(--font-mono);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.timecalc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: linear-gradient(160deg, var(--bg2) 0%, var(--bg) 130%);
+}
+
+.timecalc-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 6px 8px 6px 14px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.timecalc-input-row:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
+}
+.timecalc-input-icon { font-size: 18px; opacity: .8; }
+.timecalc-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 1px;
+  padding: 8px 0;
+}
+.timecalc-input::placeholder { color: var(--text3); }
+.timecalc-clear-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 15px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.timecalc-clear-btn:hover { color: var(--text); background: var(--bg3); }
+.timecalc-now-btn {
+  background: rgba(74,158,221,.1);
+  border-color: rgba(74,158,221,.35);
+  color: #4a9edd;
+  flex-shrink: 0;
+}
+.timecalc-now-btn:hover { background: rgba(74,158,221,.2); }
+
+.timecalc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.timecalc-chip {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform .1s ease, background .15s ease, color .15s ease, border-color .15s ease;
+}
+.timecalc-chip:hover { transform: translateY(-1px); }
+.timecalc-chip-plus:hover { color: var(--green); border-color: rgba(63,185,80,.4); background: rgba(63,185,80,.08); }
+.timecalc-chip-minus:hover { color: var(--red); border-color: rgba(248,81,73,.4); background: rgba(248,81,73,.08); }
+
+.timecalc-empty {
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+  padding: 22px 0 8px;
+}
+
+.timecalc-error {
+  color: var(--red);
+  background: rgba(248,81,73,0.08);
+  border: 1px solid rgba(248,81,73,0.3);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.timecalc-error b { font-family: var(--font-mono); }
+
+.timecalc-result {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  background: radial-gradient(circle at 0% 0%, rgba(88,166,255,0.1), transparent 60%), var(--bg3);
+  animation: timecalc-result-in .18s ease-out;
+}
+@keyframes timecalc-result-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.timecalc-result-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.timecalc-result-value {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-shadow: 0 0 24px rgba(88,166,255,0.35);
+}
+.timecalc-daybadge {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--orange);
+  border: 1px solid rgba(210,153,34,.4);
+  background: rgba(210,153,34,.1);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.timecalc-copy-btn {
+  margin-left: auto;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.timecalc-copy-btn:hover { background: var(--bg); color: var(--text); }
+.timecalc-copy-btn-done { color: var(--green); border-color: rgba(63,185,80,.4); background: rgba(63,185,80,.08); }
+.timecalc-result-phrase { font-size: 13px; color: var(--text2); margin-top: 10px; line-height: 1.6; }
+.timecalc-result-phrase b { font-family: var(--font-mono); color: var(--text); }
+
+.timecalc-history-card { display: flex; flex-direction: column; gap: 10px; }
+.timecalc-history-title { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.timecalc-history-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.timecalc-history-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease;
+}
+.timecalc-history-item:hover { border-color: var(--accent); color: var(--text); }
+.timecalc-history-arrow { color: var(--text3); }
+.timecalc-history-result { color: var(--green); }
+
+@media (max-width: 640px) {
+  .timecalc-result-value { font-size: 32px; }
+  .timecalc-input { font-size: 18px; }
+  .timecalc-copy-btn { margin-left: 0; }
+}

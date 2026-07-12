@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { key: 'shining', label: '✨ Сияние' },
   { key: 'hearts',  label: '🫀 Учёт лута' },
   { key: 'timers',  label: '⏱️ Таймеры' },
+  { key: 'timecalc', label: '🧮 Калькулятор времени' },
   { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
   { key: 'captures', label: '🚩 Захваты' },
   { key: 'clan',     label: '🏕️ Клан' },

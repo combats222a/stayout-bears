@@ -11,6 +11,7 @@ import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import HeartsPage from './pages/HeartsPage';
 import TimersPage from './pages/TimersPage';
+import TimeCalcPage from './pages/TimeCalcPage';
 import PromoPage from './pages/PromoPage';
 import LevelPage from './pages/LevelPage';
 import FaqPage from './pages/FaqPage';
@@ -22,7 +23,7 @@ import { useGlobalSoundWatcher } from './hooks/useGlobalSoundWatcher';
 
 // Разделы приложения и их адреса — каждый пункт меню Header теперь
 // соответствует отдельному пути в адресной строке.
-const APP_PAGES = ['bears', 'draugs', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin', 'captures', 'achievements'];
+const APP_PAGES = ['bears', 'draugs', 'shining', 'clan', 'hearts', 'profile', 'timers', 'timecalc', 'promo', 'level', 'faq', 'admin', 'captures', 'achievements'];
 
 // Разделы, которые гость (без входа) может открыть и увидеть их устройство —
 // просто с заглушкой вместо реальных данных и действий (см. GuestLock).
@@ -30,7 +31,9 @@ const APP_PAGES = ['bears', 'draugs', 'shining', 'clan', 'hearts', 'profile', 't
 // админка — доступ суперадмина, показывать их «превью» гостю смысла нет.
 // «Захваты» не завязаны на клан или аккаунт вообще — это просто справочная
 // таблица с расписанием, поэтому гость видит её без каких-либо ограничений.
-const GUEST_PREVIEW_PAGES = ['bears', 'draugs', 'shining', 'hearts', 'timers', 'clan', 'captures', 'achievements'];
+// «Калькулятор времени» — из той же категории: чистая утилита без данных
+// аккаунта, доступна гостю полностью, без GuestLock.
+const GUEST_PREVIEW_PAGES = ['bears', 'draugs', 'shining', 'hearts', 'timers', 'clan', 'captures', 'achievements', 'timecalc'];
 
 export default function App() {
   const navigate = useNavigate();
@@ -328,6 +331,7 @@ export default function App() {
             )}
             {page === 'captures' && <CapturesPage />}
             {page === 'achievements' && <AchievementsPage />}
+            {page === 'timecalc' && <TimeCalcPage />}
           </main>
         </>
       );
@@ -370,6 +374,9 @@ export default function App() {
         )}
         {page === 'timers' && (
           <TimersPage user={user} />
+        )}
+        {page === 'timecalc' && (
+          <TimeCalcPage />
         )}
         {page === 'promo' && (
           <PromoPage />
