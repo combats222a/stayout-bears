@@ -5,7 +5,6 @@ import {
   SHINING_INTERVAL_MS, SHINING_DURATION_MS, WARN_BEFORE_SHINING_MS,
   computeShiningSlots,
 } from '../utils/shining';
-import { playShiningWarningSound } from '../utils/sound';
 import { isShiningSoundEnabled, setShiningSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
@@ -204,9 +203,9 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
     setShiningSoundEnabled(next);
   }
 
-  const handleWarn = useCallback(() => {
-    if (isShiningSoundEnabled()) playShiningWarningSound();
-  }, []);
+  // Звук теперь проигрывает только глобальный вотчер (useGlobalSoundWatcher),
+  // чтобы не срабатывать дважды, пока пользователь на вкладке "Гора Сияния".
+  const handleWarn = useCallback(() => {}, []);
 
   async function handleCommit({ gameTimeStr, locationId, anchorRealMs }) {
     const data = {

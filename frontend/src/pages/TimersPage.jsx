@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { api } from '../utils/api';
-import { playTimerDoneSound } from '../utils/sound';
 import InfoSpoiler from '../components/InfoSpoiler';
 import GuestLock from '../components/GuestLock';
 import { TIMERS_SPOILER } from '../content/spoilerContent';
@@ -109,14 +108,6 @@ function TimerRow({
 }) {
   const [, setTick] = useState(0);
   const [showEdit, setShowEdit] = useState(false);
-  // Как у медведей: реф стартует с РЕАЛЬНОГО текущего состояния таймера,
-  // а не с false — иначе при заходе на вкладку "Таймеры" уже истёкший
-  // таймер ложно пикнет сразу, вместо того чтобы играть звук строго
-  // в момент истечения.
-  const wasExpiredRef = useRef((() => {
-    const r = getRemaining(timer);
-    return r !== null && r <= 0;
-  })());
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 1000);
@@ -128,23 +119,10 @@ function TimerRow({
   const isExpired = remaining !== null && remaining <= 0;
   const isEmpty = remaining === null;
 
-  // Ресинхронизация рефа когда таймер обновили ("Обновить") или изменили период —
-  // аналог эффекта на [bear] у медведей. Без этого после сброса уже истёкшего
-  // таймера следующее истечение могло бы не проиграть звук (или сыграть лишний раз).
-  useEffect(() => {
-    const r = getRemaining(timer);
-    wasExpiredRef.current = r !== null && r <= 0;
-  }, [timer.last_reset_at, timer.period_seconds]);
-
-  // Проигрываем сигнал ровно один раз в момент истечения таймера (переход false → true),
-  // если звук включён — по абсолютному времени, как у медведей, поэтому переживает
-  // фон/сворачивание вкладки.
-  useEffect(() => {
-    if (isExpired && !wasExpiredRef.current) {
-      if (timer.sound_enabled) playTimerDoneSound();
-    }
-    wasExpiredRef.current = isExpired;
-  }, [isExpired, timer.sound_enabled]);
+  // Звук по истечении теперь проигрывает только глобальный вотчер
+  // (useGlobalSoundWatcher, живёт на уровне App) — он срабатывает независимо
+  // от открытой вкладки. Раньше эта страница ещё и сама проигрывала сигнал,
+  // из-за чего на вкладке "Таймеры" звук звучал дважды.
 
   const progressPct = remaining !== null
     ? Math.min(100, Math.max(0, (remaining / timer.period_seconds) * 100))

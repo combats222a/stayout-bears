@@ -5,7 +5,6 @@ import {
   getTimeLeftMs, formatCountdown, formatClock, formatElapsed, getProgress,
   parseLocalTimeInput, killedAtFromSpawnAt, WARN_BEFORE_SPAWN_MS
 } from '../utils/bears';
-import { playSpawnSound } from '../utils/sound';
 import { isBearsSoundEnabled, setBearsSoundEnabled } from '../utils/soundPrefs';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
@@ -77,8 +76,9 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
       setMs(left);
       setElap(formatElapsed(bear.killed_at));
       if (bear.spawn_at && left > 0 && left <= WARN_BEFORE_SPAWN_MS && !warnedRef.current) {
+        // Звук теперь проигрывает только глобальный вотчер (useGlobalSoundWatcher),
+        // чтобы не срабатывать дважды, пока пользователь на вкладке "Медведи".
         warnedRef.current = true;
-        if (isBearsSoundEnabled()) playSpawnSound();
       }
     }, 500);
     return () => clearInterval(id);
