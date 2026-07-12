@@ -25,18 +25,36 @@ function serverTimeOnDate(baseUtcDate, hour, minute) {
   ));
 }
 
-// Ближайшее наступление точки: если сегодняшнее окно (начало+длительность)
-// уже прошло — берём завтрашнее.
+// Проверяет, подходит ли календарный день (в UTC) под день недели точки.
+// Если у точки не задан weekday — точка захватывается ежедневно.
+function matchesWeekday(location, dayUtcDate) {
+  if (location.weekday === undefined || location.weekday === null) return true;
+  return dayUtcDate.getUTCDay() === location.weekday;
+}
+
+// Ближайшее наступление точки: перебираем дни начиная с сегодняшнего,
+// пропуская те, что не подходят под день недели точки (для точек,
+// которые захватываются не каждый день, а по расписанию, например
+// только по субботам или только по воскресеньям), и берём первый день,
+// в котором окно захвата (начало+длительность) ещё не закончилось.
 export function getNextOccurrence(location, now = new Date()) {
   const durationMin = durationMinFor(location);
-  let start = serverTimeOnDate(now, location.hour, location.minute);
-  let end = new Date(start.getTime() + durationMin * 60000);
-  if (end.getTime() <= now.getTime()) {
-    const nextDay = new Date(now.getTime() + 24 * 3600000);
-    start = serverTimeOnDate(nextDay, location.hour, location.minute);
-    end = new Date(start.getTime() + durationMin * 60000);
+  let dayCursor = now;
+  // 8 итераций с запасом гарантированно покрывают полную неделю.
+  for (let i = 0; i < 8; i++) {
+    if (matchesWeekday(location, dayCursor)) {
+      const start = serverTimeOnDate(dayCursor, location.hour, location.minute);
+      const end = new Date(start.getTime() + durationMin * 60000);
+      if (end.getTime() > now.getTime()) {
+        return { start, end };
+      }
+    }
+    dayCursor = new Date(dayCursor.getTime() + 24 * 3600000);
   }
-  return { start, end };
+  // Сюда мы никогда не должны попасть, но на всякий случай отдаём
+  // сегодняшнее окно, чтобы не сломать интерфейс.
+  const start = serverTimeOnDate(now, location.hour, location.minute);
+  return { start, end: new Date(start.getTime() + durationMin * 60000) };
 }
 
 // Статус для подсветки строки: active — захват идёт прямо сейчас,
