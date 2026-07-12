@@ -66,17 +66,16 @@ body {
 .menu-trigger-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
   background: none;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
+  width: 36px;
   height: 36px;
-  padding: 0 14px;
+  padding: 0;
+  flex-shrink: 0;
   cursor: pointer;
-  font-size: 13px;
-  font-family: var(--font-body);
-  font-weight: 600;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .menu-trigger-btn:hover { background: var(--bg3); }
@@ -85,7 +84,8 @@ body {
   color: var(--accent);
   background: rgba(88,166,255,0.08);
 }
-.menu-trigger-icon { font-size: 15px; line-height: 1; }
+.menu-trigger-icon { font-size: 17px; line-height: 1; }
+.menu-trigger-label { display: none; }
 .header-user { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
 /* Разделы, видимые прямо в шапке на десктопе (на телефоне скрыты — см. медиа-запрос) */
@@ -1136,8 +1136,6 @@ body {
   .header-nav-desktop { display: none !important; }
   .header-title { display: none; }
   .header-logout-desktop { display: none !important; }
-  .menu-trigger-label { display: none; }
-  .menu-trigger-btn { padding: 0 10px; }
   .user-nick { display: none; }
   /* На телефоне ник/вход и FAQ/Steam скрыты справа в шапке — показываем их внутри панели */
   .nav-panel-user { display: flex; }
