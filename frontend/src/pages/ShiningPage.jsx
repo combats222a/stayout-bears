@@ -6,6 +6,7 @@ import {
   computeShiningSlots,
 } from '../utils/shining';
 import { isShiningSoundEnabled, setShiningSoundEnabled } from '../utils/soundPrefs';
+import SoundIcon from '../components/SoundIcon';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
 import GuestLock from '../components/GuestLock';
@@ -283,7 +284,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
             onClick={toggleSound}
             title={soundOn ? 'Звук включён — нажми чтобы выключить' : 'Звук выключен — нажми чтобы включить'}
           >
-            {soundOn ? '🔊' : '🔇'}
+            <SoundIcon on={soundOn} />
           </button>
         </div>
       </div>

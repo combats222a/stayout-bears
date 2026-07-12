@@ -6,6 +6,7 @@ import {
   parseLocalTimeInput, killedAtFromSpawnAt, WARN_BEFORE_SPAWN_MS
 } from '../utils/bears';
 import { isBearSoundEnabled, setBearSoundEnabled } from '../utils/soundPrefs';
+import SoundIcon from '../components/SoundIcon';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
 import GuestLock from '../components/GuestLock';
@@ -155,7 +156,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
               onClick={toggleSound}
               title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
             >
-              {soundOn ? '🔊' : '🔇'}
+              <SoundIcon on={soundOn} />
             </button>
           </div>
         </td>
@@ -228,7 +229,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
                 onClick={toggleSound}
                 title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
               >
-                {soundOn ? '🔊' : '🔇'}
+                <SoundIcon on={soundOn} />
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react
 import { api } from '../utils/api';
 import InfoSpoiler from '../components/InfoSpoiler';
 import GuestLock from '../components/GuestLock';
+import SoundIcon from '../components/SoundIcon';
 import { TIMERS_SPOILER } from '../content/spoilerContent';
 
 function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
@@ -170,7 +171,7 @@ function TimerRow({
             onClick={() => onToggleSound(timer)}
             title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
           >
-            {timer.sound_enabled ? '🔊' : '🔇'}
+            <SoundIcon on={timer.sound_enabled} />
           </button>
         </div>
       </div>
@@ -201,7 +202,7 @@ function TimerRow({
             onClick={() => onToggleSound(timer)}
             title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
           >
-            {timer.sound_enabled ? '🔊' : '🔇'}
+            <SoundIcon on={timer.sound_enabled} />
           </button>
         </div>
       </div>

@@ -892,21 +892,22 @@ body {
   border: 1px solid var(--border);
   background: var(--bg3);
   cursor: pointer;
-  font-size: 15px;
-  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
 }
+.rupor-btn svg { display: block; }
 .rupor-btn:hover { transform: scale(1.1); }
 .rupor-btn:active { transform: scale(0.92); }
 .rupor-btn.rupor-on {
   background: rgba(63,185,80,0.15);
   border-color: var(--green);
+  color: var(--green);
 }
 .rupor-btn.rupor-off {
   background: var(--bg3);
   border-color: var(--border);
-  opacity: 0.6;
+  color: var(--text3);
 }
-.rupor-btn-sm { width: 28px; height: 28px; font-size: 13px; flex-shrink: 0; }
+.rupor-btn-sm { width: 28px; height: 28px; flex-shrink: 0; }
 
 .timer-row-name {
   font-family: var(--font-body);
