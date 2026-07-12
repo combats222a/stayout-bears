@@ -33,18 +33,17 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
   const adminItems = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
-  // Показывается всегда в верхней строке на десктопе.
+  // Показывается всегда в верхней строке на десктопе; на телефоне (где верхняя
+  // строка скрыта) те же пункты дублируются внутри панели «Разделы».
   const navItems = [...NAV_ITEMS, ...adminItems];
-  // Показывается в выпадающей панели «Разделы» — основные + второстепенные разделы.
-  const panelItems = [...NAV_ITEMS, ...MENU_ONLY_ITEMS, ...adminItems];
 
   function handleNav(key) {
     if (onNavigate) onNavigate(key);
     setMenuOpen(false);
   }
 
-  function renderNavItem(item, className) {
-    const cls = `${className} ${page === item.key ? 'active' : ''}`;
+  function renderNavItem(item, className, extraClass = '') {
+    const cls = `${className} ${extraClass} ${page === item.key ? 'active' : ''}`;
     if (isGuest && item.guestHref) {
       return <a key={item.key} className={cls} href={item.guestHref}>{item.label}</a>;
     }
@@ -150,7 +149,8 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
               </a>
             </div>
             <div className="nav-panel-list">
-              {panelItems.map(item => renderNavItem(item, 'nav-panel-btn'))}
+              {navItems.map(item => renderNavItem(item, 'nav-panel-btn', 'nav-panel-btn-primary'))}
+              {MENU_ONLY_ITEMS.map(item => renderNavItem(item, 'nav-panel-btn'))}
             </div>
             {!isGuest && (
               <>
