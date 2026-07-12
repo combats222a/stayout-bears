@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { api } from '../utils/api';
 import { playSpawnSound, playShiningWarningSound, playTimerDoneSound } from '../utils/sound';
-import { isBearsSoundEnabled, isShiningSoundEnabled } from '../utils/soundPrefs';
+import { isBearsSoundEnabled, isDraugsSoundEnabled, isShiningSoundEnabled } from '../utils/soundPrefs';
 import { getTimeLeftMs, WARN_BEFORE_SPAWN_MS } from '../utils/bears';
+import { getTimeLeftMs as getDraugTimeLeftMs, WARN_BEFORE_SPAWN_MS as DRAUG_WARN_BEFORE_SPAWN_MS } from '../utils/draugs';
 import { computeShiningSlots } from '../utils/shining';
 
 function getTimerRemainingSeconds(timer) {
@@ -23,8 +24,9 @@ function getTimerRemainingSeconds(timer) {
  * того, какая вкладка сейчас открыта — пока открыт сам сайт, звук работает
  * везде.
  */
-export function useGlobalSoundWatcher({ token, bears, shiningData }) {
+export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
   const bearStateRef = useRef({});     // { [bear_index]: { key, warned } }
+  const draugStateRef = useRef({});    // { [draug_index]: { key, warned } }
   const shiningStateRef = useRef(null); // { key, burning }
   const timersListRef = useRef([]);     // последний загруженный список таймеров
   const timerStateRef = useRef({});     // { [timer.id]: { key, wasExpired } }
@@ -75,6 +77,24 @@ export function useGlobalSoundWatcher({ token, bears, shiningData }) {
         }
       }
 
+      // ── Драуги: сигнал за 5 минут до спавна ──
+      if (Array.isArray(draugs)) {
+        for (const draug of draugs) {
+          if (!draug.spawn_at) continue;
+          const key = `${draug.spawn_at}|${draug.killed_at}`;
+          const msLeft = getDraugTimeLeftMs(draug);
+          let entry = draugStateRef.current[draug.draug_index];
+          if (!entry || entry.key !== key) {
+            entry = { key, warned: msLeft <= DRAUG_WARN_BEFORE_SPAWN_MS };
+            draugStateRef.current[draug.draug_index] = entry;
+          }
+          if (msLeft > 0 && msLeft <= DRAUG_WARN_BEFORE_SPAWN_MS && !entry.warned) {
+            entry.warned = true;
+            if (isDraugsSoundEnabled()) playSpawnSound();
+          }
+        }
+      }
+
       // ── Гора Сияния: сигнал в момент начала ──
       if (shiningData?.gameTimeStr && shiningData?.anchorRealMs) {
         const key = `${shiningData.gameTimeStr}|${shiningData.anchorRealMs}`;
@@ -110,5 +130,5 @@ export function useGlobalSoundWatcher({ token, bears, shiningData }) {
     }, 1000);
 
     return () => clearInterval(id);
-  }, [bears, shiningData]);
+  }, [bears, draugs, shiningData]);
 }

@@ -7,9 +7,9 @@ export function getSocket() {
   return socketInstance;
 }
 
-export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate) {
-  const handlersRef = useRef({ onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate });
-  handlersRef.current = { onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate };
+export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate, onDraugUpdate) {
+  const handlersRef = useRef({ onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate, onDraugUpdate });
+  handlersRef.current = { onBearUpdate, onClanUpdate, onReconnect, onShiningUpdate, onHeartsUpdate, onDraugUpdate };
 
   useEffect(() => {
     if (!token) {
@@ -45,6 +45,10 @@ export function useSocket(token, onBearUpdate, onClanUpdate, onReconnect, onShin
 
     socketInstance.on('bear:update', (bear) => {
       handlersRef.current.onBearUpdate?.(bear);
+    });
+
+    socketInstance.on('draug:update', (draug) => {
+      handlersRef.current.onDraugUpdate?.(draug);
     });
 
     socketInstance.on('clan:update', () => {

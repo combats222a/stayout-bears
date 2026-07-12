@@ -3,6 +3,7 @@
 // Таймеры — по умолчанию ВЫКЛЮЧЕНО для каждого таймера отдельно.
 
 const KEY_BEARS = 'sound_bears_enabled';
+const KEY_DRAUGS = 'sound_draugs_enabled';
 const KEY_SHINING = 'sound_shining_enabled';
 const KEY_TIMER_PREFIX = 'sound_timer_';
 
@@ -22,6 +23,9 @@ function writeBool(key, val) {
 
 export function isBearsSoundEnabled() { return readBool(KEY_BEARS, true); }
 export function setBearsSoundEnabled(val) { writeBool(KEY_BEARS, val); }
+
+export function isDraugsSoundEnabled() { return readBool(KEY_DRAUGS, true); }
+export function setDraugsSoundEnabled(val) { writeBool(KEY_DRAUGS, val); }
 
 export function isShiningSoundEnabled() { return readBool(KEY_SHINING, true); }
 export function setShiningSoundEnabled(val) { writeBool(KEY_SHINING, val); }

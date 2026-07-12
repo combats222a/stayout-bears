@@ -11,6 +11,7 @@ import { STEAM_URL, SteamIcon } from './SteamIcon';
 // Основные разделы — видны прямо в шапке на десктопе всегда.
 const NAV_ITEMS = [
   { key: 'bears',   label: '🐻 Медведи' },
+  { key: 'draugs',  label: '💀 Драуги' },
   { key: 'shining', label: '✨ Сияние' },
   { key: 'hearts',  label: '🫀 Учёт лута' },
   { key: 'timers',  label: '⏱️ Таймеры' },

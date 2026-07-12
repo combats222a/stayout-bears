@@ -33,6 +33,12 @@ router.post('/create', auth, async (req, res) => {
         [clan.id, i]
       );
     }
+    for (let i = 1; i <= 6; i++) {
+      await client.query(
+        'INSERT INTO draugs (clan_id, draug_index) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [clan.id, i]
+      );
+    }
     await client.query('COMMIT');
     req.getIo().to(`clan:${clan.id}`).emit('clan:update');
     res.json({ clan });
@@ -90,10 +96,10 @@ router.post('/leave', auth, async (req, res) => {
 
 // Get clan info (including bans)
 router.get('/me', auth, async (req, res) => {
-  if (!req.user.clan_id) return res.json({ clan: null, members: [], bears: [], bans: [] });
+  if (!req.user.clan_id) return res.json({ clan: null, members: [], bears: [], draugs: [], bans: [] });
   try {
     const { rows: clanRows } = await pool.query('SELECT * FROM clans WHERE id = $1', [req.user.clan_id]);
-    if (!clanRows.length) return res.json({ clan: null, members: [], bears: [], bans: [] });
+    if (!clanRows.length) return res.json({ clan: null, members: [], bears: [], draugs: [], bans: [] });
     const clan = clanRows[0];
     const { rows: members } = await pool.query(
       'SELECT id, nick, game_nick, email FROM users WHERE clan_id = $1 ORDER BY id',
@@ -105,6 +111,12 @@ router.get('/me', auth, async (req, res) => {
        WHERE b.clan_id = $1 ORDER BY b.bear_index`,
       [req.user.clan_id]
     );
+    const { rows: draugs } = await pool.query(
+      `SELECT d.*, COALESCE(u.game_nick, u.nick) as killer_nick FROM draugs d
+       LEFT JOIN users u ON d.killed_by = u.id
+       WHERE d.clan_id = $1 ORDER BY d.draug_index`,
+      [req.user.clan_id]
+    );
     const { rows: bans } = await pool.query(
       `SELECT cb.user_id, cb.banned_at, cb.banned_by,
               COALESCE(u.game_nick, u.nick) as nick
@@ -113,7 +125,7 @@ router.get('/me', auth, async (req, res) => {
        WHERE cb.clan_id = $1 ORDER BY cb.banned_at DESC`,
       [req.user.clan_id]
     );
-    res.json({ clan, members, bears, bans });
+    res.json({ clan, members, bears, draugs, bans });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 

@@ -29,6 +29,16 @@ async function initSchema() {
       UNIQUE(clan_id, bear_index)
     );
 
+    CREATE TABLE IF NOT EXISTS draugs (
+      id SERIAL PRIMARY KEY,
+      clan_id INTEGER NOT NULL,
+      draug_index INTEGER NOT NULL CHECK (draug_index BETWEEN 1 AND 6),
+      killed_at TIMESTAMPTZ,
+      killed_by INTEGER,
+      spawn_at TIMESTAMPTZ,
+      UNIQUE(clan_id, draug_index)
+    );
+
     -- Shining (Гора Сияния) — одна запись на клан
     CREATE TABLE IF NOT EXISTS shining (
       clan_id      INTEGER PRIMARY KEY REFERENCES clans(id) ON DELETE CASCADE,
@@ -182,6 +192,18 @@ async function initSchema() {
     DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_bears_killer') THEN
         ALTER TABLE bears ADD CONSTRAINT fk_bears_killer
+          FOREIGN KEY (killed_by) REFERENCES users(id) ON DELETE SET NULL NOT VALID;
+      END IF;
+    END $$;
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_draugs_clan') THEN
+        ALTER TABLE draugs ADD CONSTRAINT fk_draugs_clan
+          FOREIGN KEY (clan_id) REFERENCES clans(id) ON DELETE CASCADE NOT VALID;
+      END IF;
+    END $$;
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_draugs_killer') THEN
+        ALTER TABLE draugs ADD CONSTRAINT fk_draugs_killer
           FOREIGN KEY (killed_by) REFERENCES users(id) ON DELETE SET NULL NOT VALID;
       END IF;
     END $$;

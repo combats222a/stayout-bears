@@ -4,6 +4,7 @@ import Header from './components/Header';
 import AuthPage from './pages/AuthPage';
 import PublicLandingPage from './pages/PublicLandingPage';
 import BearsPage from './pages/BearsPage';
+import DraugsPage from './pages/DraugsPage';
 import ShiningPage from './pages/ShiningPage';
 import ClanPage from './pages/ClanPage';
 import AdminPage from './pages/AdminPage';
@@ -21,7 +22,7 @@ import { useGlobalSoundWatcher } from './hooks/useGlobalSoundWatcher';
 
 // Разделы приложения и их адреса — каждый пункт меню Header теперь
 // соответствует отдельному пути в адресной строке.
-const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin', 'captures', 'achievements'];
+const APP_PAGES = ['bears', 'draugs', 'shining', 'clan', 'hearts', 'profile', 'timers', 'promo', 'level', 'faq', 'admin', 'captures', 'achievements'];
 
 // Разделы, которые гость (без входа) может открыть и увидеть их устройство —
 // просто с заглушкой вместо реальных данных и действий (см. GuestLock).
@@ -29,7 +30,7 @@ const APP_PAGES = ['bears', 'shining', 'clan', 'hearts', 'profile', 'timers', 'p
 // админка — доступ суперадмина, показывать их «превью» гостю смысла нет.
 // «Захваты» не завязаны на клан или аккаунт вообще — это просто справочная
 // таблица с расписанием, поэтому гость видит её без каких-либо ограничений.
-const GUEST_PREVIEW_PAGES = ['bears', 'shining', 'hearts', 'timers', 'clan', 'captures', 'achievements'];
+const GUEST_PREVIEW_PAGES = ['bears', 'draugs', 'shining', 'hearts', 'timers', 'clan', 'captures', 'achievements'];
 
 export default function App() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function App() {
   const [clan, setClan]       = useState(null);
   const [members, setMembers] = useState([]);
   const [bears, setBears]     = useState([]);
+  const [draugs, setDraugs]   = useState([]);
   const [bans, setBans]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
@@ -100,6 +102,7 @@ export default function App() {
       setClan(data.clan);
       setMembers(data.members);
       setBears(data.bears || []);
+      setDraugs(data.draugs || []);
       setBans(data.bans || []);
       // Если бэкенд возвращает shining — используем его
       if (data.shining) setShiningData(data.shining);
@@ -131,6 +134,10 @@ export default function App() {
     setBears(prev => prev.map(b => b.bear_index === updatedBear.bear_index ? updatedBear : b));
   }, []);
 
+  const handleDraugUpdate = useCallback((updatedDraug) => {
+    setDraugs(prev => prev.map(d => d.draug_index === updatedDraug.draug_index ? updatedDraug : d));
+  }, []);
+
   const handleClanUpdate = useCallback(() => { loadClan(); }, [loadClan]);
   const handleReconnect  = useCallback(() => { loadClan(); loadShining(); }, [loadClan, loadShining]);
 
@@ -147,12 +154,12 @@ export default function App() {
     if (heartsReloader) heartsReloader();
   }, [heartsReloader]);
 
-  useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate, handleHeartsUpdate);
+  useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate, handleHeartsUpdate, handleDraugUpdate);
 
   // Живёт на уровне App (не размонтируется при переключении вкладок) —
-  // поэтому звуки медведей/сияния/таймеров теперь играют независимо от того,
+  // поэтому звуки медведей/драугов/сияния/таймеров теперь играют независимо от того,
   // какой раздел сайта сейчас открыт.
-  useGlobalSoundWatcher({ token, bears, shiningData });
+  useGlobalSoundWatcher({ token, bears, draugs, shiningData });
 
   useEffect(() => {
     if (!token || !clan) return;
@@ -169,6 +176,7 @@ export default function App() {
         setClan(data.clan);
         setMembers(data.members);
         setBears(data.bears || []);
+        setDraugs(data.draugs || []);
         setBans(data.bans || []);
         if (data.shining) setShiningData(data.shining);
       })
@@ -182,6 +190,7 @@ export default function App() {
     setClan(null);
     setMembers([]);
     setBears([]);
+    setDraugs([]);
     setBans([]);
     setShiningData(null);
     setShowAuth(false);
@@ -302,6 +311,9 @@ export default function App() {
             {page === 'bears' && (
               <BearsPage bears={[]} clan={null} onBearChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
             )}
+            {page === 'draugs' && (
+              <DraugsPage draugs={[]} clan={null} onDraugChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+            )}
             {page === 'shining' && (
               <ShiningPage clan={null} shiningData={null} onShiningChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
             )}
@@ -331,6 +343,9 @@ export default function App() {
       <main className="main">
         {page === 'bears' && (
           <BearsPage bears={bears} clan={clan} onBearChange={handleBearUpdate} />
+        )}
+        {page === 'draugs' && (
+          <DraugsPage draugs={draugs} clan={clan} onDraugChange={handleDraugUpdate} />
         )}
         {page === 'shining' && (
           <ShiningPage
