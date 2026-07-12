@@ -1284,9 +1284,6 @@ body {
   .bear-row-mobile { display: none !important; }
   .timer-card-mobile { display: none !important; }
   .header-logout-desktop { display: inline-flex !important; }
-  /* Разделы уже видны в шапке — панель на десктопе оставляем свободной под
-     новые/дополнительные пункты, которые будут добавлены позже. */
-  .nav-panel-list { display: none; }
 }
 
 /* === PROMO PAGE === */
