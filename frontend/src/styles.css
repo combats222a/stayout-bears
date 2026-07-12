@@ -1284,7 +1284,7 @@ body {
   .timer-card-mobile { display: none !important; }
   .header-logout-desktop { display: inline-flex !important; }
   /* Основные разделы и так видны строкой в шапке — не дублируем их внутри
-     панели «Разделы» на десктопе, там остаются только Уровень и Достижения. */
+     панели «Разделы» на десктопе, там остаются только Достижения, Уровень и Драуги. */
   .nav-panel-btn-primary { display: none; }
 }
 

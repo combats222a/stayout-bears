@@ -11,7 +11,6 @@ import { STEAM_URL, SteamIcon } from './SteamIcon';
 // Основные разделы — видны прямо в шапке на десктопе всегда.
 const NAV_ITEMS = [
   { key: 'bears',   label: '🐻 Медведи' },
-  { key: 'draugs',  label: '💀 Драуги' },
   { key: 'shining', label: '✨ Сияние' },
   { key: 'hearts',  label: '🫀 Учёт лута' },
   { key: 'timers',  label: '⏱️ Таймеры' },
@@ -24,8 +23,9 @@ const NAV_ITEMS = [
 // Второстепенные разделы — убраны из верхней строки, доступны только через
 // кнопку «☰ Разделы» (и на десктопе, и на телефоне).
 const MENU_ONLY_ITEMS = [
-  { key: 'level',        label: '📈 Уровень',     guestHref: '/level' },
   { key: 'achievements', label: '🏆 Достижения' },
+  { key: 'level',        label: '📈 Уровень',     guestHref: '/level' },
+  { key: 'draugs',       label: '💀 Драуги' },
 ];
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
