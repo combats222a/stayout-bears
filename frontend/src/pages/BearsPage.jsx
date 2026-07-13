@@ -48,7 +48,7 @@ function KillTimeModal({ bearName, onCommit, onClose }) {
             autoFocus
           />
           {error && <div className="modal-error">{error}</div>}
-          <div className="modal-hint">Просто вводи цифры — двоеточия расставятся сами · Время твоего часового пояса</div>
+          <div className="modal-hint">Backspace удаляет время справа налево: секунды → минуты → часы. Затем просто вводи цифры — двоеточия расставятся сами · Время твоего часового пояса</div>
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
