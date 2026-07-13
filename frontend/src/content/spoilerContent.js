@@ -260,6 +260,8 @@ export const TIMECALC_SPOILER = {
     },
   ],
 };
+
+export const ACHIEVEMENTS_SPOILER = {
   icon: 'ℹ️',
   title: 'Справка по достижениям',
   blocks: [
