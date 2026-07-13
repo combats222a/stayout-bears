@@ -6,7 +6,7 @@ import { computeTimeResult, formatDayShift, formatDeltaPhrase, pad2 } from '../u
 
 // Быстрые дельты по возрастанию — «-35» и «+35» стоят по порядку между
 // соседними значениями, а не просто дописаны в конец.
-const QUICK_DELTAS = [-60, -35, -30, -15, -5, 5, 15, 30, 35, 60, 90, 120];
+const QUICK_DELTAS = [-30, 5, 15, 30, 35];
 
 function onlyDigits(str, maxLen) {
   return (str || '').replace(/\D/g, '').slice(0, maxLen);
