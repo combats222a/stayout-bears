@@ -14,7 +14,7 @@ async function initSchema() {
     );
     CREATE TABLE IF NOT EXISTS clans (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(64) UNIQUE NOT NULL,
+      name VARCHAR(64) NOT NULL,
       code CHAR(6) UNIQUE NOT NULL,
       owner_id INTEGER NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW()
@@ -169,6 +169,14 @@ async function initSchema() {
         WHERE table_name='clans' AND column_name='deputy_id'
       ) THEN
         ALTER TABLE clans ADD COLUMN deputy_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
+    -- Разрешаем нескольким кланам иметь одинаковое название (уникален только код приглашения)
+    DO $$ BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'clans_name_key'
+      ) THEN
+        ALTER TABLE clans DROP CONSTRAINT clans_name_key;
       END IF;
     END $$;
     DO $$ BEGIN

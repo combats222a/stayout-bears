@@ -44,7 +44,6 @@ router.post('/create', auth, async (req, res) => {
     res.json({ clan });
   } catch (e) {
     await client.query('ROLLBACK');
-    if (e.code === '23505') return res.status(409).json({ error: 'Клан с таким названием уже существует' });
     console.error(e);
     res.status(500).json({ error: 'Ошибка сервера' });
   } finally { client.release(); }
@@ -265,7 +264,6 @@ router.post('/rename', auth, async (req, res) => {
     req.getIo().to(`clan:${req.user.clan_id}`).emit('clan:update');
     res.json({ clan: updated[0] });
   } catch (e) {
-    if (e.code === '23505') return res.status(409).json({ error: 'Клан с таким названием уже существует' });
     console.error(e);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
