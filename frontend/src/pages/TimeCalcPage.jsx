@@ -4,9 +4,7 @@ import { TIMECALC_SPOILER } from '../content/spoilerContent';
 import MaskedTimeInput, { isDigitsComplete, digitsToTimeStr } from '../components/MaskedTimeInput';
 import { computeTimeResult, formatDayShift, formatDeltaPhrase, pad2 } from '../utils/timeCalc';
 
-// Быстрые дельты по возрастанию — «-35» и «+35» стоят по порядку между
-// соседними значениями, а не просто дописаны в конец.
-const QUICK_DELTAS = [-30, 5, 15, 30, 35];
+const QUICK_DELTAS = [-20, -30, 30, 20];
 
 function onlyDigits(str, maxLen) {
   return (str || '').replace(/\D/g, '').slice(0, maxLen);
