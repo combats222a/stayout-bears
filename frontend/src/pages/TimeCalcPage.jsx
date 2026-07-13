@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import InfoSpoiler from '../components/InfoSpoiler';
+import { TIMECALC_SPOILER } from '../content/spoilerContent';
 import MaskedTimeInput, { isDigitsComplete, digitsToTimeStr } from '../components/MaskedTimeInput';
 import { computeTimeResult, formatDayShift, formatDeltaPhrase, pad2 } from '../utils/timeCalc';
 
@@ -85,6 +87,8 @@ export default function TimeCalcPage() {
         Укажите время — цифрами, без двоеточия, оно проставится само — и на сколько минут его сдвинуть.
         Если время не трогать, расчёт идёт от текущего момента.
       </p>
+
+      <InfoSpoiler {...TIMECALC_SPOILER} storageKey="spoiler_timecalc" />
 
       <div className="card timecalc-card">
         <div className="timecalc-row">
