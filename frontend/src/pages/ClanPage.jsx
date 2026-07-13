@@ -69,6 +69,10 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange,
   const [copied,        setCopied]        = useState(false);
   const [showTransfer,  setShowTransfer]  = useState(false);
   const [showBans,      setShowBans]      = useState(false);
+  const [renaming,      setRenaming]      = useState(false);
+  const [renameValue,   setRenameValue]   = useState('');
+  const [renameError,   setRenameError]   = useState('');
+  const [renameLoading, setRenameLoading] = useState(false);
 
   const isOwner   = clan && clan.owner_id  === user.id;
   const isDeputy  = clan && clan.deputy_id === user.id;
@@ -129,6 +133,30 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange,
       setShowTransfer(false);
       onClanChange();
     } catch (e) { setError(e.message); }
+  }
+
+  function startRename() {
+    setRenameValue(clan.name);
+    setRenameError('');
+    setRenaming(true);
+  }
+
+  function cancelRename() {
+    setRenaming(false);
+    setRenameError('');
+  }
+
+  async function saveRename(e) {
+    e.preventDefault();
+    const trimmed = renameValue.trim();
+    if (trimmed === clan.name) { setRenaming(false); return; }
+    setRenameLoading(true); setRenameError('');
+    try {
+      await api.post('/clans/rename', { name: trimmed });
+      setRenaming(false);
+      onClanChange();
+    } catch (e) { setRenameError(e.message); }
+    finally { setRenameLoading(false); }
   }
 
   async function refreshCode() {
@@ -202,7 +230,40 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange,
           <div className="clan-card-left">
             <div className="clan-snowflake">❄️</div>
             <div>
-              <div className="clan-name-big">{clan.name}</div>
+              {renaming ? (
+                <form className="clan-rename-form" onSubmit={saveRename}>
+                  <input
+                    className="input clan-rename-input"
+                    value={renameValue}
+                    onChange={e => { setRenameValue(e.target.value); setRenameError(''); }}
+                    minLength={2}
+                    maxLength={64}
+                    autoFocus
+                    required
+                  />
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={renameLoading}>
+                    Сохранить
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={cancelRename}>
+                    Отмена
+                  </button>
+                </form>
+              ) : (
+                <div className="clan-name-row">
+                  <div className="clan-name-big">{clan.name}</div>
+                  {isOwner && (
+                    <button
+                      className="clan-rename-btn"
+                      onClick={startRename}
+                      title="Переименовать группировку"
+                      aria-label="Переименовать группировку"
+                    >
+                      ✏️
+                    </button>
+                  )}
+                </div>
+              )}
+              {renameError && <div className="error-msg clan-rename-error">{renameError}</div>}
               <div className="clan-meta">Группировка охотников на медведей</div>
             </div>
           </div>

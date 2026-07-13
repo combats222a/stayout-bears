@@ -247,6 +247,30 @@ router.post('/deputy/:userId', auth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
+// Rename clan (owner only)
+router.post('/rename', auth, async (req, res) => {
+  if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
+  const { name } = req.body;
+  if (!name || name.trim().length < 2) return res.status(400).json({ error: 'Название клана: минимум 2 символа' });
+  if (name.trim().length > 64) return res.status(400).json({ error: 'Название клана: максимум 64 символа' });
+  try {
+    const { rows } = await pool.query('SELECT owner_id FROM clans WHERE id = $1', [req.user.clan_id]);
+    if (!rows.length) return res.status(404).json({ error: 'Клан не найден' });
+    if (rows[0].owner_id !== req.user.id) return res.status(403).json({ error: 'Только лидер может переименовать группировку' });
+
+    const { rows: updated } = await pool.query(
+      'UPDATE clans SET name = $1 WHERE id = $2 RETURNING *',
+      [name.trim(), req.user.clan_id]
+    );
+    req.getIo().to(`clan:${req.user.clan_id}`).emit('clan:update');
+    res.json({ clan: updated[0] });
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'Клан с таким названием уже существует' });
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 // Refresh invite code (owner OR deputy)
 router.post('/refresh-code', auth, async (req, res) => {
   if (!req.user.clan_id) return res.status(403).json({ error: 'Нет клана' });
