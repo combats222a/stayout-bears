@@ -1,12 +1,61 @@
 import { useState, useEffect } from 'react';
 import {
-  computeAnomalySlots,
+  computeAnomalySlots, loadAnomalyAnchor, saveAnomalyAnchor,
 } from '../utils/anomaly';
 import { formatRealTime, formatCountdown } from '../utils/shining';
 import { isAnomalySoundEnabled, setAnomalySoundEnabled } from '../utils/soundPrefs';
 import SoundIcon from '../components/SoundIcon';
 import InfoSpoiler from '../components/InfoSpoiler';
+import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import { ANOMALY_SPOILER } from '../content/spoilerContent';
+
+// ─── Модалка ввода якоря Z (декоративная — на расписание не влияет) ─
+function SetAnomalyTimeModal({ onCommit, onClose }) {
+  const [digits, setDigits] = useState('');
+  const [error,  setError]  = useState('');
+
+  function handleSubmit() {
+    if (!digits) { setError('Введи игровое время — просто цифры, например 0113'); return; }
+    const timeStr = digitsToTimeStr(digits, 2);
+    const [gh, gm] = timeStr.split(':').map(Number);
+    if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError('Неверное время'); return; }
+    onCommit({ gameTimeStr: timeStr, anchorRealMs: Date.now() });
+    onClose();
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+        <div className="modal-title">🥶 Установить время Уледной жары</div>
+        <div className="modal-body" style={{ gap: 18 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label className="modal-label">
+              Якорь Z — игровое время которое ты видишь прямо сейчас в игре (только цифры)
+            </label>
+            <MaskedTimeInput
+              segments={2}
+              value={digits}
+              onChange={d => { setDigits(d); setError(''); }}
+              onEnter={handleSubmit}
+              placeholder="01:13"
+              autoFocus
+            />
+            <div className="modal-hint">
+              Backspace удаляет время справа налево: минуты → часы. Затем просто вводи цифры — двоеточие появится само ·
+              Расписание прорывов всегда идёт по реальному GMT+00:00 и от этого значения не зависит
+            </div>
+          </div>
+
+          {error && <div className="modal-error">{error}</div>}
+        </div>
+        <div className="modal-footer">
+          <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
+          <button className="modal-btn-ok" onClick={handleSubmit}>Сохранить</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Карточка одного окна прорыва ──────────────────────────────────
 function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs }) {
@@ -106,9 +155,11 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs }) {
 // Не связана с «Горой Сияния»: не использует якорь/игровое время,
 // расписание фиксировано по реальному GMT+00:00 и одинаково для всех,
 // поэтому доступна без клана/входа — как Захваты и Калькулятор времени.
-export default function AnomalyPage() {
+export default function AnomalyPage({ user }) {
   const [now, setNow]     = useState(() => Date.now());
   const [soundOn, setSoundOn] = useState(() => isAnomalySoundEnabled());
+  const [showModal, setShowModal] = useState(false);
+  const [anchor, setAnchor] = useState(() => loadAnomalyAnchor());
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500);
@@ -119,6 +170,17 @@ export default function AnomalyPage() {
     const next = !soundOn;
     setSoundOn(next);
     setAnomalySoundEnabled(next);
+  }
+
+  function handleCommit({ gameTimeStr, anchorRealMs }) {
+    const next = {
+      gameTimeStr,
+      anchorRealMs,
+      setAt: new Date().toISOString(),
+      setByNick: user?.game_nick || user?.nick || null,
+    };
+    setAnchor(next);
+    saveAnomalyAnchor(next);
   }
 
   const slots = computeAnomalySlots(now);
@@ -140,7 +202,7 @@ export default function AnomalyPage() {
     <div className="page">
       {/* Заголовок */}
       <div className="bears-hdr">
-        <h2 className="page-title">🥶 Аномальные прорывы / Ледяная жара</h2>
+        <h2 className="page-title">🥶 Аномальные прорывы / Уледная жара</h2>
         <div className="stat-pills">
           <span className="pill" style={{
             color: statusPill.color,
@@ -161,26 +223,46 @@ export default function AnomalyPage() {
 
       <InfoSpoiler {...ANOMALY_SPOILER} storageKey="spoiler_anomaly" />
 
-      {/* Инфо-панель */}
+      {/* Инфо-панель — якорь декоративный, на расписание не влияет */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
         padding: '12px 16px',
         background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10,
       }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ fontSize: 13, color: '#c8d6e5' }}>
-              Часовой пояс контеста:{' '}
-              <span style={{ fontFamily: 'var(--font-mono)', color: '#58a6ff', fontWeight: 700 }}>
-                GMT +00:00
-              </span>
+          {anchor ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ fontSize: 13, color: '#c8d6e5' }}>
+                Якорь Z (игровое):{' '}
+                <span style={{ fontFamily: 'var(--font-mono)', color: '#58a6ff', fontWeight: 700 }}>
+                  {anchor.gameTimeStr}
+                </span>
+                {' · '}
+                <span style={{ color: '#50c878' }}>GMT +00:00</span>
+              </div>
+              <div style={{ fontSize: 11, color: '#6e7681' }}>
+                Уледная жара · 08:00–10:00 и 20:00–22:00
+                {anchor.setByNick && (
+                  <> · Установил: <span style={{ color: '#8b949e' }}>{anchor.setByNick}</span></>
+                )}
+                {' · Якорь X (реальное): '}
+                <span style={{ fontFamily: 'var(--font-mono)', color: '#4a6a8a' }}>
+                  {formatRealTime(anchor.anchorRealMs)}
+                </span>
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: '#6e7681' }}>
-              Оранжевая: 07:30–07:50 и 19:30–19:50 · Зелёная: 07:50–10:00 и 19:50–22:00 ·
-              время карточек ниже показано в твоём часовом поясе
+          ) : (
+            <div style={{ fontSize: 13, color: '#8b949e' }}>
+              Введи текущее игровое время чтобы начать отсчёт
             </div>
-          </div>
+          )}
         </div>
+        <button className="modal-btn-ok"
+          style={{ padding: '8px 20px', whiteSpace: 'nowrap' }}
+          onClick={() => setShowModal(true)}
+        >
+          🥶 Установить время
+        </button>
       </div>
 
       {/* 4 карточки ПРОРЫВ 1-4 */}
@@ -201,6 +283,13 @@ export default function AnomalyPage() {
         🥶 Оранжевая: 07:30–07:50 и 19:30–19:50 · Зелёная: 07:50–10:00 и 19:50–22:00 (GMT+00:00) ·
         Звук в 07:30 и 19:30 (если включён) · Страница не зависит от Горы Сияния
       </div>
+
+      {showModal && (
+        <SetAnomalyTimeModal
+          onCommit={handleCommit}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </div>
   );
 }

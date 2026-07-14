@@ -333,7 +333,7 @@ export default function App() {
             {page === 'captures' && <CapturesPage />}
             {page === 'achievements' && <AchievementsPage />}
             {page === 'timecalc' && <TimeCalcPage />}
-            {page === 'anomaly' && <AnomalyPage />}
+            {page === 'anomaly' && <AnomalyPage user={null} />}
           </main>
         </>
       );
@@ -394,7 +394,7 @@ export default function App() {
         )}
         {page === 'captures' && <CapturesPage />}
         {page === 'achievements' && <AchievementsPage />}
-        {page === 'anomaly' && <AnomalyPage />}
+        {page === 'anomaly' && <AnomalyPage user={user} />}
       </main>
     </div>
   );

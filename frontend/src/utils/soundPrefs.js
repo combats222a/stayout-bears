@@ -33,7 +33,7 @@ export function setDraugSoundEnabled(draugIndex, val) { writeBool(KEY_DRAUG_PREF
 export function isShiningSoundEnabled() { return readBool(KEY_SHINING, false); }
 export function setShiningSoundEnabled(val) { writeBool(KEY_SHINING, val); }
 
-// Аномальные прорывы / Ледяная жара — общий переключатель на всю вкладку,
+// Аномальные прорывы / Уледная жара — общий переключатель на всю вкладку,
 // по умолчанию ВЫКЛЮЧЕН, положение сохраняется (как у Сияния).
 export function isAnomalySoundEnabled() { return readBool(KEY_ANOMALY, false); }
 export function setAnomalySoundEnabled(val) { writeBool(KEY_ANOMALY, val); }

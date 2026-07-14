@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// Аномальные прорывы / Ледяная жара — расписание по реальному
+// Аномальные прорывы / Уледная жара — расписание по реальному
 // времени GMT+00:00. В отличие от «Горы Сияния» здесь НЕТ якоря
 // (игровое время не нужно) — окна контеста фиксированы по реальным
 // часам сервера (GMT+0) и одинаковы для всех, поэтому страница не
@@ -17,6 +17,31 @@ export const ANOMALY_CYCLES_UTC = [
 ];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// ─── Декоративный «Якорь Z» ────────────────────────────────────────
+// В отличие от Сияния, здесь якорь НИ НА ЧТО НЕ ВЛИЯЕТ: расписание
+// прорывов всегда фиксировано по реальному GMT+00:00. Это чисто
+// визуальный элемент для единообразия интерфейса со страницей
+// «Гора Сияния» — хранится локально в браузере (не привязан к клану).
+const ANOMALY_ANCHOR_KEY = 'anomaly_anchor_v1';
+
+export function loadAnomalyAnchor() {
+  try {
+    const raw = window.localStorage.getItem(ANOMALY_ANCHOR_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function saveAnomalyAnchor(anchor) {
+  try {
+    window.localStorage.setItem(ANOMALY_ANCHOR_KEY, JSON.stringify(anchor));
+  } catch {
+    // localStorage может быть недоступен (приватный режим и т.п.) — игнорируем
+  }
+}
 
 function hmMs(h, m) { return (h * 60 + m) * 60 * 1000; }
 
