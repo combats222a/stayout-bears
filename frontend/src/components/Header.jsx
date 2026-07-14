@@ -27,6 +27,7 @@ const MENU_ONLY_ITEMS = [
   { key: 'achievements', label: '🏆 Достижения' },
   { key: 'level',        label: '📈 Уровень',     guestHref: '/level' },
   { key: 'draugs',       label: '💀 Драуги' },
+  { key: 'anomaly',      label: '🥶 Аномальные прорывы' },
 ];
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {

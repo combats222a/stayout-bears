@@ -7,6 +7,7 @@
 const KEY_BEAR_PREFIX = 'sound_bear_';
 const KEY_DRAUG_PREFIX = 'sound_draug_';
 const KEY_SHINING = 'sound_shining_enabled';
+const KEY_ANOMALY = 'sound_anomaly_enabled';
 const KEY_TIMER_PREFIX = 'sound_timer_';
 
 function readBool(key, def) {
@@ -31,6 +32,11 @@ export function setDraugSoundEnabled(draugIndex, val) { writeBool(KEY_DRAUG_PREF
 
 export function isShiningSoundEnabled() { return readBool(KEY_SHINING, false); }
 export function setShiningSoundEnabled(val) { writeBool(KEY_SHINING, val); }
+
+// Аномальные прорывы / Ледяная жара — общий переключатель на всю вкладку,
+// по умолчанию ВЫКЛЮЧЕН, положение сохраняется (как у Сияния).
+export function isAnomalySoundEnabled() { return readBool(KEY_ANOMALY, false); }
+export function setAnomalySoundEnabled(val) { writeBool(KEY_ANOMALY, val); }
 
 export function isTimerSoundEnabled(timerId) { return readBool(KEY_TIMER_PREFIX + timerId, false); }
 export function setTimerSoundEnabled(timerId, val) { writeBool(KEY_TIMER_PREFIX + timerId, val); }

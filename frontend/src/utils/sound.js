@@ -41,6 +41,19 @@ export function playShiningWarningSound() {
   ]);
 }
 
+// Distinct alert for Anomaly Breakthroughs / Icy Heat warning (30 min before
+// contest window opens — 07:30/19:30 GMT+0). Different melody from Shining's
+// "дин-дон" so the two independent features stay distinguishable by ear.
+export function playAnomalyWarningSound() {
+  // Три коротких нисходящих тона — отличается и от медведей (одна нота ×3),
+  // и от Сияния (два восходящих тона)
+  playTones([
+    { freq: 1046, type: 'triangle', t: 0,    dur: 0.14, gain: 0.45 },
+    { freq: 784,  type: 'triangle', t: 0.16, dur: 0.14, gain: 0.45 },
+    { freq: 587,  type: 'triangle', t: 0.32, dur: 0.2,  gain: 0.45 },
+  ]);
+}
+
 // Short distinct signal for a custom user timer finishing (different from bears/shining)
 export function playTimerDoneSound() {
   // Два коротких резких бипа квадратной волной — легко отличить от других звуков

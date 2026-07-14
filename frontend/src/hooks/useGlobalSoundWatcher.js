@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { api } from '../utils/api';
-import { playSpawnSound, playShiningWarningSound, playTimerDoneSound } from '../utils/sound';
-import { isBearSoundEnabled, isDraugSoundEnabled, isShiningSoundEnabled } from '../utils/soundPrefs';
+import { playSpawnSound, playShiningWarningSound, playTimerDoneSound, playAnomalyWarningSound } from '../utils/sound';
+import { isBearSoundEnabled, isDraugSoundEnabled, isShiningSoundEnabled, isAnomalySoundEnabled } from '../utils/soundPrefs';
 import { getTimeLeftMs, WARN_BEFORE_SPAWN_MS } from '../utils/bears';
 import { getTimeLeftMs as getDraugTimeLeftMs, WARN_BEFORE_SPAWN_MS as DRAUG_WARN_BEFORE_SPAWN_MS } from '../utils/draugs';
 import { computeShiningSlots } from '../utils/shining';
+import { getNearestAnomalySlot } from '../utils/anomaly';
 
 function getTimerRemainingSeconds(timer) {
   if (!timer.last_reset_at) return null;
@@ -28,6 +29,7 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
   const bearStateRef = useRef({});     // { [bear_index]: { key, warned } }
   const draugStateRef = useRef({});    // { [draug_index]: { key, warned } }
   const shiningStateRef = useRef(null); // { key, burning }
+  const anomalyStateRef = useRef(null); // { key, warning } — независим от клана/входа
   const timersListRef = useRef([]);     // последний загруженный список таймеров
   const timerStateRef = useRef({});     // { [timer.id]: { key, wasExpired } }
 
@@ -110,6 +112,25 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
           if (isShiningSoundEnabled()) playShiningWarningSound();
         }
         entry.burning = burning;
+      }
+
+      // ── Аномальные прорывы / Ледяная жара: сигнал в момент входа в
+      //    предупреждение (07:30 и 19:30 GMT+0) — не зависит от клана/входа,
+      //    окна фиксированы по реальному времени сервера.
+      {
+        const now = Date.now();
+        const slot = getNearestAnomalySlot(now);
+        const key = String(slot.realStartMs);
+        const warning = now >= slot.warnStartMs && now < slot.realStartMs;
+        let entry = anomalyStateRef.current;
+        if (!entry || entry.key !== key) {
+          entry = { key, warning };
+          anomalyStateRef.current = entry;
+        }
+        if (warning && !entry.warning) {
+          if (isAnomalySoundEnabled()) playAnomalyWarningSound();
+        }
+        entry.warning = warning;
       }
 
       // ── Таймеры: сигнал в момент истечения ──
