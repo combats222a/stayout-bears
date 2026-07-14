@@ -54,6 +54,9 @@ export default function App() {
   // Shining data — общее для клана, хранится в памяти + синхронизируется через сокет
   const [shiningData, setShiningData] = useState(null);
 
+  // Anomaly data — привязано к аккаунту (не к клану), хранится на бэкенде
+  const [anomalyData, setAnomalyData] = useState(null);
+
   // Колбэк для перезагрузки сердец (устанавливается из HeartsPage)
   const [heartsReloader, setHeartsReloader] = useState(null);
 
@@ -126,12 +129,25 @@ export default function App() {
     } catch {}
   }, [token]);
 
+  // Подгрузить якорь Аномальных прорывов — привязан к аккаунту, не к клану
+  const loadAnomaly = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await api.get('/anomaly');
+      if (data?.anchorIso || data?.anchorRealMs) {
+        if (data.anchorIso && !data.anchorRealMs) data.anchorRealMs = new Date(data.anchorIso).getTime();
+        setAnomalyData(data);
+      }
+    } catch {}
+  }, [token]);
+
   useEffect(() => {
     if (user) {
       loadClan();
       loadShining();
+      loadAnomaly();
     }
-  }, [user, loadClan, loadShining]);
+  }, [user, loadClan, loadShining, loadAnomaly]);
 
   // Socket handlers
   const handleBearUpdate = useCallback((updatedBear) => {
@@ -163,7 +179,7 @@ export default function App() {
   // Живёт на уровне App (не размонтируется при переключении вкладок) —
   // поэтому звуки медведей/драугов/сияния/таймеров теперь играют независимо от того,
   // какой раздел сайта сейчас открыт.
-  useGlobalSoundWatcher({ token, bears, draugs, shiningData });
+  useGlobalSoundWatcher({ token, bears, draugs, shiningData, anomalyData });
 
   useEffect(() => {
     if (!token || !clan) return;
@@ -185,6 +201,14 @@ export default function App() {
         if (data.shining) setShiningData(data.shining);
       })
       .finally(() => setLoading(false));
+    api.get('/anomaly')
+      .then(data => {
+        if (data?.anchorIso || data?.anchorRealMs) {
+          if (data.anchorIso && !data.anchorRealMs) data.anchorRealMs = new Date(data.anchorIso).getTime();
+          setAnomalyData(data);
+        }
+      })
+      .catch(() => {});
   }
 
   function onLogout() {
@@ -197,6 +221,7 @@ export default function App() {
     setDraugs([]);
     setBans([]);
     setShiningData(null);
+    setAnomalyData(null);
     setShowAuth(false);
     navigate('/');
   }
@@ -207,6 +232,12 @@ export default function App() {
   // бэкенд уведомит остальных через сокет
   function handleShiningChange(data) {
     setShiningData(data);
+  }
+
+  // Когда игрок обновляет якорь Аномальных прорывов — сохраняем локально
+  // сразу (бэкенд уже вызван внутри AnomalyPage перед этим колбэком)
+  function handleAnomalyChange(data) {
+    setAnomalyData(data);
   }
 
   function retryConnection() {
@@ -333,7 +364,9 @@ export default function App() {
             {page === 'captures' && <CapturesPage />}
             {page === 'achievements' && <AchievementsPage />}
             {page === 'timecalc' && <TimeCalcPage />}
-            {page === 'anomaly' && <AnomalyPage user={null} />}
+            {page === 'anomaly' && (
+              <AnomalyPage user={null} anomalyData={null} onAnomalyChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+            )}
           </main>
         </>
       );
@@ -394,7 +427,9 @@ export default function App() {
         )}
         {page === 'captures' && <CapturesPage />}
         {page === 'achievements' && <AchievementsPage />}
-        {page === 'anomaly' && <AnomalyPage user={user} />}
+        {page === 'anomaly' && (
+          <AnomalyPage user={user} anomalyData={anomalyData} onAnomalyChange={handleAnomalyChange} />
+        )}
       </main>
     </div>
   );

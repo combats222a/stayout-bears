@@ -4,12 +4,15 @@
 // и дальше всё считается по той же формуле игровой скорости времени
 // (1 игр. минута = 8750 мс реального времени), что и в Сиянии.
 //
-// Единственные отличия от Сияния:
+// Отличия от Сияния:
 //   — локация зафиксирована на GMT +00:00 (это уже существующая
 //     локация 'gmt0' из shining.js — выбор недоступен, всегда она)
 //   — окна другие: не 4 равных цикла по 6 игр. часов, а 2 цикла в
 //     игровые сутки, каждый со своими границами предупреждения и
 //     самого прорыва (см. ANOMALY_CYCLES ниже)
+//   — якорь хранится на бэкенде ПРИВЯЗАННЫМ К АККАУНТУ (не к клану) —
+//     видит и настраивает только сам игрок, с любого устройства после
+//     входа (см. backend/src/routes/anomaly.js)
 // ═══════════════════════════════════════════════════════════════
 
 import { GAME_MINUTE_MS, getLocation } from './shining';
@@ -85,27 +88,4 @@ export function getNearestAnomalySlot(anchorGameTimeStr, anchorRealMs, nowMs = D
   if (!anchorGameTimeStr || !anchorRealMs) return null;
   const slots = computeAnomalySlots(anchorGameTimeStr, anchorRealMs, nowMs);
   return slots[0] || null;
-}
-
-// ─── Якорь Z/X — хранится локально в браузере (страница не привязана
-// к клану), но, в отличие от предыдущей версии, ТЕПЕРЬ РЕАЛЬНО ЗАПУСКАЕТ
-// расчёт циклов — совсем как якорь Сияния на бэкенде клана. ───────────
-const ANOMALY_ANCHOR_KEY = 'anomaly_anchor_v2';
-
-export function loadAnomalyAnchor() {
-  try {
-    const raw = window.localStorage.getItem(ANOMALY_ANCHOR_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-export function saveAnomalyAnchor(anchor) {
-  try {
-    window.localStorage.setItem(ANOMALY_ANCHOR_KEY, JSON.stringify(anchor));
-  } catch {
-    // localStorage может быть недоступен (приватный режим и т.п.) — игнорируем
-  }
 }

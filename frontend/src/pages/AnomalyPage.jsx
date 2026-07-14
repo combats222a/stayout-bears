@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import {
-  computeAnomalySlots, getAnomalyLocation, ANOMALY_LOCATION_ID,
-  loadAnomalyAnchor, saveAnomalyAnchor,
-} from '../utils/anomaly';
+import { computeAnomalySlots, getAnomalyLocation } from '../utils/anomaly';
 import { getLiveGameTime, formatRealTime, formatCountdown } from '../utils/shining';
 import { isAnomalySoundEnabled, setAnomalySoundEnabled } from '../utils/soundPrefs';
 import SoundIcon from '../components/SoundIcon';
 import InfoSpoiler from '../components/InfoSpoiler';
+import GuestLock from '../components/GuestLock';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import { ANOMALY_SPOILER } from '../content/spoilerContent';
+import { api } from '../utils/api';
 
 // ─── Модалка ввода якоря Z — работает точно как на Сиянии ──────────
 function SetAnomalyTimeModal({ onCommit, onClose }) {
@@ -169,16 +168,17 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGam
 
 // ─── Основная страница ───────────────────────────────────────────
 // Работает как «Гора Сияния»: якорь Z/X реально запускает расчёт циклов
-// по игровой скорости времени. Единственное отличие — локация всегда
-// зафиксирована на GMT+00:00 (выбор недоступен), и окна другие: два
-// цикла в сутки (07:30–10:00 и 19:30–22:00 по игре) вместо четырёх
-// равных по 6 игр. часов. Хранится локально в браузере — страница не
-// привязана к клану, доступна без входа.
-export default function AnomalyPage({ user }) {
+// по игровой скорости времени. Отличия: локация всегда зафиксирована на
+// GMT+00:00 (выбор недоступен), окна другие — два цикла в сутки
+// (07:30–10:00 и 19:30–22:00 по игре) вместо четырёх равных по 6 игр.
+// часов, и якорь хранится на бэкенде ПРИВЯЗАННЫМ К АККАУНТУ (не к
+// клану и не в браузере) — видит и настраивает только сам игрок, с
+// любого устройства после входа.
+export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGuest, onLoginClick }) {
   const [showModal, setShowModal] = useState(false);
   const [now, setNow]             = useState(() => Date.now());
   const [soundOn, setSoundOn]     = useState(() => isAnomalySoundEnabled());
-  const [anchor, setAnchor]       = useState(() => loadAnomalyAnchor());
+  const [error, setError]         = useState('');
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500);
@@ -191,23 +191,41 @@ export default function AnomalyPage({ user }) {
     setAnomalySoundEnabled(next);
   }
 
-  function handleCommit({ gameTimeStr, anchorRealMs }) {
-    const next = {
+  async function handleCommit({ gameTimeStr, anchorRealMs }) {
+    const data = {
       gameTimeStr,
       anchorRealMs,
-      locationId: ANOMALY_LOCATION_ID,
+      anchorIso: new Date(anchorRealMs).toISOString(),
       setAt: new Date().toISOString(),
-      setByNick: user?.game_nick || user?.nick || null,
     };
-    setAnchor(next);
-    saveAnomalyAnchor(next);
+    onAnomalyChange(data);
+    try { await api.post('/anomaly/set', data); } catch (e) { setError(e.message); }
+  }
+
+  if (!user) {
+    return (
+      <div className="page">
+        <h2 className="page-title">🥶 Аномальные прорывы / Уледная жара</h2>
+        <InfoSpoiler {...ANOMALY_SPOILER} storageKey="spoiler_anomaly" />
+        {isGuest ? (
+          <GuestLock
+            icon="🥶"
+            title="Личный отсчёт — только твой"
+            text="Якорь Аномальных прорывов видит и настраивает только сам игрок. Зарегистрируйся, чтобы завести свой — он будет доступен с любого устройства."
+            onLoginClick={onLoginClick}
+          />
+        ) : (
+          <div className="empty-state"><p>Войди, чтобы отслеживать Аномальные прорывы</p></div>
+        )}
+      </div>
+    );
   }
 
   const loc = getAnomalyLocation();
-  const hasData = anchor?.gameTimeStr && anchor?.anchorRealMs;
+  const hasData = anomalyData?.gameTimeStr && anomalyData?.anchorRealMs;
 
   const slots = hasData
-    ? computeAnomalySlots(anchor.gameTimeStr, anchor.anchorRealMs, now)
+    ? computeAnomalySlots(anomalyData.gameTimeStr, anomalyData.anchorRealMs, now)
     : null;
 
   // Статус-строка
@@ -254,10 +272,12 @@ export default function AnomalyPage({ user }) {
       </div>
 
       <div className="timer-owner-note">
-        🔒 Аномальные прорывы — данные видны только в этом браузере, не привязаны к аккаунту или клану
+        🔒 Аномальные прорывы видит и настраивает только их владелец — <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
       </div>
 
       <InfoSpoiler {...ANOMALY_SPOILER} storageKey="spoiler_anomaly" />
+
+      {error && <div className="error-banner">{error}</div>}
 
       {/* Инфо-панель — якорь работает как на Сиянии, локация зафиксирована */}
       <div style={{
@@ -271,19 +291,16 @@ export default function AnomalyPage({ user }) {
               <div style={{ fontSize: 13, color: '#c8d6e5' }}>
                 Якорь Z (игровое):{' '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#58a6ff', fontWeight: 700 }}>
-                  {anchor.gameTimeStr}
+                  {anomalyData.gameTimeStr}
                 </span>
                 {' · '}
                 <span style={{ color: '#50c878' }}>{loc.label}</span>
               </div>
               <div style={{ fontSize: 11, color: '#6e7681' }}>
                 {loc.name}
-                {anchor.setByNick && (
-                  <> · Установил: <span style={{ color: '#8b949e' }}>{anchor.setByNick}</span></>
-                )}
                 {' · Якорь X (реальное): '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#4a6a8a' }}>
-                  {formatRealTime(anchor.anchorRealMs)}
+                  {formatRealTime(anomalyData.anchorRealMs)}
                 </span>
               </div>
             </div>
@@ -311,8 +328,8 @@ export default function AnomalyPage({ user }) {
                 warnStartMs={slot.warnStartMs}
                 realStartMs={slot.realStartMs}
                 realEndMs={slot.realEndMs}
-                anchorGameTimeStr={anchor.gameTimeStr}
-                anchorRealMs={anchor.anchorRealMs}
+                anchorGameTimeStr={anomalyData.gameTimeStr}
+                anchorRealMs={anomalyData.anchorRealMs}
               />
             ))
           : [0, 1, 2, 3].map(i => (

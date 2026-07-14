@@ -134,6 +134,15 @@ async function initSchema() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
+    -- Аномальные прорывы / Уледная жара — одна запись на аккаунт (не на клан),
+    -- видна и настраивается только владельцем аккаунта, как таймеры.
+    CREATE TABLE IF NOT EXISTS user_anomaly (
+      user_id      INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      anchor_iso   TIMESTAMPTZ NOT NULL,
+      game_time_str VARCHAR(8) NOT NULL DEFAULT '',
+      set_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     DO $$ BEGIN
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns

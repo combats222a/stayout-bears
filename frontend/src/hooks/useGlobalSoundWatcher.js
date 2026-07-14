@@ -5,7 +5,7 @@ import { isBearSoundEnabled, isDraugSoundEnabled, isShiningSoundEnabled, isAnoma
 import { getTimeLeftMs, WARN_BEFORE_SPAWN_MS } from '../utils/bears';
 import { getTimeLeftMs as getDraugTimeLeftMs, WARN_BEFORE_SPAWN_MS as DRAUG_WARN_BEFORE_SPAWN_MS } from '../utils/draugs';
 import { computeShiningSlots } from '../utils/shining';
-import { getNearestAnomalySlot, loadAnomalyAnchor } from '../utils/anomaly';
+import { getNearestAnomalySlot } from '../utils/anomaly';
 
 function getTimerRemainingSeconds(timer) {
   if (!timer.last_reset_at) return null;
@@ -25,7 +25,7 @@ function getTimerRemainingSeconds(timer) {
  * того, какая вкладка сейчас открыта — пока открыт сам сайт, звук работает
  * везде.
  */
-export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
+export function useGlobalSoundWatcher({ token, bears, draugs, shiningData, anomalyData }) {
   const bearStateRef = useRef({});     // { [bear_index]: { key, warned } }
   const draugStateRef = useRef({});    // { [draug_index]: { key, warned } }
   const shiningStateRef = useRef(null); // { key, burning }
@@ -116,16 +116,16 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
 
       // ── Аномальные прорывы / Уледная жара: сигнал в момент входа в
       //    предупреждение — считается по тому же якорю Z/X, что и на
-      //    самой странице (хранится в localStorage, страница не привязана
-      //    к клану). Если якорь не задан — просто нечего проверять.
+      //    самой странице. Якорь теперь привязан к аккаунту (приходит с
+      //    бэкенда через App), а не хранится в браузере — если игрок не
+      //    вошёл или ещё не задал якорь, anomalyData будет пустым.
       {
         const now = Date.now();
-        const anomalyAnchor = loadAnomalyAnchor();
-        const slot = anomalyAnchor
-          ? getNearestAnomalySlot(anomalyAnchor.gameTimeStr, anomalyAnchor.anchorRealMs, now)
+        const slot = anomalyData?.gameTimeStr && anomalyData?.anchorRealMs
+          ? getNearestAnomalySlot(anomalyData.gameTimeStr, anomalyData.anchorRealMs, now)
           : null;
         if (slot) {
-          const key = `${anomalyAnchor.gameTimeStr}|${anomalyAnchor.anchorRealMs}|${slot.realStartMs}`;
+          const key = `${anomalyData.gameTimeStr}|${anomalyData.anchorRealMs}|${slot.realStartMs}`;
           const warning = now >= slot.warnStartMs && now < slot.realStartMs;
           let entry = anomalyStateRef.current;
           if (!entry || entry.key !== key) {
@@ -157,5 +157,5 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
     }, 1000);
 
     return () => clearInterval(id);
-  }, [bears, draugs, shiningData]);
+  }, [bears, draugs, shiningData, anomalyData]);
 }
