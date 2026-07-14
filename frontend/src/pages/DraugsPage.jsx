@@ -213,6 +213,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
                   </span>
                 </span>
                 <span>⚡ Спавн: {spawnDisplay}</span>
+                <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
                 {draug.killer_nick && <span>👤 {draug.killer_nick}</span>}
               </div>
             )}

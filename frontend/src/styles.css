@@ -1187,7 +1187,7 @@ body {
 
   /* === МЕДВЕДИ — скрываем таблицу, показываем карточки === */
   .tbl-wrap { border-radius: 8px; overflow: hidden; }
-  .bears-table thead { display: none; }
+  .bears-table:not(.captures-table) thead { display: none; }
   .bear-row-desktop { display: none !important; }
   .bear-row-mobile { display: table-row !important; }
 
@@ -1289,7 +1289,9 @@ body {
   .clan-code-block { flex-direction: column; align-items: flex-start; gap: 8px; }
   .clan-members-section { padding: 0 14px 16px; }
   .clan-member-nick { font-size: 13px; }
-  .clan-member-actions { flex-wrap: wrap; }
+  .clan-member-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .clan-member-actions { flex-wrap: wrap; width: 100%; }
+  .clan-member-actions .mem-btn { flex: 1 1 auto; text-align: center; }
 
   /* === ADMIN таблица === */
   .admin-table-header,

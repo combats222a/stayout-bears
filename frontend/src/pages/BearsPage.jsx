@@ -213,6 +213,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
                   </span>
                 </span>
                 <span>⚡ Спавн: {spawnDisplay}</span>
+                <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
                 {bear.killer_nick && <span>👤 {bear.killer_nick}</span>}
               </div>
             )}
