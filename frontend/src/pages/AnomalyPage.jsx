@@ -253,6 +253,10 @@ export default function AnomalyPage({ user }) {
         </div>
       </div>
 
+      <div className="timer-owner-note">
+        🔒 Аномальные прорывы — данные видны только в этом браузере, не привязаны к аккаунту или клану
+      </div>
+
       <InfoSpoiler {...ANOMALY_SPOILER} storageKey="spoiler_anomaly" />
 
       {/* Инфо-панель — якорь работает как на Сиянии, локация зафиксирована */}
