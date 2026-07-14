@@ -585,7 +585,8 @@ body {
 .bears-table td { padding: 11px 12px; vertical-align: middle; white-space: nowrap; }
 
 .td-name  { font-size: 15px; font-weight: 600; color: #c8d6e5; }
-.td-clock { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4a6a8a; }
+.td-clock { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #8fb8e0; }
+.td-clock-empty { color: #3a5a7a; }
 .td-user  { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #58a6ff; max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
 
 /* === EDITABLE KILLED_AT CELL === */

@@ -13,6 +13,7 @@ export const BEARS_LIST = [
   { index: 8,  name: 'Левый',           square: 'A4-4' },
   { index: 9,  name: 'Возле моста',     square: 'B5-4' },
   { index: 10, name: 'Южка мост',       square: 'C3-1' },
+  { index: 12, name: 'Южка мост/Плевок', square: 'C3-1' },
   { index: 11, name: 'Южка Сникерс',    square: 'D3-3' },
 ];
 

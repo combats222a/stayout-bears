@@ -160,8 +160,8 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
             </button>
           </div>
         </td>
-        <td className="td-clock">{isActive ? spawnDisplay : '--:--:--'}</td>
-        <td className="td-clock">{isActive ? elap : '--:--:--'}</td>
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`}>{isActive ? spawnDisplay : '--:--:--'}</td>
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`}>{isActive ? elap : '--:--:--'}</td>
         <td>
           {isActive
             ? <span className="td-clock clock-editable" title="Нажми чтобы исправить время смерти" onClick={() => setShowModal(true)}>
