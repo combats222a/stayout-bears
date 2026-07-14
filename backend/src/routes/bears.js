@@ -3,7 +3,7 @@ const { pool } = require('../db/pool');
 const { auth } = require('../middleware/auth');
 
 const BEAR_RESPAWN_MS = 35 * 60 * 1000;
-const MAX_BEAR_INDEX  = 12;
+const MAX_BEAR_INDEX  = 11;
 
 // POST /bears/:index/kill
 // body: { killed_at? } — если не передан, используется текущее время (кнопка "Сейчас")

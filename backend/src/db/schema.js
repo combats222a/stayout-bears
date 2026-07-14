@@ -22,7 +22,7 @@ async function initSchema() {
     CREATE TABLE IF NOT EXISTS bears (
       id SERIAL PRIMARY KEY,
       clan_id INTEGER NOT NULL,
-      bear_index INTEGER NOT NULL CHECK (bear_index BETWEEN 1 AND 12),
+      bear_index INTEGER NOT NULL CHECK (bear_index BETWEEN 1 AND 11),
       killed_at TIMESTAMPTZ,
       killed_by INTEGER,
       spawn_at TIMESTAMPTZ,
@@ -190,16 +190,6 @@ async function initSchema() {
         ALTER TABLE clans ADD CONSTRAINT fk_clans_owner
           FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE RESTRICT NOT VALID;
       END IF;
-    END $$;
-    -- Расширяем диапазон bear_index до 12 (добавлен «Южка мост/Плевок»)
-    DO $$ BEGIN
-      IF EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'bears_bear_index_check'
-      ) THEN
-        ALTER TABLE bears DROP CONSTRAINT bears_bear_index_check;
-      END IF;
-      ALTER TABLE bears ADD CONSTRAINT bears_bear_index_check
-        CHECK (bear_index BETWEEN 1 AND 12);
     END $$;
     DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_bears_clan') THEN
