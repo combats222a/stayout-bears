@@ -78,8 +78,8 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGam
   const isWarn = now >= warnStartMs && now < realStartMs;
 
   // ── Цвета ──
-  // Отличие от Горы Сияния: ближайшее окно (cardIndex === 0), пока оно ещё
-  // не в предупреждении и не активно, подсвечивается жёлтым (а не синим).
+  // Ближайшее окно (cardIndex === 0), пока оно ещё не в предупреждении и
+  // не активно, подсвечивается синим — точно как на Горе Сияния.
   let accentColor, borderColor, bgColor, dotColor;
   if (burning) {
     accentColor = '#50c878'; borderColor = 'rgba(80,200,120,.5)';
@@ -88,8 +88,8 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGam
     accentColor = '#e0a030'; borderColor = 'rgba(224,160,48,.4)';
     bgColor = 'rgba(224,160,48,.06)'; dotColor = '#e0a030';
   } else if (cardIndex === 0) {
-    accentColor = '#e0c930'; borderColor = 'rgba(224,201,48,.4)';
-    bgColor = 'rgba(224,201,48,.05)'; dotColor = '#e0c930';
+    accentColor = '#4a9edd'; borderColor = '#1e3a5f';
+    bgColor = 'rgba(74,158,221,.04)'; dotColor = '#4a9edd';
   } else {
     accentColor = '#4a6a8a'; borderColor = '#1a2535';
     bgColor = 'transparent'; dotColor = '#4a6a8a';
@@ -106,7 +106,7 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGam
   } else {
     timerLabel = 'Через';
     timerValue = msUntilStart > 0 ? formatCountdown(msUntilStart) : '00:00';
-    timerColor = isWarn ? '#e0a030' : (cardIndex === 0 ? '#e0c930' : '#6e8090');
+    timerColor = isWarn ? '#e0a030' : (cardIndex === 0 ? '#4a9edd' : '#6e8090');
   }
 
   return (
@@ -223,7 +223,7 @@ export default function AnomalyPage({ user }) {
       if (isWarn) {
         statusPill = { color: '#e0a030', text: `⚠️ Прорыв через ${formatCountdown(msUntilNext)}!` };
       } else {
-        statusPill = { color: '#e0c930', text: `До ближайшего прорыва: ${formatCountdown(msUntilNext)}` };
+        statusPill = { color: '#4a9edd', text: `До ближайшего прорыва: ${formatCountdown(msUntilNext)}` };
       }
     }
   }
