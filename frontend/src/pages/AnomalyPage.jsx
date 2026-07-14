@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import {
-  computeAnomalySlots, loadAnomalyAnchor, saveAnomalyAnchor,
+  computeAnomalySlots, getAnomalyLocation, ANOMALY_LOCATION_ID,
+  loadAnomalyAnchor, saveAnomalyAnchor,
 } from '../utils/anomaly';
-import { formatRealTime, formatCountdown } from '../utils/shining';
+import { getLiveGameTime, formatRealTime, formatCountdown } from '../utils/shining';
 import { isAnomalySoundEnabled, setAnomalySoundEnabled } from '../utils/soundPrefs';
 import SoundIcon from '../components/SoundIcon';
 import InfoSpoiler from '../components/InfoSpoiler';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import { ANOMALY_SPOILER } from '../content/spoilerContent';
 
-// ─── Модалка ввода якоря Z (декоративная — на расписание не влияет) ─
+// ─── Модалка ввода якоря Z — работает точно как на Сиянии ──────────
 function SetAnomalyTimeModal({ onCommit, onClose }) {
   const [digits, setDigits] = useState('');
   const [error,  setError]  = useState('');
@@ -42,7 +43,7 @@ function SetAnomalyTimeModal({ onCommit, onClose }) {
             />
             <div className="modal-hint">
               Backspace удаляет время справа налево: минуты → часы. Затем просто вводи цифры — двоеточие появится само ·
-              Расписание прорывов всегда идёт по реальному GMT+00:00 и от этого значения не зависит
+              Локация зафиксирована — GMT +00:00
             </div>
           </div>
 
@@ -57,14 +58,19 @@ function SetAnomalyTimeModal({ onCommit, onClose }) {
   );
 }
 
-// ─── Карточка одного окна прорыва ──────────────────────────────────
-function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs }) {
+// ─── Карточка одного прорыва ────────────────────────────────────────
+function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGameTimeStr, anchorRealMs }) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(id);
   }, []);
+
+  // Живое игровое время — тикает одинаково на всех карточках, ровно как
+  // на Сиянии (getLiveGameTime универсальна и не завязана на конкретный
+  // раздел).
+  const liveGameTime = getLiveGameTime(anchorGameTimeStr, anchorRealMs, 0, now);
 
   const burning = now >= realStartMs && now < realEndMs;
   const msUntilStart = realStartMs - now;
@@ -125,15 +131,25 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs }) {
         }}>{CARD_LABELS[cardIndex]}</span>
       </div>
 
-      {/* Реальное время начала окна (GMT+00:00) */}
+      {/* Игровое время — тикает, одинаково для всех карточек */}
       <div>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-          {burning ? 'Началось в' : 'Начало в'}
+          Игровое время
         </div>
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700,
+          fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 700,
           color: accentColor, letterSpacing: '0.04em', lineHeight: 1,
         }}>
+          {liveGameTime}
+        </div>
+      </div>
+
+      {/* Реальное время начала ЭТОГО прорыва */}
+      <div>
+        <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+          {burning ? 'Началось в' : 'Начало в'}
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, color: '#8b949e' }}>
           {formatRealTime(realStartMs)}
         </div>
       </div>
@@ -152,14 +168,17 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs }) {
 }
 
 // ─── Основная страница ───────────────────────────────────────────
-// Не связана с «Горой Сияния»: не использует якорь/игровое время,
-// расписание фиксировано по реальному GMT+00:00 и одинаково для всех,
-// поэтому доступна без клана/входа — как Захваты и Калькулятор времени.
+// Работает как «Гора Сияния»: якорь Z/X реально запускает расчёт циклов
+// по игровой скорости времени. Единственное отличие — локация всегда
+// зафиксирована на GMT+00:00 (выбор недоступен), и окна другие: два
+// цикла в сутки (07:30–10:00 и 19:30–22:00 по игре) вместо четырёх
+// равных по 6 игр. часов. Хранится локально в браузере — страница не
+// привязана к клану, доступна без входа.
 export default function AnomalyPage({ user }) {
-  const [now, setNow]     = useState(() => Date.now());
-  const [soundOn, setSoundOn] = useState(() => isAnomalySoundEnabled());
   const [showModal, setShowModal] = useState(false);
-  const [anchor, setAnchor] = useState(() => loadAnomalyAnchor());
+  const [now, setNow]             = useState(() => Date.now());
+  const [soundOn, setSoundOn]     = useState(() => isAnomalySoundEnabled());
+  const [anchor, setAnchor]       = useState(() => loadAnomalyAnchor());
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500);
@@ -176,6 +195,7 @@ export default function AnomalyPage({ user }) {
     const next = {
       gameTimeStr,
       anchorRealMs,
+      locationId: ANOMALY_LOCATION_ID,
       setAt: new Date().toISOString(),
       setByNick: user?.game_nick || user?.nick || null,
     };
@@ -183,19 +203,29 @@ export default function AnomalyPage({ user }) {
     saveAnomalyAnchor(next);
   }
 
-  const slots = computeAnomalySlots(now);
-  const slot0 = slots[0];
-  const burning = now >= slot0.realStartMs && now < slot0.realEndMs;
-  const isWarn = now >= slot0.warnStartMs && now < slot0.realStartMs;
-  const msUntilNext = slot0.realStartMs - now;
+  const loc = getAnomalyLocation();
+  const hasData = anchor?.gameTimeStr && anchor?.anchorRealMs;
 
-  let statusPill;
-  if (burning) {
-    statusPill = { color: '#50c878', text: '⚡ Прорыв идёт прямо сейчас!' };
-  } else if (isWarn) {
-    statusPill = { color: '#e0a030', text: `⚠️ Прорыв через ${formatCountdown(msUntilNext)}!` };
-  } else {
-    statusPill = { color: '#e0c930', text: `До ближайшего прорыва: ${formatCountdown(msUntilNext)}` };
+  const slots = hasData
+    ? computeAnomalySlots(anchor.gameTimeStr, anchor.anchorRealMs, now)
+    : null;
+
+  // Статус-строка
+  let statusPill = null;
+  if (slots && slots[0]) {
+    const slot0 = slots[0];
+    const burning = now >= slot0.realStartMs && now < slot0.realEndMs;
+    const isWarn = now >= slot0.warnStartMs && now < slot0.realStartMs;
+    if (burning) {
+      statusPill = { color: '#50c878', text: '⚡ Прорыв идёт прямо сейчас!' };
+    } else {
+      const msUntilNext = slot0.realStartMs - now;
+      if (isWarn) {
+        statusPill = { color: '#e0a030', text: `⚠️ Прорыв через ${formatCountdown(msUntilNext)}!` };
+      } else {
+        statusPill = { color: '#e0c930', text: `До ближайшего прорыва: ${formatCountdown(msUntilNext)}` };
+      }
+    }
   }
 
   return (
@@ -204,13 +234,15 @@ export default function AnomalyPage({ user }) {
       <div className="bears-hdr">
         <h2 className="page-title">🥶 Аномальные прорывы / Уледная жара</h2>
         <div className="stat-pills">
-          <span className="pill" style={{
-            color: statusPill.color,
-            borderColor: statusPill.color,
-            background: `${statusPill.color}18`,
-          }}>
-            {statusPill.text}
-          </span>
+          {statusPill && (
+            <span className="pill" style={{
+              color: statusPill.color,
+              borderColor: statusPill.color,
+              background: `${statusPill.color}18`,
+            }}>
+              {statusPill.text}
+            </span>
+          )}
           <button
             className={`rupor-btn ${soundOn ? 'rupor-on' : 'rupor-off'}`}
             onClick={toggleSound}
@@ -223,14 +255,14 @@ export default function AnomalyPage({ user }) {
 
       <InfoSpoiler {...ANOMALY_SPOILER} storageKey="spoiler_anomaly" />
 
-      {/* Инфо-панель — якорь декоративный, на расписание не влияет */}
+      {/* Инфо-панель — якорь работает как на Сиянии, локация зафиксирована */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
         padding: '12px 16px',
         background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10,
       }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          {anchor ? (
+          {hasData ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 13, color: '#c8d6e5' }}>
                 Якорь Z (игровое):{' '}
@@ -238,10 +270,10 @@ export default function AnomalyPage({ user }) {
                   {anchor.gameTimeStr}
                 </span>
                 {' · '}
-                <span style={{ color: '#50c878' }}>GMT +00:00</span>
+                <span style={{ color: '#50c878' }}>{loc.label}</span>
               </div>
               <div style={{ fontSize: 11, color: '#6e7681' }}>
-                Уледная жара · 08:00–10:00 и 20:00–22:00
+                {loc.name}
                 {anchor.setByNick && (
                   <> · Установил: <span style={{ color: '#8b949e' }}>{anchor.setByNick}</span></>
                 )}
@@ -267,21 +299,39 @@ export default function AnomalyPage({ user }) {
 
       {/* 4 карточки ПРОРЫВ 1-4 */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {slots.map((slot, i) => (
-          <AnomalyCard
-            key={i}
-            cardIndex={i}
-            warnStartMs={slot.warnStartMs}
-            realStartMs={slot.realStartMs}
-            realEndMs={slot.realEndMs}
-          />
-        ))}
+        {hasData && slots
+          ? slots.map((slot, i) => (
+              <AnomalyCard
+                key={i}
+                cardIndex={i}
+                warnStartMs={slot.warnStartMs}
+                realStartMs={slot.realStartMs}
+                realEndMs={slot.realEndMs}
+                anchorGameTimeStr={anchor.gameTimeStr}
+                anchorRealMs={anchor.anchorRealMs}
+              />
+            ))
+          : [0, 1, 2, 3].map(i => (
+              <div key={i} style={{
+                flex: '1 1 180px', minWidth: 170,
+                border: '1px solid #1a2535', borderRadius: 10,
+                padding: '14px 16px', opacity: 0.4,
+              }}>
+                <div style={{ fontSize: 10, color: '#4a6a8a', textTransform: 'uppercase',
+                  letterSpacing: '.07em', marginBottom: 10 }}>
+                  {['ПРОРЫВ 1','ПРОРЫВ 2','ПРОРЫВ 3','ПРОРЫВ 4'][i]}
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: '#1e2a3a' }}>--:--</div>
+              </div>
+            ))
+        }
       </div>
 
       {/* Подсказка */}
       <div className="tbl-hint">
-        🥶 Оранжевая: 07:30–07:50 и 19:30–19:50 · Зелёная: 07:50–10:00 и 19:50–22:00 (GMT+00:00) ·
-        Звук в 07:30 и 19:30 (если включён) · Страница не зависит от Горы Сияния
+        🥶 Оранжевая: 07:30–07:50 и 19:30–19:50 (игровое) · Зелёная: 07:50–10:00 и 19:50–22:00 (игровое) ·
+        Локация зафиксирована на GMT+00:00 · Звук в момент появления оранжевой рамки ·
+        Страница не зависит от Горы Сияния
       </div>
 
       {showModal && (

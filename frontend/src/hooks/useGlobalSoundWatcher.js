@@ -5,7 +5,7 @@ import { isBearSoundEnabled, isDraugSoundEnabled, isShiningSoundEnabled, isAnoma
 import { getTimeLeftMs, WARN_BEFORE_SPAWN_MS } from '../utils/bears';
 import { getTimeLeftMs as getDraugTimeLeftMs, WARN_BEFORE_SPAWN_MS as DRAUG_WARN_BEFORE_SPAWN_MS } from '../utils/draugs';
 import { computeShiningSlots } from '../utils/shining';
-import { getNearestAnomalySlot } from '../utils/anomaly';
+import { getNearestAnomalySlot, loadAnomalyAnchor } from '../utils/anomaly';
 
 function getTimerRemainingSeconds(timer) {
   if (!timer.last_reset_at) return null;
@@ -115,22 +115,28 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData }) {
       }
 
       // ── Аномальные прорывы / Уледная жара: сигнал в момент входа в
-      //    предупреждение (07:30 и 19:30 GMT+0) — не зависит от клана/входа,
-      //    окна фиксированы по реальному времени сервера.
+      //    предупреждение — считается по тому же якорю Z/X, что и на
+      //    самой странице (хранится в localStorage, страница не привязана
+      //    к клану). Если якорь не задан — просто нечего проверять.
       {
         const now = Date.now();
-        const slot = getNearestAnomalySlot(now);
-        const key = String(slot.realStartMs);
-        const warning = now >= slot.warnStartMs && now < slot.realStartMs;
-        let entry = anomalyStateRef.current;
-        if (!entry || entry.key !== key) {
-          entry = { key, warning };
-          anomalyStateRef.current = entry;
+        const anomalyAnchor = loadAnomalyAnchor();
+        const slot = anomalyAnchor
+          ? getNearestAnomalySlot(anomalyAnchor.gameTimeStr, anomalyAnchor.anchorRealMs, now)
+          : null;
+        if (slot) {
+          const key = `${anomalyAnchor.gameTimeStr}|${anomalyAnchor.anchorRealMs}|${slot.realStartMs}`;
+          const warning = now >= slot.warnStartMs && now < slot.realStartMs;
+          let entry = anomalyStateRef.current;
+          if (!entry || entry.key !== key) {
+            entry = { key, warning };
+            anomalyStateRef.current = entry;
+          }
+          if (warning && !entry.warning) {
+            if (isAnomalySoundEnabled()) playAnomalyWarningSound();
+          }
+          entry.warning = warning;
         }
-        if (warning && !entry.warning) {
-          if (isAnomalySoundEnabled()) playAnomalyWarningSound();
-        }
-        entry.warning = warning;
       }
 
       // ── Таймеры: сигнал в момент истечения ──
