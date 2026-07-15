@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import {
   DRAUGS_LIST, getDraugMeta, getDraugStatus,
@@ -6,7 +6,6 @@ import {
   parseLocalTimeInput, killedAtFromSpawnAt
 } from '../utils/draugs';
 import { isDraugSoundEnabled, setDraugSoundEnabled } from '../utils/soundPrefs';
-import useIsMobile from '../hooks/useIsMobile';
 import SoundIcon from '../components/SoundIcon';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
@@ -64,7 +63,6 @@ function KillTimeModal({ draugName, onCommit, onClose }) {
 function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
   const [showModal, setShowModal] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isDraugSoundEnabled(draug.draug_index));
-  const isMobile = useIsMobile();
 
   // Как и в BearsPage: раньше у каждой строки был свой setInterval со
   // случайным сдвигом старта (специально чтобы тики разных строк НЕ
@@ -113,73 +111,18 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
   const spawnDisplay  = formatClock(draug.spawn_at);
   const killedDisplay = formatClock(draug.killed_at);
 
-  // ПОЛНОСТЬЮ отдельный, максимально лёгкий рендер для мобилки (как и в
-  // BearsPage — проверено на реальном Redmi 8 Pro, предыдущие фиксы не
-  // убрали баг). Нет прогресс-бара (раньше .prog-fill менял inline width
-  // каждый тик — постоянный layout+paint), минимум вложенных узлов, блок
-  // "Смерть/Спавн/Прошло" — одна текстовая строка.
-  if (isMobile) {
-    return (
-      <>
-        <div className={`bear-lite-card ${rowCls}`}>
-          <div className="bear-lite-row1">
-            <span className={dotCls} />
-            <span className="bear-lite-name">{meta.name}</span>
-            <span className="square-badge">{meta.square}</span>
-            {isReady ? (
-              <span className="spawn-tag">⚡ Спавн!</span>
-            ) : (
-              <span
-                className="bear-lite-time"
-                style={isDead ? { color: timerColor } : undefined}
-                onClick={() => setShowModal(true)}
-              >
-                {isDead ? formatCountdown(ms) : '--:--'} ✎
-              </span>
-            )}
-          </div>
-          {isActive && (
-            <div className="bear-lite-row2" onClick={() => setShowModal(true)}>
-              Смерть {killedDisplay} · Спавн {spawnDisplay} · Прошло {isDead ? elap : '--:--:--'}
-              {draug.killer_nick ? ` · ${draug.killer_nick}` : ''}
-            </div>
-          )}
-          <div className="bear-lite-row3">
-            {!isDead && !isReady
-              ? <>
-                  <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(draug.draug_index)}>Сейчас</button>
-                  <button className="btn-gone" style={{ flex: 1 }} onClick={() => onVanish(draug.draug_index)}>Исчез</button>
-                </>
-              : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(draug.draug_index)}>✕ Сброс</button>
-            }
-            <button
-              className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
-              onClick={toggleSound}
-              title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
-            >
-              <SoundIcon on={soundOn} />
-            </button>
-          </div>
-        </div>
-
-        {showModal && (
-          <KillTimeModal
-            draugName={meta.name}
-            onCommit={iso => onManualTime(draug.draug_index, iso)}
-            onClose={() => setShowModal(false)}
-          />
-        )}
-      </>
-    );
-  }
-
+  // Единая разметка для десктопа и мобилки — таблица всегда рендерится
+  // одна и та же, адаптацию под маленький экран делает чистый CSS (медиа-
+  // запрос с CSS Grid, см. .bears-table в styles.css). См. подробный
+  // комментарий в BearsPage.jsx/BearRow — раньше JS-ветвление card/tr +
+  // repaint-хак давали визуальный «слом» на части Android-телефонов.
   return (
     <>
       <tr className={rowCls}>
-        <td><span className={dotCls} /></td>
-        <td className="td-name">{meta.name}</td>
-        <td><span className="square-badge">{meta.square}</span></td>
-        <td className="td-timer">
+        <td className="td-dot"><span className={dotCls} /></td>
+        <td className="td-name" data-label="Драуг">{meta.name}</td>
+        <td className="td-square" data-label="Квадрат"><span className="square-badge">{meta.square}</span></td>
+        <td className="td-timer" data-label="До спавна">
           {isReady
             ? <span className="spawn-tag">⚡ Спавн!</span>
             : <div className="prog-wrap">
@@ -192,7 +135,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
               </div>
           }
         </td>
-        <td>
+        <td className="td-actions" data-label="Действия">
           <div className="act-btns">
             {!isDead && !isReady
               ? <>
@@ -210,9 +153,9 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
             </button>
           </div>
         </td>
-        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`}>{isActive ? spawnDisplay : '--:--:--'}</td>
-        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`}>{isActive ? elap : '--:--:--'}</td>
-        <td>
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label="Спавн">{isActive ? spawnDisplay : '--:--:--'}</td>
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label="Прошло">{isActive ? elap : '--:--:--'}</td>
+        <td data-label="Смерть">
           {isActive
             ? <span className="td-clock clock-editable" title="Нажми чтобы исправить время смерти" onClick={() => setShowModal(true)}>
                 {killedDisplay}<span className="edit-icon"> ✎</span>
@@ -222,7 +165,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
               </span>
           }
         </td>
-        <td className="td-user">{draug.killer_nick || '—'}</td>
+        <td className="td-user" data-label="Игрок">{draug.killer_nick || '—'}</td>
       </tr>
 
       {showModal && (
@@ -240,35 +183,6 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
 export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLoginClick }) {
   const [error, setError] = useState('');
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const isMobile = useIsMobile();
-
-  // ── Фикс наложения карточек на старых Android WebView (как в BearsPage) ──
-  // `clan`/`draugs` подгружаются асинхронно после монтирования страницы (см.
-  // App.jsx) — полноценный `.bears-mobile-list` с карточками вставляется
-  // отдельным более поздним рендером. На старом WebView (Redmi 8 Pro/MIUI)
-  // такая вставка иногда не перерисовывается сама, пока клик не форсирует
-  // repaint. Форсируем его программно сразу после первого появления реальных
-  // данных.
-  const mobileListRef = useRef(null);
-  const hadContentRef = useRef(false);
-  useLayoutEffect(() => {
-    if (!isMobile) return;
-    const hasContent = !!clan;
-    if (hasContent && !hadContentRef.current) {
-      hadContentRef.current = true;
-      requestAnimationFrame(() => {
-        const el = mobileListRef.current;
-        if (!el) return;
-        const prevDisplay = el.style.display;
-        el.style.display = 'none';
-        // eslint-disable-next-line no-unused-expressions
-        el.offsetHeight;
-        el.style.display = prevDisplay || '';
-      });
-    } else if (!hasContent) {
-      hadContentRef.current = false;
-    }
-  }, [isMobile, clan]);
 
   // Один общий тик на всю страницу вместо независимых per-row таймеров
   // (см. комментарий в DraugRow) — форсирует атомарный re-render всего
@@ -345,8 +259,21 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
       {error && <div className="error-msg">{error}</div>}
 
       <div className="tbl-wrap">
-        {isMobile ? (
-          <div className="bears-mobile-list" ref={mobileListRef}>
+        <table className="bears-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Название</th>
+              <th>Квадрат</th>
+              <th>До спавна</th>
+              <th>Действия</th>
+              <th>Время спавна</th>
+              <th>Прошло времени</th>
+              <th>Время смерти</th>
+              <th>Игрок</th>
+            </tr>
+          </thead>
+          <tbody>
             {mergedDraugs.map(draug => (
               <DraugRow
                 key={draug.draug_index}
@@ -357,36 +284,8 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
                 onManualTime={handleManualTime}
               />
             ))}
-          </div>
-        ) : (
-          <table className="bears-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Название</th>
-                <th>Квадрат</th>
-                <th>До спавна</th>
-                <th>Действия</th>
-                <th>Время спавна</th>
-                <th>Прошло времени</th>
-                <th>Время смерти</th>
-                <th>Игрок</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mergedDraugs.map(draug => (
-                <DraugRow
-                  key={draug.draug_index}
-                  draug={draug}
-                  onKill={killDraug}
-                  onVanish={vanishDraug}
-                  onReset={resetDraug}
-                  onManualTime={handleManualTime}
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
+          </tbody>
+        </table>
         <div className="tbl-timezone">
           ⏱ Часовой пояс: <span className="tbl-timezone-value">{userTimezone}</span>
         </div>

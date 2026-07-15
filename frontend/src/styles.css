@@ -1230,71 +1230,86 @@ body {
   .bears-hdr { flex-wrap: wrap; }
   .stat-pills { flex-wrap: wrap; gap: 6px; }
 
-  /* === МЕДВЕДИ — скрываем таблицу, показываем карточки === */
+  /* === МЕДВЕДИ / ДРАУГИ — резиновая карточка на чистом CSS ===
+     Раньше под мобилку рендерилось отдельное JS-поддерево (карточка вместо
+     <tr>), переключаемое через matchMedia + принудительный repaint-хак.
+     Именно эта связка (разный DOM при ресайзе/повороте экрана +
+     асинхронная подгрузка данных) на части Android-телефонов приводила к
+     «слому» экрана — наложению кусков старого и нового кадра.
+     Сейчас в DOM всегда одна и та же таблица (см. BearsPage.jsx/
+     DraugsPage.jsx) — под 640px её строки просто раскладываются в карточку
+     через CSS Grid, без единой смены разметки, пересобирать нечего.
+     Раскладка «резиновая»: fr/auto-колонки и перенос строк, а не жёсткая
+     ширина — на узких экранах текст переносится, а не сжимается в кашу. */
   .tbl-wrap { border-radius: 8px; overflow: hidden; }
   .bears-table:not(.captures-table) thead { display: none; }
-  /* Строка «Медведи»/«Драуги» теперь рендерится в JS только в одном
-     варианте (см. useIsMobile), поэтому классов-переключателей
-     bear-row-desktop/bear-row-mobile больше нет — тут только стили карточки. */
 
-  .bears-mobile-list {
-    display: flex;
-    flex-direction: column;
-  }
+  .bears-table:not(.captures-table) tbody { display: block; }
 
-  /* === Лёгкая мобильная карточка (без прогресс-бара) ===
-     Раньше .prog-fill менял inline width каждый тик — это постоянный
-     layout+paint на отдельном узле, что на слабых/старых движках
-     (Redmi 8 Pro) ломало рендер. Здесь прогресс-бара нет вообще, только
-     текст — его дешевле перерисовать, и узлов в DOM в разы меньше. */
-  .bear-lite-card {
-    padding: 10px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border-bottom: 1px solid rgba(30,58,95,0.4);
-  }
-  .bears-mobile-list .bear-lite-card:last-child { border-bottom: none; }
-  .bear-lite-row1 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .bear-lite-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: #c8d6e5;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .bear-lite-time {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    color: #4a9edd;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .bear-lite-row2 {
-    font-size: 12px;
-    color: var(--text2);
-    font-family: var(--font-mono);
-    cursor: pointer;
-  }
-  .bear-lite-row3 {
-    display: flex;
-    gap: 8px;
-  }
-
-  .bear-mobile-card {
+  .bears-table:not(.captures-table) tbody tr {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    column-gap: 10px;
+    row-gap: 8px;
     padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    border-bottom: 1px solid rgba(30,58,95,0.4);
+    white-space: normal;
   }
-  .bears-mobile-list .bear-mobile-card:last-child { border-bottom: none; }
+
+  .bears-table:not(.captures-table) td {
+    padding: 0;
+    white-space: normal;
+    vertical-align: baseline;
+  }
+
+  /* Строка 1: точка-статус · название (тянется) · квадрат */
+  .bears-table:not(.captures-table) .td-dot    { grid-row: 1; grid-column: 1; align-self: center; }
+  .bears-table:not(.captures-table) .td-name   { grid-row: 1; grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .bears-table:not(.captures-table) .td-square { grid-row: 1; grid-column: 3; align-self: center; }
+
+  /* Строка 2: таймер/прогресс на всю ширину — резиновый, без фикс. min-width */
+  .bears-table:not(.captures-table) .td-timer { grid-row: 2; grid-column: 1 / -1; }
+  .bears-table:not(.captures-table) .prog-bar { min-width: 0; }
+
+  /* Строки 3–6: спавн / прошло / смерть / игрок — каждая на своей полной
+     строке, содержимое переносится само по себе (это и есть «резиновость»:
+     ничего не сжимается по ширине, просто занимает столько строк, сколько
+     нужно). Различаем поля по data-label, а не по порядку — надёжнее, чем
+     завязываться на nth-child. */
+  .bears-table:not(.captures-table) td.td-clock,
+  .bears-table:not(.captures-table) td[data-label="Смерть"],
+  .bears-table:not(.captures-table) td.td-user {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .bears-table:not(.captures-table) td.td-user { max-width: none; }
+
+  .bears-table:not(.captures-table) td.td-clock::before,
+  .bears-table:not(.captures-table) td[data-label="Смерть"]::before,
+  .bears-table:not(.captures-table) td.td-user::before {
+    content: attr(data-label);
+    flex: 0 0 72px;
+    font-size: 11px;
+    color: #4a6a8a;
+    font-family: inherit;
+  }
+
+  .bears-table:not(.captures-table) td[data-label="Спавн"]   { grid-row: 3; }
+  .bears-table:not(.captures-table) td[data-label="Прошло"]  { grid-row: 4; }
+  .bears-table:not(.captures-table) td[data-label="Смерть"]  { grid-row: 5; }
+  .bears-table:not(.captures-table) td[data-label="Игрок"]   { grid-row: 6; }
+
+  /* Строка 7: действия на всю ширину, кнопки резиново делят место */
+  .bears-table:not(.captures-table) .td-actions { grid-row: 7; grid-column: 1 / -1; }
+  .bears-table:not(.captures-table) .act-btns { flex-wrap: wrap; }
+  .bears-table:not(.captures-table) .act-btns .btn-now,
+  .bears-table:not(.captures-table) .act-btns .btn-gone,
+  .bears-table:not(.captures-table) .act-btns .btn-reset-row {
+    flex: 1 1 auto;
+    text-align: center;
+  }
 
   /* === ТАЙМЕРЫ — скрываем таблицу, показываем карточки === */
   .timers-thead-desktop { display: none !important; }

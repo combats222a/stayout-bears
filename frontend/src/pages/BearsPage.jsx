@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import {
   BEARS_LIST, getBearMeta, getBearStatus,
@@ -6,7 +6,6 @@ import {
   parseLocalTimeInput, killedAtFromSpawnAt
 } from '../utils/bears';
 import { isBearSoundEnabled, setBearSoundEnabled } from '../utils/soundPrefs';
-import useIsMobile from '../hooks/useIsMobile';
 import SoundIcon from '../components/SoundIcon';
 import MaskedTimeInput, { digitsToTimeStr } from '../components/MaskedTimeInput';
 import InfoSpoiler from '../components/InfoSpoiler';
@@ -64,7 +63,6 @@ function KillTimeModal({ bearName, onCommit, onClose }) {
 function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
   const [showModal, setShowModal] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isBearSoundEnabled(bear.bear_index));
-  const isMobile = useIsMobile();
 
   // Раньше у каждой строки был свой setInterval со случайным сдвигом старта —
   // специально чтобы тики разных строк НЕ совпадали в один кадр (расчёт был
@@ -116,78 +114,22 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
   const spawnDisplay  = formatClock(bear.spawn_at);
   const killedDisplay = formatClock(bear.killed_at);
 
-  // ПОЛНОСТЬЮ отдельный, максимально лёгкий рендер для мобилки (проверено
-  // на реальном Redmi 8 Pro: предыдущие фиксы — div вместо table, общий
-  // тик — не убрали баг). Главные отличия от десктопной/старой мобильной
-  // версии:
-  //  1. Нет прогресс-бара — раньше .prog-fill менял inline width КАЖДЫЙ тик,
-  //     это постоянный layout+paint на отдельном узле. Убираем совсем —
-  //     остаётся только текст, который дешевле перерисовать.
-  //  2. Минимум вложенных div/span — меньше узлов, которые движок должен
-  //     пересчитать и перерисовать за кадр.
-  //  3. Блок "Смерть/Спавн/Прошло" — одна текстовая строка вместо 4 span.
-  if (isMobile) {
-    return (
-      <>
-        <div className={`bear-lite-card ${rowCls}`}>
-          <div className="bear-lite-row1">
-            <span className={dotCls} />
-            <span className="bear-lite-name">{meta.name}</span>
-            <span className="square-badge">{meta.square}</span>
-            {isReady ? (
-              <span className="spawn-tag">⚡ Спавн!</span>
-            ) : (
-              <span
-                className="bear-lite-time"
-                style={isDead ? { color: timerColor } : undefined}
-                onClick={() => setShowModal(true)}
-              >
-                {isDead ? formatCountdown(ms) : '--:--'} ✎
-              </span>
-            )}
-          </div>
-          {isActive && (
-            <div className="bear-lite-row2" onClick={() => setShowModal(true)}>
-              Смерть {killedDisplay} · Спавн {spawnDisplay} · Прошло {isDead ? elap : '--:--:--'}
-              {bear.killer_nick ? ` · ${bear.killer_nick}` : ''}
-            </div>
-          )}
-          <div className="bear-lite-row3">
-            {!isDead && !isReady
-              ? <>
-                  <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(bear.bear_index)}>Сейчас</button>
-                  <button className="btn-gone" style={{ flex: 1 }} onClick={() => onVanish(bear.bear_index)}>Исчез</button>
-                </>
-              : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(bear.bear_index)}>✕ Сброс</button>
-            }
-            <button
-              className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
-              onClick={toggleSound}
-              title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
-            >
-              <SoundIcon on={soundOn} />
-            </button>
-          </div>
-        </div>
-
-        {showModal && (
-          <KillTimeModal
-            bearName={meta.name}
-            onCommit={iso => onManualTime(bear.bear_index, iso)}
-            onClose={() => setShowModal(false)}
-          />
-        )}
-      </>
-    );
-  }
-
+  // Единая разметка для десктопа и мобилки — таблица всегда рендерится
+  // одна и та же, адаптацию под маленький экран делает чистый CSS (медиа-
+  // запрос с CSS Grid, см. .bears-table в styles.css). Раньше здесь было
+  // JS-ветвление на два совершенно разных поддерева (card vs tr) плюс ручной
+  // repaint-хак в BearsPage/DraugsPage — именно связка «разное дерево при
+  // ресайзе/смене ориентации + async вставка данных» давала на части
+  // Android-телефонов визуальный «слом» экрана (наложение/битые кадры).
+  // Один и тот же DOM во всех размерах экрана убирает саму возможность
+  // такого бага: браузеру нечего пересобирать, меняется только CSS.
   return (
     <>
       <tr className={rowCls}>
-        <td><span className={dotCls} /></td>
-        <td className="td-name">{meta.name}</td>
-        <td><span className="square-badge">{meta.square}</span></td>
-        <td className="td-timer">
+        <td className="td-dot"><span className={dotCls} /></td>
+        <td className="td-name" data-label="Медведь">{meta.name}</td>
+        <td className="td-square" data-label="Квадрат"><span className="square-badge">{meta.square}</span></td>
+        <td className="td-timer" data-label="До спавна">
           {isReady
             ? <span className="spawn-tag">⚡ Спавн!</span>
             : <div className="prog-wrap">
@@ -200,7 +142,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
               </div>
           }
         </td>
-        <td>
+        <td className="td-actions" data-label="Действия">
           <div className="act-btns">
             {!isDead && !isReady
               ? <>
@@ -218,9 +160,9 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
             </button>
           </div>
         </td>
-        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`}>{isActive ? spawnDisplay : '--:--:--'}</td>
-        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`}>{isActive ? elap : '--:--:--'}</td>
-        <td>
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label="Спавн">{isActive ? spawnDisplay : '--:--:--'}</td>
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label="Прошло">{isActive ? elap : '--:--:--'}</td>
+        <td data-label="Смерть">
           {isActive
             ? <span className="td-clock clock-editable" title="Нажми чтобы исправить время смерти" onClick={() => setShowModal(true)}>
                 {killedDisplay}<span className="edit-icon"> ✎</span>
@@ -230,7 +172,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
               </span>
           }
         </td>
-        <td className="td-user">{bear.killer_nick || '—'}</td>
+        <td className="td-user" data-label="Игрок">{bear.killer_nick || '—'}</td>
       </tr>
 
       {showModal && (
@@ -248,42 +190,6 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
 export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginClick }) {
   const [error, setError] = useState('');
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const isMobile = useIsMobile();
-
-  // ── Фикс наложения карточек на старых Android WebView (Redmi 8 Pro/MIUI) ──
-  // `clan`/`bears` в App.jsx подгружаются АСИНХРОННО уже после того, как сама
-  // страница смонтирована (clan изначально null/undefined, см. App.jsx).
-  // Значит первый реальный пейнт этой страницы — это маленький блок из ветки
-  // `if (!clan)` выше, а полноценный `.bears-mobile-list` с карточками
-  // вставляется ПОЗЖЕ, отдельным рендером, когда loadClan() резолвится.
-  // На современных движках (Chrome/десктоп, Samsung S9) вставка такого
-  // поддерева сразу перерисовывается штатно. На старом WebView в MIUI это
-  // иногда не происходит само — карточки визуально накладываются друг на
-  // друга, пока какое-то взаимодействие (клик по кнопке) не форсирует
-  // layout+paint. Здесь мы форсируем тот же repaint программно, без участия
-  // пользователя, сразу после того как список впервые получает реальные
-  // данные — тем же приёмом (принудительное чтение layout-свойства), что уже
-  // используется для FLIP-анимации в TimersPage.jsx.
-  const mobileListRef = useRef(null);
-  const hadContentRef = useRef(false);
-  useLayoutEffect(() => {
-    if (!isMobile) return;
-    const hasContent = !!clan;
-    if (hasContent && !hadContentRef.current) {
-      hadContentRef.current = true;
-      requestAnimationFrame(() => {
-        const el = mobileListRef.current;
-        if (!el) return;
-        const prevDisplay = el.style.display;
-        el.style.display = 'none';
-        // eslint-disable-next-line no-unused-expressions
-        el.offsetHeight; // форсируем синхронный layout, пока узел вне дерева рендеринга
-        el.style.display = prevDisplay || '';
-      });
-    } else if (!hasContent) {
-      hadContentRef.current = false;
-    }
-  }, [isMobile, clan]);
 
   // Один общий тик на всю страницу вместо ~11 независимых setInterval со
   // случайным сдвигом на каждую строку (см. комментарий в BearRow). Любое
@@ -363,8 +269,21 @@ export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginC
       {error && <div className="error-msg">{error}</div>}
 
       <div className="tbl-wrap">
-        {isMobile ? (
-          <div className="bears-mobile-list" ref={mobileListRef}>
+        <table className="bears-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Название</th>
+              <th>Квадрат</th>
+              <th>До спавна</th>
+              <th>Действия</th>
+              <th>Время спавна</th>
+              <th>Прошло времени</th>
+              <th>Время смерти</th>
+              <th>Игрок</th>
+            </tr>
+          </thead>
+          <tbody>
             {mergedBears.map(bear => (
               <BearRow
                 key={bear.bear_index}
@@ -375,36 +294,8 @@ export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginC
                 onManualTime={handleManualTime}
               />
             ))}
-          </div>
-        ) : (
-          <table className="bears-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Название</th>
-                <th>Квадрат</th>
-                <th>До спавна</th>
-                <th>Действия</th>
-                <th>Время спавна</th>
-                <th>Прошло времени</th>
-                <th>Время смерти</th>
-                <th>Игрок</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mergedBears.map(bear => (
-                <BearRow
-                  key={bear.bear_index}
-                  bear={bear}
-                  onKill={killBear}
-                  onVanish={vanishBear}
-                  onReset={resetBear}
-                  onManualTime={handleManualTime}
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
+          </tbody>
+        </table>
         <div className="tbl-timezone">
           ⏱ Часовой пояс: <span className="tbl-timezone-value">{userTimezone}</span>
         </div>
