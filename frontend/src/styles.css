@@ -1317,6 +1317,24 @@ body {
 
   /* === PROFILE === */
   .form-row { flex-direction: column; }
+
+  /* === МОБИЛЬНАЯ ПРОИЗВОДИТЕЛЬНОСТЬ (медведи/драуги) ===
+     На слабых мобильных GPU постоянные анимации (пульсация точки статуса,
+     свечение box-shadow, backdrop-filter blur, transition на прогресс-баре)
+     дают лаги и подтормаживания при скролле списка. Упрощаем: */
+  .sdot-blue, .sdot-green, .sdot-orange {
+    animation: none;
+    box-shadow: none;
+  }
+  .prog-fill { transition: none; }
+  .clock-editable,
+  .clock-editable .edit-icon,
+  .clock-editable:hover,
+  .clock-editable:hover .edit-icon {
+    transition: none;
+  }
+  .modal-overlay { backdrop-filter: none; }
+  .modal-box { animation: none; }
 }
 
 /* На desktop скрываем мобильные карточки */
