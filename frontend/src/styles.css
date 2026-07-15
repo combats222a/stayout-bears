@@ -526,8 +526,13 @@ body {
   border-radius: 2px;
   transform-origin: left center;
   transform: scaleX(0);
-  will-change: transform;
-  transition: transform 1s linear, background .5s;
+  /* Раньше здесь были will-change: transform и transition. При десятках строк,
+     тикающих каждые 500мс, это форсированно создаёт отдельный GPU-слой на
+     КАЖДУЮ строку и держит его постоянно — на слабых GPU (в т.ч. в режиме
+     "ПК" на телефоне при зуме, где слоёв из-за увеличенного контента ещё
+     больше) это переполняет память композитора и ломает рендер (полосы,
+     призрачный текст). Без анимации и без will-change бар просто мгновенно
+     перескакивает в нужное положение — никакого отдельного слоя не нужно. */
 }
 .timer-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; min-width: 44px; text-align: right; }
 
@@ -535,11 +540,9 @@ body {
   border-radius: 3px; padding: 2px 8px; font-size: 11px; color: #50c878; letter-spacing: 1px; text-transform: uppercase; }
 
 .sdot { width: 9px; height: 9px; border-radius: 50%; background: #1e3a5f; display: inline-block; }
-.sdot-blue   { background: #4a9edd; box-shadow: 0 0 6px #4a9edd; animation: sdot-pulse 1.5s infinite; }
-.sdot-green  { background: #50c878; box-shadow: 0 0 6px #50c878; animation: sdot-pop 1s infinite; }
-.sdot-orange { background: #e0a030; box-shadow: 0 0 6px #e0a030; animation: sdot-pulse .8s infinite; }
-@keyframes sdot-pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
-@keyframes sdot-pop   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+.sdot-blue   { background: #4a9edd; }
+.sdot-green  { background: #50c878; }
+.sdot-orange { background: #e0a030; }
 
 .act-btns { display: flex; gap: 6px; }
 .btn-now  { background: rgba(74,158,221,.1); border: 1px solid #1e3a5f; color: #4a9edd;
@@ -1319,14 +1322,9 @@ body {
   .form-row { flex-direction: column; }
 
   /* === МОБИЛЬНАЯ ПРОИЗВОДИТЕЛЬНОСТЬ (медведи/драуги) ===
-     На слабых мобильных GPU постоянные анимации (пульсация точки статуса,
-     свечение box-shadow, backdrop-filter blur, transition на прогресс-баре)
-     дают лаги и подтормаживания при скролле списка. Упрощаем: */
-  .sdot-blue, .sdot-green, .sdot-orange {
-    animation: none;
-    box-shadow: none;
-  }
-  .prog-fill { transition: none; will-change: auto; }
+     Пульсация точки статуса и transition на прогресс-баре убраны глобально
+     (см. .sdot-*/.prog-fill выше) — оставляем только то, что касается
+     именно мобильного слоя: backdrop-filter и transition на мелких деталях. */
   .clock-editable,
   .clock-editable .edit-icon,
   .clock-editable:hover,
