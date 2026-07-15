@@ -522,17 +522,18 @@ body {
 .prog-bar  { flex: 1; height: 4px; background: #1a2a3a; border-radius: 2px; overflow: hidden; min-width: 130px; }
 .prog-fill {
   height: 100%;
-  width: 100%;
+  width: 0%;
   border-radius: 2px;
-  transform-origin: left center;
-  transform: scaleX(0);
-  /* Раньше здесь были will-change: transform и transition. При десятках строк,
-     тикающих каждые 500мс, это форсированно создаёт отдельный GPU-слой на
-     КАЖДУЮ строку и держит его постоянно — на слабых GPU (в т.ч. в режиме
-     "ПК" на телефоне при зуме, где слоёв из-за увеличенного контента ещё
-     больше) это переполняет память композитора и ломает рендер (полосы,
-     призрачный текст). Без анимации и без will-change бар просто мгновенно
-     перескакивает в нужное положение — никакого отдельного слоя не нужно. */
+  /* Раньше здесь были will-change: transform и transition, а заполнение
+     шло через transform: scaleX(). Даже без will-change/transition
+     свойство transform на самом по себе на части GPU (особенно на слабых
+     мобильных чипах вроде Mali в MediaTek Helio) может форсировать промоушен
+     элемента в отдельный composited layer — особенно в связке с overflow:
+     hidden на родителе (.prog-bar). При десятках строк в таблице, тикающих
+     раз в секунду, это по одному создаёт и держит лишние GPU-слои и на
+     слабых/багованных драйверах ломает рендер при скролле (шумовые
+     артефакты, "фантомный" текст, полосы). width не требует композитинга —
+     это обычный layout+paint, слоёв не создаёт вообще. */
 }
 .timer-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; min-width: 44px; text-align: right; }
 

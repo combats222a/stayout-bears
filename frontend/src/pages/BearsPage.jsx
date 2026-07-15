@@ -143,7 +143,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
             ? <span className="spawn-tag">⚡ Спавн!</span>
             : <div className="prog-wrap">
                 <div className="prog-bar">
-                  <div className="prog-fill" style={{ transform: `scaleX(${pct})`, background: barColor }} />
+                  <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
                 </div>
                 <span className="timer-val" style={{ color: timerColor }}>
                   {isDead ? formatCountdown(ms) : '--:--'}
@@ -203,7 +203,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
                     title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
                   >
                     <div className="prog-bar">
-                      <div className="prog-fill" style={{ transform: `scaleX(${pct})`, background: barColor }} />
+                      <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
                     </div>
                     <span
                       className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}
