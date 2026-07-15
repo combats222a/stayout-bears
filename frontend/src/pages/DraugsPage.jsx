@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { api } from '../utils/api';
 import {
   DRAUGS_LIST, getDraugMeta, getDraugStatus,
@@ -242,6 +242,34 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const isMobile = useIsMobile();
 
+  // ── Фикс наложения карточек на старых Android WebView (как в BearsPage) ──
+  // `clan`/`draugs` подгружаются асинхронно после монтирования страницы (см.
+  // App.jsx) — полноценный `.bears-mobile-list` с карточками вставляется
+  // отдельным более поздним рендером. На старом WebView (Redmi 8 Pro/MIUI)
+  // такая вставка иногда не перерисовывается сама, пока клик не форсирует
+  // repaint. Форсируем его программно сразу после первого появления реальных
+  // данных.
+  const mobileListRef = useRef(null);
+  const hadContentRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!isMobile) return;
+    const hasContent = !!clan;
+    if (hasContent && !hadContentRef.current) {
+      hadContentRef.current = true;
+      requestAnimationFrame(() => {
+        const el = mobileListRef.current;
+        if (!el) return;
+        const prevDisplay = el.style.display;
+        el.style.display = 'none';
+        // eslint-disable-next-line no-unused-expressions
+        el.offsetHeight;
+        el.style.display = prevDisplay || '';
+      });
+    } else if (!hasContent) {
+      hadContentRef.current = false;
+    }
+  }, [isMobile, clan]);
+
   // Один общий тик на всю страницу вместо независимых per-row таймеров
   // (см. комментарий в DraugRow) — форсирует атомарный re-render всего
   // списка раз в секунду.
@@ -318,7 +346,7 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
 
       <div className="tbl-wrap">
         {isMobile ? (
-          <div className="bears-mobile-list">
+          <div className="bears-mobile-list" ref={mobileListRef}>
             {mergedDraugs.map(draug => (
               <DraugRow
                 key={draug.draug_index}

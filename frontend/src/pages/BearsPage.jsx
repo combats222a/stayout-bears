@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { api } from '../utils/api';
 import {
   BEARS_LIST, getBearMeta, getBearStatus,
@@ -250,6 +250,41 @@ export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginC
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const isMobile = useIsMobile();
 
+  // ── Фикс наложения карточек на старых Android WebView (Redmi 8 Pro/MIUI) ──
+  // `clan`/`bears` в App.jsx подгружаются АСИНХРОННО уже после того, как сама
+  // страница смонтирована (clan изначально null/undefined, см. App.jsx).
+  // Значит первый реальный пейнт этой страницы — это маленький блок из ветки
+  // `if (!clan)` выше, а полноценный `.bears-mobile-list` с карточками
+  // вставляется ПОЗЖЕ, отдельным рендером, когда loadClan() резолвится.
+  // На современных движках (Chrome/десктоп, Samsung S9) вставка такого
+  // поддерева сразу перерисовывается штатно. На старом WebView в MIUI это
+  // иногда не происходит само — карточки визуально накладываются друг на
+  // друга, пока какое-то взаимодействие (клик по кнопке) не форсирует
+  // layout+paint. Здесь мы форсируем тот же repaint программно, без участия
+  // пользователя, сразу после того как список впервые получает реальные
+  // данные — тем же приёмом (принудительное чтение layout-свойства), что уже
+  // используется для FLIP-анимации в TimersPage.jsx.
+  const mobileListRef = useRef(null);
+  const hadContentRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!isMobile) return;
+    const hasContent = !!clan;
+    if (hasContent && !hadContentRef.current) {
+      hadContentRef.current = true;
+      requestAnimationFrame(() => {
+        const el = mobileListRef.current;
+        if (!el) return;
+        const prevDisplay = el.style.display;
+        el.style.display = 'none';
+        // eslint-disable-next-line no-unused-expressions
+        el.offsetHeight; // форсируем синхронный layout, пока узел вне дерева рендеринга
+        el.style.display = prevDisplay || '';
+      });
+    } else if (!hasContent) {
+      hadContentRef.current = false;
+    }
+  }, [isMobile, clan]);
+
   // Один общий тик на всю страницу вместо ~11 независимых setInterval со
   // случайным сдвигом на каждую строку (см. комментарий в BearRow). Любое
   // изменение этого состояния триггерит re-render BearsPage, а значит и
@@ -329,7 +364,7 @@ export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginC
 
       <div className="tbl-wrap">
         {isMobile ? (
-          <div className="bears-mobile-list">
+          <div className="bears-mobile-list" ref={mobileListRef}>
             {mergedBears.map(bear => (
               <BearRow
                 key={bear.bear_index}
