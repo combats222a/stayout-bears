@@ -1200,8 +1200,9 @@ body {
   /* === МЕДВЕДИ — скрываем таблицу, показываем карточки === */
   .tbl-wrap { border-radius: 8px; overflow: hidden; }
   .bears-table:not(.captures-table) thead { display: none; }
-  .bear-row-desktop { display: none !important; }
-  .bear-row-mobile { display: table-row !important; }
+  /* Строка «Медведи»/«Драуги» теперь рендерится в JS только в одном
+     варианте (см. useIsMobile), поэтому классов-переключателей
+     bear-row-desktop/bear-row-mobile больше нет — тут только стили карточки. */
 
   .bear-mobile-card {
     padding: 12px 14px;
@@ -1338,7 +1339,6 @@ body {
 
 /* На desktop скрываем мобильные карточки */
 @media (min-width: 641px) {
-  .bear-row-mobile { display: none !important; }
   .timer-card-mobile { display: none !important; }
   .header-logout-desktop { display: inline-flex !important; }
   /* Основные разделы и так видны строкой в шапке — не дублируем их внутри
