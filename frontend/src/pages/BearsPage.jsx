@@ -86,7 +86,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
 
   const isDead    = getBearStatus(bear) === 'dead';
   const isReady   = bear.spawn_at && !isDead;
-  const isWarning = isDead && ms <= 60_000;
+  const isWarning = isDead && ms <= 5 * 60_000;
   const meta      = getBearMeta(bear.bear_index);
   const pct       = getProgress(bear);
   const isActive  = isDead || isReady;

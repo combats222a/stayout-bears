@@ -83,7 +83,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
 
   const isDead    = getDraugStatus(draug) === 'dead';
   const isReady   = draug.spawn_at && !isDead;
-  const isWarning = isDead && ms <= 60_000;
+  const isWarning = isDead && ms <= 5 * 60_000;
   const meta      = getDraugMeta(draug.draug_index);
   const pct       = getProgress(draug);
   const isActive  = isDead || isReady;
