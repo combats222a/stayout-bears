@@ -1326,7 +1326,7 @@ body {
     animation: none;
     box-shadow: none;
   }
-  .prog-fill { transition: none; }
+  .prog-fill { transition: none; will-change: auto; }
   .clock-editable,
   .clock-editable .edit-icon,
   .clock-editable:hover,
