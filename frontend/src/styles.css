@@ -1208,6 +1208,52 @@ body {
     display: flex;
     flex-direction: column;
   }
+
+  /* === Лёгкая мобильная карточка (без прогресс-бара) ===
+     Раньше .prog-fill менял inline width каждый тик — это постоянный
+     layout+paint на отдельном узле, что на слабых/старых движках
+     (Redmi 8 Pro) ломало рендер. Здесь прогресс-бара нет вообще, только
+     текст — его дешевле перерисовать, и узлов в DOM в разы меньше. */
+  .bear-lite-card {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 1px solid rgba(30,58,95,0.4);
+  }
+  .bears-mobile-list .bear-lite-card:last-child { border-bottom: none; }
+  .bear-lite-row1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bear-lite-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #c8d6e5;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bear-lite-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: #4a9edd;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .bear-lite-row2 {
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    cursor: pointer;
+  }
+  .bear-lite-row3 {
+    display: flex;
+    gap: 8px;
+  }
+
   .bear-mobile-card {
     padding: 12px 14px;
     display: flex;
@@ -1216,32 +1262,6 @@ body {
     border-bottom: 1px solid rgba(30,58,95,0.4);
   }
   .bears-mobile-list .bear-mobile-card:last-child { border-bottom: none; }
-  .bear-mobile-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .bear-mobile-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: #c8d6e5;
-  }
-  .bear-mobile-timer .prog-wrap {
-    gap: 8px;
-  }
-  .bear-mobile-timer .prog-bar { flex: 1; }
-  .bear-mobile-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-    font-size: 12px;
-    color: var(--text2);
-    font-family: var(--font-mono);
-  }
-  .bear-mobile-actions {
-    display: flex;
-    gap: 8px;
-  }
 
   /* === ТАЙМЕРЫ — скрываем таблицу, показываем карточки === */
   .timers-thead-desktop { display: none !important; }
