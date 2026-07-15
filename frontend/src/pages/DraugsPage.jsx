@@ -79,17 +79,24 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
   }, [draug]);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      const left = getTimeLeftMs(draug);
-      setMs(left);
-      setElap(formatElapsed(draug.killed_at));
-      if (draug.spawn_at && left > 0 && left <= WARN_BEFORE_SPAWN_MS && !warnedRef.current) {
-        // Звук проигрывает только глобальный вотчер (useGlobalSoundWatcher),
-        // чтобы не срабатывать дважды, пока пользователь на вкладке "Драуги".
-        warnedRef.current = true;
-      }
-    }, 500);
-    return () => clearInterval(id);
+    // Небольшой случайный сдвиг старта, чтобы тики всех строк таблицы
+    // не совпадали на один и тот же кадр (иначе на слабых GPU это даёт
+    // залповую перерисовку сразу всех прогресс-баров и глючит рендер).
+    const offset = Math.floor(Math.random() * 500);
+    let id;
+    const timeoutId = setTimeout(() => {
+      id = setInterval(() => {
+        const left = getTimeLeftMs(draug);
+        setMs(left);
+        setElap(formatElapsed(draug.killed_at));
+        if (draug.spawn_at && left > 0 && left <= WARN_BEFORE_SPAWN_MS && !warnedRef.current) {
+          // Звук проигрывает только глобальный вотчер (useGlobalSoundWatcher),
+          // чтобы не срабатывать дважды, пока пользователь на вкладке "Драуги".
+          warnedRef.current = true;
+        }
+      }, 500);
+    }, offset);
+    return () => { clearTimeout(timeoutId); clearInterval(id); };
   }, [draug]);
 
   const isDead    = getDraugStatus(draug) === 'dead';
@@ -134,7 +141,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
             ? <span className="spawn-tag">⚡ Спавн!</span>
             : <div className="prog-wrap">
                 <div className="prog-bar">
-                  <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+                  <div className="prog-fill" style={{ transform: `scaleX(${pct})`, background: barColor }} />
                 </div>
                 <span className="timer-val" style={{ color: timerColor }}>
                   {isDead ? formatCountdown(ms) : '--:--'}
@@ -194,7 +201,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
                     title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
                   >
                     <div className="prog-bar">
-                      <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+                      <div className="prog-fill" style={{ transform: `scaleX(${pct})`, background: barColor }} />
                     </div>
                     <span
                       className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}

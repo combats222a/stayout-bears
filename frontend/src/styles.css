@@ -520,7 +520,15 @@ body {
 
 .prog-wrap { display: flex; align-items: center; gap: 8px; }
 .prog-bar  { flex: 1; height: 4px; background: #1a2a3a; border-radius: 2px; overflow: hidden; min-width: 130px; }
-.prog-fill { height: 100%; border-radius: 2px; transition: width 1s linear, background .5s; }
+.prog-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 2px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
+  transition: transform 1s linear, background .5s;
+}
 .timer-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; min-width: 44px; text-align: right; }
 
 .spawn-tag { display: inline-block; background: rgba(80,200,120,.1); border: 1px solid rgba(80,200,120,.3);
