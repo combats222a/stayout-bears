@@ -113,57 +113,38 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
   const spawnDisplay  = formatClock(draug.spawn_at);
   const killedDisplay = formatClock(draug.killed_at);
 
-  // Как и в BearsPage: на телефоне карточка — обычный div вне <table>/<tr>/<td>.
-  // Раньше карточка сидела в <tr><td colSpan={9}>, и хотя рендерился только
-  // один вариант строки, DOM всё равно обновлялся через table layout engine
-  // (у каждой строки свой setInterval со случайным сдвигом — строки меняются
-  // асинхронно). На слабых/старых движках (Redmi 8 Pro и т.п.) table layout
-  // не успевает корректно пересчитать высоты строк при таких частых точечных
-  // изменениях — получается "внахлёст" старого и нового кадра. Обычный div
-  // вне table этой проблемы не имеет.
+  // ПОЛНОСТЬЮ отдельный, максимально лёгкий рендер для мобилки (как и в
+  // BearsPage — проверено на реальном Redmi 8 Pro, предыдущие фиксы не
+  // убрали баг). Нет прогресс-бара (раньше .prog-fill менял inline width
+  // каждый тик — постоянный layout+paint), минимум вложенных узлов, блок
+  // "Смерть/Спавн/Прошло" — одна текстовая строка.
   if (isMobile) {
     return (
       <>
-        <div className={`bear-mobile-card ${rowCls}`}>
-          <div className="bear-mobile-header">
+        <div className={`bear-lite-card ${rowCls}`}>
+          <div className="bear-lite-row1">
             <span className={dotCls} />
-            <span className="bear-mobile-name">{meta.name}</span>
-            <span className="square-badge" style={{ marginLeft: 'auto' }}>{meta.square}</span>
-          </div>
-          <div className="bear-mobile-timer">
-            {isReady
-              ? <span className="spawn-tag">⚡ Спавн!</span>
-              : <div
-                  className="prog-wrap"
-                  onClick={() => setShowModal(true)}
-                  style={{ cursor: 'pointer' }}
-                  title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
-                >
-                  <div className="prog-bar">
-                    <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
-                  </div>
-                  <span
-                    className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}
-                    style={isDead ? { color: timerColor } : undefined}
-                  >
-                    {isDead ? formatCountdown(ms) : '--:--'}<span className="edit-icon"> ✎</span>
-                  </span>
-                </div>
-            }
+            <span className="bear-lite-name">{meta.name}</span>
+            <span className="square-badge">{meta.square}</span>
+            {isReady ? (
+              <span className="spawn-tag">⚡ Спавн!</span>
+            ) : (
+              <span
+                className="bear-lite-time"
+                style={isDead ? { color: timerColor } : undefined}
+                onClick={() => setShowModal(true)}
+              >
+                {isDead ? formatCountdown(ms) : '--:--'} ✎
+              </span>
+            )}
           </div>
           {isActive && (
-            <div className="bear-mobile-meta">
-              <span>🕐 Смерть:&nbsp;
-                <span className="clock-editable" onClick={() => setShowModal(true)}>
-                  {killedDisplay} <span className="edit-icon">✎</span>
-                </span>
-              </span>
-              <span>⚡ Спавн: {spawnDisplay}</span>
-              <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
-              {draug.killer_nick && <span>👤 {draug.killer_nick}</span>}
+            <div className="bear-lite-row2" onClick={() => setShowModal(true)}>
+              Смерть {killedDisplay} · Спавн {spawnDisplay} · Прошло {isDead ? elap : '--:--:--'}
+              {draug.killer_nick ? ` · ${draug.killer_nick}` : ''}
             </div>
           )}
-          <div className="bear-mobile-actions">
+          <div className="bear-lite-row3">
             {!isDead && !isReady
               ? <>
                   <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(draug.draug_index)}>Сейчас</button>

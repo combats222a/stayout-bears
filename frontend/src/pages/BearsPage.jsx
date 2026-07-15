@@ -116,60 +116,43 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
   const spawnDisplay  = formatClock(bear.spawn_at);
   const killedDisplay = formatClock(bear.killed_at);
 
-  // На телефоне карточка больше НЕ живёт внутри <table>/<tr>/<td> — это
-  // обычный div вне табличной разметки. Раньше карточка была засунута в
-  // <tr><td colSpan={9}>, и хотя рендерился только один вариант строки,
-  // каждая карточка всё равно обновлялась через table layout engine (у
-  // каждой строки свой setInterval со случайным сдвигом — значит DOM разных
-  // строк меняется асинхронно, в разное время). На слабых/старых движках
-  // (Redmi 8 Pro и т.п.) table layout не успевает корректно пересчитать
-  // высоты строк при таких частых точечных изменениях — получается
-  // "внахлёст" старого и нового кадра. Обычный div вне table этой проблемы
-  // не имеет: у него нет табличного алгоритма разметки, который нужно
-  // синхronизировать между строками.
+  // ПОЛНОСТЬЮ отдельный, максимально лёгкий рендер для мобилки (проверено
+  // на реальном Redmi 8 Pro: предыдущие фиксы — div вместо table, общий
+  // тик — не убрали баг). Главные отличия от десктопной/старой мобильной
+  // версии:
+  //  1. Нет прогресс-бара — раньше .prog-fill менял inline width КАЖДЫЙ тик,
+  //     это постоянный layout+paint на отдельном узле. Убираем совсем —
+  //     остаётся только текст, который дешевле перерисовать.
+  //  2. Минимум вложенных div/span — меньше узлов, которые движок должен
+  //     пересчитать и перерисовать за кадр.
+  //  3. Блок "Смерть/Спавн/Прошло" — одна текстовая строка вместо 4 span.
   if (isMobile) {
     return (
       <>
-        <div className={`bear-mobile-card ${rowCls}`}>
-          <div className="bear-mobile-header">
+        <div className={`bear-lite-card ${rowCls}`}>
+          <div className="bear-lite-row1">
             <span className={dotCls} />
-            <span className="bear-mobile-name">{meta.name}</span>
-            <span className="square-badge" style={{ marginLeft: 'auto' }}>{meta.square}</span>
-          </div>
-          <div className="bear-mobile-timer">
-            {isReady
-              ? <span className="spawn-tag">⚡ Спавн!</span>
-              : <div
-                  className="prog-wrap"
-                  onClick={() => setShowModal(true)}
-                  style={{ cursor: 'pointer' }}
-                  title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
-                >
-                  <div className="prog-bar">
-                    <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
-                  </div>
-                  <span
-                    className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}
-                    style={isDead ? { color: timerColor } : undefined}
-                  >
-                    {isDead ? formatCountdown(ms) : '--:--'}<span className="edit-icon"> ✎</span>
-                  </span>
-                </div>
-            }
+            <span className="bear-lite-name">{meta.name}</span>
+            <span className="square-badge">{meta.square}</span>
+            {isReady ? (
+              <span className="spawn-tag">⚡ Спавн!</span>
+            ) : (
+              <span
+                className="bear-lite-time"
+                style={isDead ? { color: timerColor } : undefined}
+                onClick={() => setShowModal(true)}
+              >
+                {isDead ? formatCountdown(ms) : '--:--'} ✎
+              </span>
+            )}
           </div>
           {isActive && (
-            <div className="bear-mobile-meta">
-              <span>🕐 Смерть:&nbsp;
-                <span className="clock-editable" onClick={() => setShowModal(true)}>
-                  {killedDisplay} <span className="edit-icon">✎</span>
-                </span>
-              </span>
-              <span>⚡ Спавн: {spawnDisplay}</span>
-              <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
-              {bear.killer_nick && <span>👤 {bear.killer_nick}</span>}
+            <div className="bear-lite-row2" onClick={() => setShowModal(true)}>
+              Смерть {killedDisplay} · Спавн {spawnDisplay} · Прошло {isDead ? elap : '--:--:--'}
+              {bear.killer_nick ? ` · ${bear.killer_nick}` : ''}
             </div>
           )}
-          <div className="bear-mobile-actions">
+          <div className="bear-lite-row3">
             {!isDead && !isReady
               ? <>
                   <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(bear.bear_index)}>Сейчас</button>
