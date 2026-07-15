@@ -540,41 +540,32 @@ body {
 .spawn-tag { display: inline-block; background: rgba(80,200,120,.1); border: 1px solid rgba(80,200,120,.3);
   border-radius: 3px; padding: 2px 8px; font-size: 11px; color: #50c878; letter-spacing: 1px; text-transform: uppercase; }
 
-.sdot { width: 9px; height: 9px; border-radius: 50%; background: #1e3a5f; display: inline-block; }
+.sdot { position: relative; width: 9px; height: 9px; border-radius: 50%; background: #1e3a5f; display: inline-block; }
 .sdot-blue   { background: #4a9edd; }
 .sdot-green  { background: #50c878; }
 .sdot-orange { background: #e0a030; }
 
-/* Кейфреймы для «мигающих лампочек» статуса — намеренно объявлены на верхнем
-   уровне (не внутри @media), а не только там, где к ним привязан
+/* Кейфрейм для «мигающих лампочек» статуса — намеренно объявлен на верхнем
+   уровне (не внутри @media), а не только там, где к нему привязан
    `animation:`. Некоторые CSS-минификаторы в проде (esbuild/lightningcss,
    которыми пользуется Vite) могут срезать @keyframes, вложенные в
    @media, как «неиспользуемые», если не отслеживают связь с animation
    в том же скоупе — из-за этого пульсация пропадала в собранном билде,
-   хотя в самом CSS-файле выглядела корректно. Сами keyframes ничего не
-   анимируют сами по себе, пока на элемент не навешено свойство
-   animation — а оно по-прежнему добавляется только на десктопе, см. ниже.
+   хотя в самом CSS-файле выглядела корректно. Сам keyframe ничего не
+   анимирует сам по себе, пока на элемент не навешено свойство animation —
+   а оно по-прежнему добавляется только на десктопе, см. ниже.
 
-   Первая версия анимировала только box-shadow. box-shadow — это
-   layout/paint-свойство, не композитное: браузер вправе "экономить" на его
-   перерисовке и фактически приостанавливать анимацию, если страница какое-то
-   время не перерисовывается сама по себе (отсюда баг — синяя точка не
-   мигала сама, но "просыпалась" после клика; зелёная через некоторое время
-   простоя гасла тем же образом). transform и opacity — настоящие
-   GPU-композитные свойства, их браузер анимирует на отдельном слое
-   независимо от остального рендера и не имеет права так же просто
-   "заморозить". will-change подсказывает браузеру заранее выделить слой. */
-@keyframes sdot-pulse-blue {
-  0%, 100% { transform: scale(1);    opacity: 1;  box-shadow: 0 0 0 0 rgba(74,158,221,.6); }
-  50%      { transform: scale(1.14); opacity: .6; box-shadow: 0 0 9px 3px rgba(74,158,221,.75); }
-}
-@keyframes sdot-pulse-green {
-  0%, 100% { transform: scale(1);    opacity: 1;  box-shadow: 0 0 0 0 rgba(80,200,120,.6); }
-  50%      { transform: scale(1.14); opacity: .6; box-shadow: 0 0 9px 3px rgba(80,200,120,.75); }
-}
-@keyframes sdot-pulse-orange {
-  0%, 100% { transform: scale(1);    opacity: 1;  box-shadow: 0 0 0 0 rgba(224,160,48,.6); }
-  50%      { transform: scale(1.14); opacity: .6; box-shadow: 0 0 9px 3px rgba(224,160,48,.75); }
+   Дизайн сменили с «дыхания» (сама точка меняла размер/прозрачность —
+   выглядело как дёрганое мигание) на классический radar-ping: сама точка
+   .sdot/.sdot-* остаётся полностью статичной, а от неё расходится и гаснет
+   кольцо того же цвета (псевдоэлемент ::after, см. ниже) — как индикатор
+   «онлайн» в Google Maps/Slack. transform: scale и opacity — GPU-
+   композитные свойства, анимируются на отдельном слое без лишней нагрузки
+   на layout/paint. */
+@keyframes sdot-ping {
+  0%   { transform: scale(1);   opacity: .65; }
+  70%  { transform: scale(2.6); opacity: 0; }
+  100% { transform: scale(2.6); opacity: 0; }
 }
 
 
@@ -1424,19 +1415,25 @@ body {
      по себе не так тяжела, но в сумме с остальным давала лишнюю нагрузку на
      слабом GPU). На десктопе и Samsung S9 этой проблемы никогда не было —
      возвращаем эффект, но только здесь, внутри min-width: 641px, чтобы
-     мобилка гарантированно осталась без анимации. Сами @keyframes объявлены
-     на верхнем уровне файла (см. рядом с .sdot-*) — здесь только триггер.
-     Тайминг: 2.4s вместо прежних 1.6s — «дыхание», а не мельтешение, но и
-     не настолько медленно, чтобы статус лампы читался с задержкой.
-     cubic-bezier вместо ease-in-out — плавный, без рывка на пиках.
+     мобилка гарантированно осталась без анимации. Сам @keyframe объявлен
+     на верхнем уровне файла (см. рядом с .sdot) — здесь только триггер.
+     Сама точка (.sdot-*) НЕ анимируется вообще — статичный цвет, никакого
+     изменения размера/прозрачности у неё. Двигается только кольцо-эхо
+     ::after того же цвета (background: inherit), которое расширяется и
+     гаснет — классический radar-ping, как «онлайн»-индикатор в Google Maps/
+     Slack. 2.6s — заметно, но не мельтешит; кольцо не перекрывает соседние
+     элементы, т.к. схлопывается в 0 прозрачности к концу цикла.
      Эти же классы переиспользует .shine-dot на странице «Сияния», так что
-     эффект у обеих ламп теперь одинаковый по ощущению. */
-  .sdot-blue, .sdot-green, .sdot-orange {
-    will-change: transform, opacity, box-shadow;
+     эффект у обеих ламп теперь одинаковый. */
+  .sdot-blue::after, .sdot-green::after, .sdot-orange::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: sdot-ping 2.6s cubic-bezier(0, 0, .3, 1) infinite;
+    pointer-events: none;
   }
-  .sdot-blue   { animation: sdot-pulse-blue   2.4s cubic-bezier(.45,0,.55,1) infinite; }
-  .sdot-green  { animation: sdot-pulse-green  2.4s cubic-bezier(.45,0,.55,1) infinite; }
-  .sdot-orange { animation: sdot-pulse-orange 2.4s cubic-bezier(.45,0,.55,1) infinite; }
 }
 
 /* === PROMO PAGE === */
