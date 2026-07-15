@@ -553,19 +553,30 @@ body {
    в том же скоупе — из-за этого пульсация пропадала в собранном билде,
    хотя в самом CSS-файле выглядела корректно. Сами keyframes ничего не
    анимируют сами по себе, пока на элемент не навешено свойство
-   animation — а оно по-прежнему добавляется только на десктопе, см. ниже. */
+   animation — а оно по-прежнему добавляется только на десктопе, см. ниже.
+
+   Первая версия анимировала только box-shadow. box-shadow — это
+   layout/paint-свойство, не композитное: браузер вправе "экономить" на его
+   перерисовке и фактически приостанавливать анимацию, если страница какое-то
+   время не перерисовывается сама по себе (отсюда баг — синяя точка не
+   мигала сама, но "просыпалась" после клика; зелёная через некоторое время
+   простоя гасла тем же образом). transform и opacity — настоящие
+   GPU-композитные свойства, их браузер анимирует на отдельном слое
+   независимо от остального рендера и не имеет права так же просто
+   "заморозить". will-change подсказывает браузеру заранее выделить слой. */
 @keyframes sdot-pulse-blue {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(74,158,221,.65); }
-  50%      { box-shadow: 0 0 7px 2px rgba(74,158,221,.65); }
+  0%, 100% { transform: scale(1);    opacity: 1;   box-shadow: 0 0 0 0 rgba(74,158,221,.55); }
+  50%      { transform: scale(1.35); opacity: .75; box-shadow: 0 0 10px 3px rgba(74,158,221,.9); }
 }
 @keyframes sdot-pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(80,200,120,.65); }
-  50%      { box-shadow: 0 0 7px 2px rgba(80,200,120,.65); }
+  0%, 100% { transform: scale(1);    opacity: 1;   box-shadow: 0 0 0 0 rgba(80,200,120,.55); }
+  50%      { transform: scale(1.35); opacity: .75; box-shadow: 0 0 10px 3px rgba(80,200,120,.9); }
 }
 @keyframes sdot-pulse-orange {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(224,160,48,.65); }
-  50%      { box-shadow: 0 0 7px 2px rgba(224,160,48,.65); }
+  0%, 100% { transform: scale(1);    opacity: 1;   box-shadow: 0 0 0 0 rgba(224,160,48,.55); }
+  50%      { transform: scale(1.35); opacity: .75; box-shadow: 0 0 10px 3px rgba(224,160,48,.9); }
 }
+
 
 .act-btns { display: flex; gap: 6px; }
 .btn-now  { background: rgba(74,158,221,.1); border: 1px solid #1e3a5f; color: #4a9edd;
@@ -1400,6 +1411,9 @@ body {
      возвращаем эффект, но только здесь, внутри min-width: 641px, чтобы
      мобилка гарантированно осталась без анимации. Сами @keyframes объявлены
      на верхнем уровне файла (см. рядом с .sdot-*) — здесь только триггер. */
+  .sdot-blue, .sdot-green, .sdot-orange {
+    will-change: transform, opacity, box-shadow;
+  }
   .sdot-blue   { animation: sdot-pulse-blue 1.6s ease-in-out infinite; }
   .sdot-green  { animation: sdot-pulse-green 1.6s ease-in-out infinite; }
   .sdot-orange { animation: sdot-pulse-orange 1.6s ease-in-out infinite; }
