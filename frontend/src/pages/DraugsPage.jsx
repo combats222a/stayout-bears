@@ -79,10 +79,12 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
   }, [draug]);
 
   useEffect(() => {
-    // Небольшой случайный сдвиг старта, чтобы тики всех строк таблицы
-    // не совпадали на один и тот же кадр (иначе на слабых GPU это даёт
-    // залповую перерисовку сразу всех прогресс-баров и глючит рендер).
-    const offset = Math.floor(Math.random() * 500);
+    // Тик раз в секунду вместо раза в 500мс: секундный счётчик всё равно
+    // меняется не чаще раза в секунду, а лишний тик — это лишняя перерисовка
+    // строки, которая на слабом GPU телефона копится по всей таблице и рвёт
+    // рендер. Небольшой случайный сдвиг старта — чтобы тики разных строк
+    // не совпадали в один и тот же кадр.
+    const offset = Math.floor(Math.random() * 1000);
     let id;
     const timeoutId = setTimeout(() => {
       id = setInterval(() => {
@@ -94,7 +96,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
           // чтобы не срабатывать дважды, пока пользователь на вкладке "Драуги".
           warnedRef.current = true;
         }
-      }, 500);
+      }, 1000);
     }, offset);
     return () => { clearTimeout(timeoutId); clearInterval(id); };
   }, [draug]);
