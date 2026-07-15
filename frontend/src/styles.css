@@ -545,6 +545,28 @@ body {
 .sdot-green  { background: #50c878; }
 .sdot-orange { background: #e0a030; }
 
+/* Кейфреймы для «мигающих лампочек» статуса — намеренно объявлены на верхнем
+   уровне (не внутри @media), а не только там, где к ним привязан
+   `animation:`. Некоторые CSS-минификаторы в проде (esbuild/lightningcss,
+   которыми пользуется Vite) могут срезать @keyframes, вложенные в
+   @media, как «неиспользуемые», если не отслеживают связь с animation
+   в том же скоупе — из-за этого пульсация пропадала в собранном билде,
+   хотя в самом CSS-файле выглядела корректно. Сами keyframes ничего не
+   анимируют сами по себе, пока на элемент не навешено свойство
+   animation — а оно по-прежнему добавляется только на десктопе, см. ниже. */
+@keyframes sdot-pulse-blue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74,158,221,.65); }
+  50%      { box-shadow: 0 0 7px 2px rgba(74,158,221,.65); }
+}
+@keyframes sdot-pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(80,200,120,.65); }
+  50%      { box-shadow: 0 0 7px 2px rgba(80,200,120,.65); }
+}
+@keyframes sdot-pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224,160,48,.65); }
+  50%      { box-shadow: 0 0 7px 2px rgba(224,160,48,.65); }
+}
+
 .act-btns { display: flex; gap: 6px; }
 .btn-now  { background: rgba(74,158,221,.1); border: 1px solid #1e3a5f; color: #4a9edd;
   border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-weight: 600;
@@ -1376,23 +1398,11 @@ body {
      по себе не так тяжела, но в сумме с остальным давала лишнюю нагрузку на
      слабом GPU). На десктопе и Samsung S9 этой проблемы никогда не было —
      возвращаем эффект, но только здесь, внутри min-width: 641px, чтобы
-     мобилка гарантированно осталась без анимации.*/
+     мобилка гарантированно осталась без анимации. Сами @keyframes объявлены
+     на верхнем уровне файла (см. рядом с .sdot-*) — здесь только триггер. */
   .sdot-blue   { animation: sdot-pulse-blue 1.6s ease-in-out infinite; }
   .sdot-green  { animation: sdot-pulse-green 1.6s ease-in-out infinite; }
   .sdot-orange { animation: sdot-pulse-orange 1.6s ease-in-out infinite; }
-
-  @keyframes sdot-pulse-blue {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(74,158,221,.65); }
-    50%      { box-shadow: 0 0 7px 2px rgba(74,158,221,.65); }
-  }
-  @keyframes sdot-pulse-green {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(80,200,120,.65); }
-    50%      { box-shadow: 0 0 7px 2px rgba(80,200,120,.65); }
-  }
-  @keyframes sdot-pulse-orange {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(224,160,48,.65); }
-    50%      { box-shadow: 0 0 7px 2px rgba(224,160,48,.65); }
-  }
 }
 
 /* === PROMO PAGE === */
