@@ -133,71 +133,73 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
   const spawnDisplay  = formatClock(draug.spawn_at);
   const killedDisplay = formatClock(draug.killed_at);
 
-  // Как и в BearsPage: на телефоне рендерим только мобильную карточку,
-  // на десктопе — только табличную строку, а не обе разом с CSS display:none.
+  // Как и в BearsPage: на телефоне карточка — обычный div вне <table>/<tr>/<td>.
+  // Раньше карточка сидела в <tr><td colSpan={9}>, и хотя рендерился только
+  // один вариант строки, DOM всё равно обновлялся через table layout engine
+  // (у каждой строки свой setInterval со случайным сдвигом — строки меняются
+  // асинхронно). На слабых/старых движках (Redmi 8 Pro и т.п.) table layout
+  // не успевает корректно пересчитать высоты строк при таких частых точечных
+  // изменениях — получается "внахлёст" старого и нового кадра. Обычный div
+  // вне table этой проблемы не имеет.
   if (isMobile) {
     return (
       <>
-        <tr className={rowCls}>
-          <td colSpan={9} style={{ padding: 0 }}>
-            <div className="bear-mobile-card">
-              <div className="bear-mobile-header">
-                <span className={dotCls} />
-                <span className="bear-mobile-name">{meta.name}</span>
-                <span className="square-badge" style={{ marginLeft: 'auto' }}>{meta.square}</span>
-              </div>
-              <div className="bear-mobile-timer">
-                {isReady
-                  ? <span className="spawn-tag">⚡ Спавн!</span>
-                  : <div
-                      className="prog-wrap"
-                      onClick={() => setShowModal(true)}
-                      style={{ cursor: 'pointer' }}
-                      title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
-                    >
-                      <div className="prog-bar">
-                        <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
-                      </div>
-                      <span
-                        className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}
-                        style={isDead ? { color: timerColor } : undefined}
-                      >
-                        {isDead ? formatCountdown(ms) : '--:--'}<span className="edit-icon"> ✎</span>
-                      </span>
-                    </div>
-                }
-              </div>
-              {isActive && (
-                <div className="bear-mobile-meta">
-                  <span>🕐 Смерть:&nbsp;
-                    <span className="clock-editable" onClick={() => setShowModal(true)}>
-                      {killedDisplay} <span className="edit-icon">✎</span>
-                    </span>
-                  </span>
-                  <span>⚡ Спавн: {spawnDisplay}</span>
-                  <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
-                  {draug.killer_nick && <span>👤 {draug.killer_nick}</span>}
-                </div>
-              )}
-              <div className="bear-mobile-actions">
-                {!isDead && !isReady
-                  ? <>
-                      <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(draug.draug_index)}>Сейчас</button>
-                      <button className="btn-gone" style={{ flex: 1 }} onClick={() => onVanish(draug.draug_index)}>Исчез</button>
-                    </>
-                  : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(draug.draug_index)}>✕ Сброс</button>
-                }
-                <button
-                  className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
-                  onClick={toggleSound}
-                  title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
+        <div className={`bear-mobile-card ${rowCls}`}>
+          <div className="bear-mobile-header">
+            <span className={dotCls} />
+            <span className="bear-mobile-name">{meta.name}</span>
+            <span className="square-badge" style={{ marginLeft: 'auto' }}>{meta.square}</span>
+          </div>
+          <div className="bear-mobile-timer">
+            {isReady
+              ? <span className="spawn-tag">⚡ Спавн!</span>
+              : <div
+                  className="prog-wrap"
+                  onClick={() => setShowModal(true)}
+                  style={{ cursor: 'pointer' }}
+                  title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
                 >
-                  <SoundIcon on={soundOn} />
-                </button>
-              </div>
+                  <div className="prog-bar">
+                    <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+                  </div>
+                  <span
+                    className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}
+                    style={isDead ? { color: timerColor } : undefined}
+                  >
+                    {isDead ? formatCountdown(ms) : '--:--'}<span className="edit-icon"> ✎</span>
+                  </span>
+                </div>
+            }
+          </div>
+          {isActive && (
+            <div className="bear-mobile-meta">
+              <span>🕐 Смерть:&nbsp;
+                <span className="clock-editable" onClick={() => setShowModal(true)}>
+                  {killedDisplay} <span className="edit-icon">✎</span>
+                </span>
+              </span>
+              <span>⚡ Спавн: {spawnDisplay}</span>
+              <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
+              {draug.killer_nick && <span>👤 {draug.killer_nick}</span>}
             </div>
-          </td>
-        </tr>
+          )}
+          <div className="bear-mobile-actions">
+            {!isDead && !isReady
+              ? <>
+                  <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(draug.draug_index)}>Сейчас</button>
+                  <button className="btn-gone" style={{ flex: 1 }} onClick={() => onVanish(draug.draug_index)}>Исчез</button>
+                </>
+              : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(draug.draug_index)}>✕ Сброс</button>
+            }
+            <button
+              className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
+              onClick={toggleSound}
+              title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
+            >
+              <SoundIcon on={soundOn} />
+            </button>
+          </div>
+        </div>
 
         {showModal && (
           <KillTimeModal
@@ -277,6 +279,7 @@ function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
 export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLoginClick }) {
   const [error, setError] = useState('');
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const isMobile = useIsMobile();
 
   const mergedDraugs = DRAUGS_LIST.map(meta => {
     const found = draugs.find(d => d.draug_index === meta.index);
@@ -344,21 +347,8 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
       {error && <div className="error-msg">{error}</div>}
 
       <div className="tbl-wrap">
-        <table className="bears-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Название</th>
-              <th>Квадрат</th>
-              <th>До спавна</th>
-              <th>Действия</th>
-              <th>Время спавна</th>
-              <th>Прошло времени</th>
-              <th>Время смерти</th>
-              <th>Игрок</th>
-            </tr>
-          </thead>
-          <tbody>
+        {isMobile ? (
+          <div className="bears-mobile-list">
             {mergedDraugs.map(draug => (
               <DraugRow
                 key={draug.draug_index}
@@ -369,8 +359,36 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
                 onManualTime={handleManualTime}
               />
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table className="bears-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Название</th>
+                <th>Квадрат</th>
+                <th>До спавна</th>
+                <th>Действия</th>
+                <th>Время спавна</th>
+                <th>Прошло времени</th>
+                <th>Время смерти</th>
+                <th>Игрок</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mergedDraugs.map(draug => (
+                <DraugRow
+                  key={draug.draug_index}
+                  draug={draug}
+                  onKill={killDraug}
+                  onVanish={vanishDraug}
+                  onReset={resetDraug}
+                  onManualTime={handleManualTime}
+                />
+              ))}
+            </tbody>
+          </table>
+        )}
         <div className="tbl-timezone">
           ⏱ Часовой пояс: <span className="tbl-timezone-value">{userTimezone}</span>
         </div>

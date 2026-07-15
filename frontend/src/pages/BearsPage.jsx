@@ -133,73 +133,76 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
   const spawnDisplay  = formatClock(bear.spawn_at);
   const killedDisplay = formatClock(bear.killed_at);
 
-  // На телефоне в DOM попадает ТОЛЬКО мобильная карточка, на десктопе —
-  // только табличная строка. Раньше рендерились обе (одна пряталась через
-  // CSS display:none), что на слабом железе давало вдвое больше узлов и
-  // тиков таймера в секунду и приводило к артефактам отрисовки ("внахлёст").
+  // На телефоне карточка больше НЕ живёт внутри <table>/<tr>/<td> — это
+  // обычный div вне табличной разметки. Раньше карточка была засунута в
+  // <tr><td colSpan={9}>, и хотя рендерился только один вариант строки,
+  // каждая карточка всё равно обновлялась через table layout engine (у
+  // каждой строки свой setInterval со случайным сдвигом — значит DOM разных
+  // строк меняется асинхронно, в разное время). На слабых/старых движках
+  // (Redmi 8 Pro и т.п.) table layout не успевает корректно пересчитать
+  // высоты строк при таких частых точечных изменениях — получается
+  // "внахлёст" старого и нового кадра. Обычный div вне table этой проблемы
+  // не имеет: у него нет табличного алгоритма разметки, который нужно
+  // синхronизировать между строками.
   if (isMobile) {
     return (
       <>
-        <tr className={rowCls}>
-          <td colSpan={9} style={{ padding: 0 }}>
-            <div className="bear-mobile-card">
-              <div className="bear-mobile-header">
-                <span className={dotCls} />
-                <span className="bear-mobile-name">{meta.name}</span>
-                <span className="square-badge" style={{ marginLeft: 'auto' }}>{meta.square}</span>
-              </div>
-              <div className="bear-mobile-timer">
-                {isReady
-                  ? <span className="spawn-tag">⚡ Спавн!</span>
-                  : <div
-                      className="prog-wrap"
-                      onClick={() => setShowModal(true)}
-                      style={{ cursor: 'pointer' }}
-                      title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
-                    >
-                      <div className="prog-bar">
-                        <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
-                      </div>
-                      <span
-                        className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}
-                        style={isDead ? { color: timerColor } : undefined}
-                      >
-                        {isDead ? formatCountdown(ms) : '--:--'}<span className="edit-icon"> ✎</span>
-                      </span>
-                    </div>
-                }
-              </div>
-              {isActive && (
-                <div className="bear-mobile-meta">
-                  <span>🕐 Смерть:&nbsp;
-                    <span className="clock-editable" onClick={() => setShowModal(true)}>
-                      {killedDisplay} <span className="edit-icon">✎</span>
-                    </span>
-                  </span>
-                  <span>⚡ Спавн: {spawnDisplay}</span>
-                  <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
-                  {bear.killer_nick && <span>👤 {bear.killer_nick}</span>}
-                </div>
-              )}
-              <div className="bear-mobile-actions">
-                {!isDead && !isReady
-                  ? <>
-                      <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(bear.bear_index)}>Сейчас</button>
-                      <button className="btn-gone" style={{ flex: 1 }} onClick={() => onVanish(bear.bear_index)}>Исчез</button>
-                    </>
-                  : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(bear.bear_index)}>✕ Сброс</button>
-                }
-                <button
-                  className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
-                  onClick={toggleSound}
-                  title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
+        <div className={`bear-mobile-card ${rowCls}`}>
+          <div className="bear-mobile-header">
+            <span className={dotCls} />
+            <span className="bear-mobile-name">{meta.name}</span>
+            <span className="square-badge" style={{ marginLeft: 'auto' }}>{meta.square}</span>
+          </div>
+          <div className="bear-mobile-timer">
+            {isReady
+              ? <span className="spawn-tag">⚡ Спавн!</span>
+              : <div
+                  className="prog-wrap"
+                  onClick={() => setShowModal(true)}
+                  style={{ cursor: 'pointer' }}
+                  title={isDead ? 'Нажми чтобы исправить время смерти' : 'Нажми чтобы ввести время смерти'}
                 >
-                  <SoundIcon on={soundOn} />
-                </button>
-              </div>
+                  <div className="prog-bar">
+                    <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
+                  </div>
+                  <span
+                    className={`timer-val clock-editable${isDead ? '' : ' clock-empty'}`}
+                    style={isDead ? { color: timerColor } : undefined}
+                  >
+                    {isDead ? formatCountdown(ms) : '--:--'}<span className="edit-icon"> ✎</span>
+                  </span>
+                </div>
+            }
+          </div>
+          {isActive && (
+            <div className="bear-mobile-meta">
+              <span>🕐 Смерть:&nbsp;
+                <span className="clock-editable" onClick={() => setShowModal(true)}>
+                  {killedDisplay} <span className="edit-icon">✎</span>
+                </span>
+              </span>
+              <span>⚡ Спавн: {spawnDisplay}</span>
+              <span>⏳ Прошло: {isDead ? elap : '--:--:--'}</span>
+              {bear.killer_nick && <span>👤 {bear.killer_nick}</span>}
             </div>
-          </td>
-        </tr>
+          )}
+          <div className="bear-mobile-actions">
+            {!isDead && !isReady
+              ? <>
+                  <button className="btn-now" style={{ flex: 1 }} onClick={() => onKill(bear.bear_index)}>Сейчас</button>
+                  <button className="btn-gone" style={{ flex: 1 }} onClick={() => onVanish(bear.bear_index)}>Исчез</button>
+                </>
+              : <button className="btn-reset-row" style={{ flex: 1 }} onClick={() => onReset(bear.bear_index)}>✕ Сброс</button>
+            }
+            <button
+              className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
+              onClick={toggleSound}
+              title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
+            >
+              <SoundIcon on={soundOn} />
+            </button>
+          </div>
+        </div>
 
         {showModal && (
           <KillTimeModal
@@ -279,6 +282,7 @@ function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
 export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginClick }) {
   const [error, setError] = useState('');
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const isMobile = useIsMobile();
 
   const mergedBears = BEARS_LIST.map(meta => {
     const found = bears.find(b => b.bear_index === meta.index);
@@ -346,21 +350,8 @@ export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginC
       {error && <div className="error-msg">{error}</div>}
 
       <div className="tbl-wrap">
-        <table className="bears-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Название</th>
-              <th>Квадрат</th>
-              <th>До спавна</th>
-              <th>Действия</th>
-              <th>Время спавна</th>
-              <th>Прошло времени</th>
-              <th>Время смерти</th>
-              <th>Игрок</th>
-            </tr>
-          </thead>
-          <tbody>
+        {isMobile ? (
+          <div className="bears-mobile-list">
             {mergedBears.map(bear => (
               <BearRow
                 key={bear.bear_index}
@@ -371,8 +362,36 @@ export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginC
                 onManualTime={handleManualTime}
               />
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table className="bears-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Название</th>
+                <th>Квадрат</th>
+                <th>До спавна</th>
+                <th>Действия</th>
+                <th>Время спавна</th>
+                <th>Прошло времени</th>
+                <th>Время смерти</th>
+                <th>Игрок</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mergedBears.map(bear => (
+                <BearRow
+                  key={bear.bear_index}
+                  bear={bear}
+                  onKill={killBear}
+                  onVanish={vanishBear}
+                  onReset={resetBear}
+                  onManualTime={handleManualTime}
+                />
+              ))}
+            </tbody>
+          </table>
+        )}
         <div className="tbl-timezone">
           ⏱ Часовой пояс: <span className="tbl-timezone-value">{userTimezone}</span>
         </div>
