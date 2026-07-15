@@ -1204,6 +1204,10 @@ body {
      варианте (см. useIsMobile), поэтому классов-переключателей
      bear-row-desktop/bear-row-mobile больше нет — тут только стили карточки. */
 
+  .bears-mobile-list {
+    display: flex;
+    flex-direction: column;
+  }
   .bear-mobile-card {
     padding: 12px 14px;
     display: flex;
@@ -1211,6 +1215,7 @@ body {
     gap: 8px;
     border-bottom: 1px solid rgba(30,58,95,0.4);
   }
+  .bears-mobile-list .bear-mobile-card:last-child { border-bottom: none; }
   .bear-mobile-header {
     display: flex;
     align-items: center;
