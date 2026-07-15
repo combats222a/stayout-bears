@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import {
   DRAUGS_LIST, getDraugMeta, getDraugStatus,
   getTimeLeftMs, formatCountdown, formatClock, formatElapsed, getProgress,
-  parseLocalTimeInput, killedAtFromSpawnAt, WARN_BEFORE_SPAWN_MS
+  parseLocalTimeInput, killedAtFromSpawnAt
 } from '../utils/draugs';
 import { isDraugSoundEnabled, setDraugSoundEnabled } from '../utils/soundPrefs';
 import useIsMobile from '../hooks/useIsMobile';
@@ -62,46 +62,26 @@ function KillTimeModal({ draugName, onCommit, onClose }) {
 
 // ── Draug row ───────────────────────────────────────────────────────────────
 function DraugRow({ draug, onKill, onVanish, onReset, onManualTime }) {
-  const [ms, setMs]     = useState(() => getTimeLeftMs(draug));
-  const [elap, setElap] = useState('--:--:--');
   const [showModal, setShowModal] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isDraugSoundEnabled(draug.draug_index));
-  const warnedRef = useRef(getTimeLeftMs(draug) <= WARN_BEFORE_SPAWN_MS);
   const isMobile = useIsMobile();
+
+  // Как и в BearsPage: раньше у каждой строки был свой setInterval со
+  // случайным сдвигом старта (специально чтобы тики разных строк НЕ
+  // совпадали в один кадр). На слабом/багованном GPU (Redmi 8 Pro) это
+  // давало обратный эффект — непрерывный поток из ~10+ независимых
+  // асинхронных частичных перерисовок в секунду, размазанных по экрану,
+  // страница никогда не в стабильном состоянии. Теперь тик общий для всей
+  // страницы (см. forceTick в DraugsPage) — все строки обновляются одним
+  // атомарным рендером раз в секунду.
+  const ms   = getTimeLeftMs(draug);
+  const elap = formatElapsed(draug.killed_at);
 
   function toggleSound() {
     const next = !soundOn;
     setSoundOn(next);
     setDraugSoundEnabled(draug.draug_index, next);
   }
-
-  useEffect(() => {
-    setMs(getTimeLeftMs(draug));
-    warnedRef.current = getTimeLeftMs(draug) <= WARN_BEFORE_SPAWN_MS;
-  }, [draug]);
-
-  useEffect(() => {
-    // Тик раз в секунду вместо раза в 500мс: секундный счётчик всё равно
-    // меняется не чаще раза в секунду, а лишний тик — это лишняя перерисовка
-    // строки, которая на слабом GPU телефона копится по всей таблице и рвёт
-    // рендер. Небольшой случайный сдвиг старта — чтобы тики разных строк
-    // не совпадали в один и тот же кадр.
-    const offset = Math.floor(Math.random() * 1000);
-    let id;
-    const timeoutId = setTimeout(() => {
-      id = setInterval(() => {
-        const left = getTimeLeftMs(draug);
-        setMs(left);
-        setElap(formatElapsed(draug.killed_at));
-        if (draug.spawn_at && left > 0 && left <= WARN_BEFORE_SPAWN_MS && !warnedRef.current) {
-          // Звук проигрывает только глобальный вотчер (useGlobalSoundWatcher),
-          // чтобы не срабатывать дважды, пока пользователь на вкладке "Драуги".
-          warnedRef.current = true;
-        }
-      }, 1000);
-    }, offset);
-    return () => { clearTimeout(timeoutId); clearInterval(id); };
-  }, [draug]);
 
   const isDead    = getDraugStatus(draug) === 'dead';
   const isReady   = draug.spawn_at && !isDead;
@@ -280,6 +260,15 @@ export default function DraugsPage({ draugs, clan, onDraugChange, isGuest, onLog
   const [error, setError] = useState('');
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const isMobile = useIsMobile();
+
+  // Один общий тик на всю страницу вместо независимых per-row таймеров
+  // (см. комментарий в DraugRow) — форсирует атомарный re-render всего
+  // списка раз в секунду.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const mergedDraugs = DRAUGS_LIST.map(meta => {
     const found = draugs.find(d => d.draug_index === meta.index);

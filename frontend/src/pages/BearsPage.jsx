@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import {
   BEARS_LIST, getBearMeta, getBearStatus,
   getTimeLeftMs, formatCountdown, formatClock, formatElapsed, getProgress,
-  parseLocalTimeInput, killedAtFromSpawnAt, WARN_BEFORE_SPAWN_MS
+  parseLocalTimeInput, killedAtFromSpawnAt
 } from '../utils/bears';
 import { isBearSoundEnabled, setBearSoundEnabled } from '../utils/soundPrefs';
 import useIsMobile from '../hooks/useIsMobile';
@@ -62,46 +62,29 @@ function KillTimeModal({ bearName, onCommit, onClose }) {
 
 // ── Bear row ────────────────────────────────────────────────────────────────
 function BearRow({ bear, onKill, onVanish, onReset, onManualTime }) {
-  const [ms, setMs]     = useState(() => getTimeLeftMs(bear));
-  const [elap, setElap] = useState('--:--:--');
   const [showModal, setShowModal] = useState(false);
   const [soundOn, setSoundOn] = useState(() => isBearSoundEnabled(bear.bear_index));
-  const warnedRef = useRef(getTimeLeftMs(bear) <= WARN_BEFORE_SPAWN_MS);
   const isMobile = useIsMobile();
+
+  // Раньше у каждой строки был свой setInterval со случайным сдвигом старта —
+  // специально чтобы тики разных строк НЕ совпадали в один кадр (расчёт был
+  // на снижение нагрузки на кадр). На практике на слабом/багованном GPU
+  // (Redmi 8 Pro) это давало обратный эффект: ~10+ независимых асинхронных
+  // частичных перерисовок в секунду, размазанных по экрану — страница
+  // никогда не находится в стабильном состоянии, отсюда рваный рендер.
+  // Ручной клик по кнопке форсирует ОДИН общий re-render всего списка —
+  // и именно поэтому картинка на секунду чинится. Теперь тик общий для всей
+  // страницы (см. forceTick в BearsPage) — все строки обновляются одним
+  // атомарным рендером раз в секунду, как при прокликивании всех кнопок
+  // разом, только автоматически.
+  const ms   = getTimeLeftMs(bear);
+  const elap = formatElapsed(bear.killed_at);
 
   function toggleSound() {
     const next = !soundOn;
     setSoundOn(next);
     setBearSoundEnabled(bear.bear_index, next);
   }
-
-  useEffect(() => {
-    setMs(getTimeLeftMs(bear));
-    warnedRef.current = getTimeLeftMs(bear) <= WARN_BEFORE_SPAWN_MS;
-  }, [bear]);
-
-  useEffect(() => {
-    // Тик раз в секунду вместо раза в 500мс: секундный счётчик всё равно
-    // меняется не чаще раза в секунду, а лишний тик — это лишняя перерисовка
-    // строки, которая на слабом GPU телефона копится по всей таблице и рвёт
-    // рендер. Небольшой случайный сдвиг старта — чтобы тики разных строк
-    // не совпадали в один и тот же кадр.
-    const offset = Math.floor(Math.random() * 1000);
-    let id;
-    const timeoutId = setTimeout(() => {
-      id = setInterval(() => {
-        const left = getTimeLeftMs(bear);
-        setMs(left);
-        setElap(formatElapsed(bear.killed_at));
-        if (bear.spawn_at && left > 0 && left <= WARN_BEFORE_SPAWN_MS && !warnedRef.current) {
-          // Звук теперь проигрывает только глобальный вотчер (useGlobalSoundWatcher),
-          // чтобы не срабатывать дважды, пока пользователь на вкладке "Медведи".
-          warnedRef.current = true;
-        }
-      }, 1000);
-    }, offset);
-    return () => { clearTimeout(timeoutId); clearInterval(id); };
-  }, [bear]);
 
   const isDead    = getBearStatus(bear) === 'dead';
   const isReady   = bear.spawn_at && !isDead;
@@ -283,6 +266,18 @@ export default function BearsPage({ bears, clan, onBearChange, isGuest, onLoginC
   const [error, setError] = useState('');
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const isMobile = useIsMobile();
+
+  // Один общий тик на всю страницу вместо ~11 независимых setInterval со
+  // случайным сдвигом на каждую строку (см. комментарий в BearRow). Любое
+  // изменение этого состояния триггерит re-render BearsPage, а значит и
+  // ВСЕХ BearRow разом (они не обёрнуты в memo) — то есть один атомарный
+  // рендер всего списка раз в секунду, а не размазанный поток частичных
+  // обновлений.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const mergedBears = BEARS_LIST.map(meta => {
     const found = bears.find(b => b.bear_index === meta.index);
