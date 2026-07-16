@@ -48,19 +48,34 @@ function PeriodNumberInput({ value, onChange, max, className = 'input timer-peri
   );
 }
 
-// ── Модалка редактирования таймера (название + период) ─────────────────────
+// ── Модалка редактирования таймера (название + период + оставшееся время) ──
 function EditTimerModal({ timer, onCommit, onClose }) {
   const [name, setName] = useState(timer.name);
   const [days, setDays] = useState(Math.floor(timer.period_seconds / 86400));
   const [hours, setHours] = useState(Math.floor((timer.period_seconds % 86400) / 3600));
   const [minutes, setMinutes] = useState(Math.floor((timer.period_seconds % 3600) / 60));
+
+  // Оставшееся время — отдельное поле, не связанное с периодом. Предзаполняем
+  // тем, сколько реально осталось прямо сейчас (а не полным периодом), чтобы
+  // можно было точечно поправить его, например если забыли вовремя нажать
+  // "Обновить" и таймер утёк на лишний час.
+  const initialRemaining = (() => {
+    const r = getRemaining(timer);
+    if (r === null) return timer.period_seconds;
+    return Math.max(0, Math.round(r));
+  })();
+  const [remDays, setRemDays] = useState(Math.floor(initialRemaining / 86400));
+  const [remHours, setRemHours] = useState(Math.floor((initialRemaining % 86400) / 3600));
+  const [remMinutes, setRemMinutes] = useState(Math.floor((initialRemaining % 3600) / 60));
+
   const [error, setError] = useState('');
 
   function handleSubmit() {
     if (!name.trim()) { setError('Введите название таймера'); return; }
     const totalSeconds = days * 86400 + hours * 3600 + minutes * 60;
     if (totalSeconds < 60) { setError('Период должен быть не менее 1 минуты'); return; }
-    onCommit({ name: name.trim(), period_seconds: totalSeconds });
+    const remainingSeconds = remDays * 86400 + remHours * 3600 + remMinutes * 60;
+    onCommit({ name: name.trim(), period_seconds: totalSeconds, remaining_seconds: remainingSeconds });
     onClose();
   }
 
@@ -91,6 +106,20 @@ function EditTimerModal({ timer, onCommit, onClose }) {
             <PeriodNumberInput value={minutes} onChange={setMinutes} max={59} />
             <span className="timer-period-unit">м</span>
           </div>
+
+          <label className="modal-label" style={{ marginTop: 8 }}>Осталось до конца</label>
+          <div className="timer-period-inputs">
+            <PeriodNumberInput value={remDays} onChange={setRemDays} />
+            <span className="timer-period-unit">д</span>
+            <PeriodNumberInput value={remHours} onChange={setRemHours} max={23} />
+            <span className="timer-period-unit">ч</span>
+            <PeriodNumberInput value={remMinutes} onChange={setRemMinutes} max={59} />
+            <span className="timer-period-unit">м</span>
+          </div>
+          <div className="modal-hint" style={{ marginTop: 4, fontSize: 12, opacity: 0.6 }}>
+            Поправьте, если забыли вовремя нажать «Обновить» — период при этом не изменится
+          </div>
+
           {error && <div className="modal-error">{error}</div>}
         </div>
         <div className="modal-footer">

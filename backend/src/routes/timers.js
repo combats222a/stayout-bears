@@ -48,9 +48,9 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// PATCH /api/timers/:id — изменить название / период / звук таймера
+// PATCH /api/timers/:id — изменить название / период / оставшееся время / звук таймера
 router.patch('/:id', auth, async (req, res) => {
-  const { name, period_seconds, sound_enabled } = req.body;
+  const { name, period_seconds, remaining_seconds, sound_enabled } = req.body;
 
   const sets = [];
   const values = [];
@@ -63,14 +63,34 @@ router.patch('/:id', auth, async (req, res) => {
   if (period_seconds !== undefined) {
     if (!period_seconds || period_seconds < 60) return res.status(400).json({ error: 'Период минимум 1 минута' });
     sets.push(`period_seconds = $${i++}`); values.push(period_seconds);
+  }
 
-    // Сохранение в окне "Изменить" всегда фиксирует новое время заново —
-    // сбрасываем точку отсчёта на "сейчас", даже если цифры периода не
-    // поменялись. Иначе оставшееся время считалось бы как (старый
-    // last_reset_at + период), из-за чего таймер показывал не полный
-    // указанный период, а "период минус время, прошедшее с прошлого сброса".
+  if (remaining_seconds !== undefined) {
+    // Ручная правка именно "оставшегося времени" (например, забыли вовремя
+    // нажать "Обновить" и хотят вручную поставить сколько реально осталось),
+    // не трогая при этом сам период-шаблон. Пересчитываем last_reset_at так,
+    // чтобы (last_reset_at + период) дало нужный момент истечения:
+    //   last_reset_at = сейчас + remaining_seconds − период
+    if (remaining_seconds < 0) return res.status(400).json({ error: 'Оставшееся время не может быть отрицательным' });
+
+    let effectivePeriod = period_seconds;
+    if (effectivePeriod === undefined) {
+      const { rows: cur } = await pool.query(
+        `SELECT period_seconds FROM user_timers WHERE id = $1 AND user_id = $2`,
+        [req.params.id, req.user.id]
+      );
+      if (!cur.length) return res.status(404).json({ error: 'Таймер не найден' });
+      effectivePeriod = cur[0].period_seconds;
+    }
+
+    const lastResetAt = new Date(Date.now() + remaining_seconds * 1000 - effectivePeriod * 1000);
+    sets.push(`last_reset_at = $${i++}`); values.push(lastResetAt);
+  } else if (period_seconds !== undefined) {
+    // Старое поведение: если период поменяли, а оставшееся время явно не
+    // задавали — просто сбрасываем отсчёт на "сейчас" (полный новый период).
     sets.push(`last_reset_at = NOW()`);
   }
+
   if (sound_enabled !== undefined) {
     sets.push(`sound_enabled = $${i++}`); values.push(!!sound_enabled);
   }
