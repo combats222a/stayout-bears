@@ -30,6 +30,10 @@ const MENU_ONLY_ITEMS = [
   { key: 'anomaly',      label: '🥶 Аномальные прорывы' },
 ];
 
+// Ширина сайдбара — должна совпадать с .desktop-sidebar { width: ... }
+// в styles.css.
+const SIDEBAR_WIDTH = 140;
+
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
   // Панель разделов (и на десктопе, и на телефоне) всегда стартует
   // свёрнутой при каждой загрузке страницы — состояние нигде не
@@ -59,6 +63,42 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
   }, []);
 
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
+
+  // .main обычно центрируется чистым CSS (margin: 0 auto) и никогда не
+  // трогается, когда открыт сайдбар — так раскладка страниц остаётся
+  // одинаковой всегда. Но если свободного поля слева от контента (это поле
+  // и есть та самая margin:auto) меньше ширины сайдбара — например, при
+  // увеличении масштаба страницы в браузере (Ctrl + колесо) эффективная
+  // ширина окна в CSS-пикселях уменьшается и поле сужается — сайдбар начинает
+  // наезжать на текст. В этом (и только в этом) случае аккуратно досдвигаем
+  // .main вправо ровно настолько, чтобы перекрытия не было — ни больше,
+  // ни меньше. Как только места снова достаточно (масштаб вернули, окно
+  // расширили), сдвиг сам обнуляется.
+  useEffect(() => {
+    const mainEl = document.querySelector('.main');
+    if (!mainEl) return;
+
+    const syncMainShift = () => {
+      const isDesktop = window.matchMedia('(min-width: 641px)').matches;
+      if (!menuOpen || !isDesktop) {
+        mainEl.style.marginLeft = '';
+        return;
+      }
+      // offsetWidth не зависит от текущего margin-left, поэтому измерение
+      // безопасно и не создаёт петлю обратной связи с самим собой.
+      const naturalMargin = (window.innerWidth - mainEl.offsetWidth) / 2;
+      const overlap = SIDEBAR_WIDTH - naturalMargin;
+      mainEl.style.marginLeft = overlap > 0 ? `${naturalMargin + overlap}px` : '';
+    };
+
+    syncMainShift();
+    if (!menuOpen) return;
+    window.addEventListener('resize', syncMainShift);
+    return () => {
+      window.removeEventListener('resize', syncMainShift);
+      mainEl.style.marginLeft = '';
+    };
+  }, [menuOpen]);
 
   const adminItems = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
   // Показывается всегда в верхней строке на десктопе; на телефоне (где верхняя
