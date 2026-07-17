@@ -21,7 +21,6 @@ const NAV_ITEMS = [
   { key: 'shining', label: '✨ Сияние' },
   { key: 'hearts',  label: '🫀 Учёт лута' },
   { key: 'timers',  label: '⏱️ Таймеры' },
-  { key: 'timecalc', label: '🧮 Калькулятор времени' },
   { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
   { key: 'captures', label: '🚩 Захваты' },
   { key: 'clan',     label: '🏕️ Клан' },
@@ -33,6 +32,7 @@ const NAV_ITEMS = [
 const MENU_ONLY_ITEMS = [
   { key: 'achievements', label: '🏆 Достижения' },
   { key: 'level',        label: '📈 Уровень',     guestHref: '/level' },
+  { key: 'timecalc',     label: '🧮 Калькулятор времени' },
   { key: 'draugs',       label: '💀 Драуги' },
   { key: 'anomaly',      label: '🥶 Аномальные прорывы' },
 ];
