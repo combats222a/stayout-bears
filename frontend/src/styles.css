@@ -1349,7 +1349,19 @@ body {
   }
   .desktop-sidebar.open { transform: translateX(0); }
   .desktop-sidebar-list { display: flex; flex-direction: column; gap: 2px; }
-  .desktop-sidebar-list .nav-panel-btn { width: 100%; font-size: 13px; padding: 8px 12px; }
+  .desktop-sidebar-list .nav-panel-btn { width: 100%; font-size: 14px; padding: 9px 12px; }
+
+  /* Заголовок страницы (.page-title — «Медведи», «Драуги» и т.п.) и обёртка
+     таблицы (.tbl-wrap) — единственные элементы, которые реально оказывались
+     под сайдбаром на «плотных» страницах (сравни с Промокодом — там контент
+     и так с большими отступами, поэтому его трогать не нужно и не стали).
+     Сдвигаем именно их вправо ровно на ширину сайдбара, но только пока он
+     открыт — остальная страница (.main) по-прежнему не трогается. */
+  .page-title, .tbl-wrap { transition: margin-left 0.2s ease; }
+  body.sidebar-open .page-title,
+  body.sidebar-open .tbl-wrap {
+    margin-left: 190px;
+  }
 }
 
 /* === MODAL — корректный размер на мобиле === */

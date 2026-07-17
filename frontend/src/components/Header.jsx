@@ -62,6 +62,14 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
     }
   }, [menuOpen]);
 
+  // Класс на <body> используется только для точечного сдвига заголовков
+  // страниц и таблиц (.page-title, .tbl-wrap), чтобы они не оказывались
+  // под открытым сайдбаром — см. styles.css. Сам .main этот класс больше
+  // не двигает (см. комментарий у .desktop-sidebar в styles.css).
+  useEffect(() => {
+    document.body.classList.toggle('sidebar-open', menuOpen);
+    return () => document.body.classList.remove('sidebar-open');
+  }, [menuOpen]);
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
   const adminItems = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
