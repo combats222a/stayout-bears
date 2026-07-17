@@ -753,6 +753,105 @@ body {
 }
 .modal-btn-ok:hover { background: #58a6ff; }
 
+/* === Расширенная модалка редактирования таймера (по новому макету) ===
+   Все правила скопированы только под .edit-timer-modal, чтобы не затронуть
+   остальные модалки в приложении (BearsPage, ClanPage, AnomalyPage и т.д.),
+   которые используют те же базовые modal-* классы. */
+.modal-box.edit-timer-modal {
+  width: 560px;
+  max-width: 94vw;
+}
+.edit-timer-modal .modal-title {
+  background: transparent;
+  border-bottom: none;
+  padding: 22px 24px 4px;
+}
+.edit-timer-modal .modal-title-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.edit-timer-modal .modal-title-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(56,139,253,0.15);
+  color: #58a6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.edit-timer-modal .modal-title-text {
+  font-size: 19px;
+  font-weight: 600;
+  color: #e6edf3;
+}
+.edit-timer-modal .modal-body {
+  padding: 12px 24px 20px;
+  gap: 10px;
+}
+.edit-timer-modal .modal-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.edit-timer-modal .modal-label:first-child { margin-top: 0; }
+.edit-timer-modal .input { font-size: 14px; padding: 10px 14px; }
+.edit-timer-modal .timer-period-inputs { gap: 10px; }
+.edit-timer-modal .timer-period-unit { font-size: 13px; }
+.edit-timer-modal .modal-divider {
+  height: 1px;
+  background: #21262d;
+  margin: 10px 0 2px;
+}
+.edit-timer-modal .modal-hint { font-size: 12px; margin-top: 2px; }
+.edit-timer-modal .modal-footer { padding: 16px 24px; }
+.edit-timer-modal .modal-btn-cancel,
+.edit-timer-modal .modal-btn-ok {
+  padding: 10px 22px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+/* Поле периода со стрелками вверх/вниз вместо нативного OS-спиннера */
+.stepped-input { position: relative; display: flex; align-items: center; }
+.stepped-input-field {
+  width: 96px;
+  text-align: left;
+  font-family: var(--font-mono);
+  -moz-appearance: textfield;
+  padding-right: 28px !important;
+}
+.stepped-input-field::-webkit-inner-spin-button,
+.stepped-input-field::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.stepped-input-arrows {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stepped-input-arrow {
+  background: transparent;
+  border: none;
+  color: #6e7681;
+  cursor: pointer;
+  padding: 1px 2px;
+  line-height: 0;
+  display: flex;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+}
+.stepped-input-arrow:hover { color: #c9d1d9; background: #21262d; }
+
 /* === NEW: Ban button === */
 .mem-btn-ban {
   background: rgba(248,81,73,0.15);
