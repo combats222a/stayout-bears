@@ -32,12 +32,6 @@ function getForecast(timer) {
   return new Date(expireMs);
 }
 
-// Формат для <input type="datetime-local">: "YYYY-MM-DDTHH:mm" в локальном времени
-function toLocalDatetimeValue(date) {
-  const pad2 = n => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
-}
-
 function RefreshIcon({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -67,27 +61,6 @@ function InfoIcon({ size = 13 }) {
       <circle cx="12" cy="7.5" r="0.5" fill="currentColor" />
     </svg>
   );
-}
-
-function CalendarIcon({ size = 15 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M3 10h18M8 3v4M16 3v4" />
-    </svg>
-  );
-}
-
-// "17 июля 2026 • 05:18" — человекочитаемый формат вместо системного
-// вида datetime-local, который в разных браузерах/ОС выглядит по-разному
-// (то точки, то слэши, то 24-часовой формат вперемешку с 12-часовым).
-function formatLastReset(localValue) {
-  const d = new Date(localValue);
-  if (isNaN(d.getTime())) return '—';
-  const datePart = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-  const timePart = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  return `${datePart} • ${timePart}`;
 }
 
 // Небольшая подсказка: значок ⓘ с нативным title-тултипом на ховере —
@@ -307,15 +280,6 @@ function EditTimerModal({ timer, onCommit, onClose }) {
   const [remHours, setRemHours] = useState(Math.floor((initialRemaining % 86400) / 3600));
   const [remMinutes, setRemMinutes] = useState(Math.floor((initialRemaining % 3600) / 60));
 
-  // Точное время, когда таймер реально был обновлён (last_reset_at) — то же
-  // самое значение, что и «Осталось до конца», просто другой способ его
-  // задать: не длительностью, а конкретной датой/временем. Оба поля живут
-  // синхронно: правишь одно — пересчитывается другое.
-  const initialLastReset = timer.last_reset_at
-    ? new Date(timer.last_reset_at)
-    : new Date(Date.now() - (timer.period_seconds - initialRemaining) * 1000);
-  const [lastResetLocal, setLastResetLocal] = useState(toLocalDatetimeValue(initialLastReset));
-
   const [error, setError] = useState('');
 
   // Правим "Осталось до конца" → пересчитываем поле точного времени.
@@ -325,20 +289,6 @@ function EditTimerModal({ timer, onCommit, onClose }) {
     setRemDays(nextRemDays);
     setRemHours(nextRemHours);
     setRemMinutes(nextRemMinutes);
-    const remainingSeconds = nextRemDays * 86400 + nextRemHours * 3600 + nextRemMinutes * 60;
-    const lastReset = new Date(Date.now() + remainingSeconds * 1000 - timer.period_seconds * 1000);
-    setLastResetLocal(toLocalDatetimeValue(lastReset));
-  }
-
-  // Правим точное время обновления → пересчитываем "Осталось до конца"
-  function handleLastResetChange(value) {
-    setLastResetLocal(value);
-    const dt = new Date(value);
-    if (isNaN(dt.getTime())) return;
-    const remainingSeconds = Math.max(0, Math.round((dt.getTime() + timer.period_seconds * 1000 - Date.now()) / 1000));
-    setRemDays(Math.floor(remainingSeconds / 86400));
-    setRemHours(Math.floor((remainingSeconds % 86400) / 3600));
-    setRemMinutes(Math.floor((remainingSeconds % 3600) / 60));
   }
 
   function handleSubmit() {
@@ -388,24 +338,6 @@ function EditTimerModal({ timer, onCommit, onClose }) {
             <span className="timer-period-unit">мин.</span>
           </div>
           <div className="modal-hint">Введите время, которое показывает игра.</div>
-
-          <label className="modal-label" style={{ marginTop: 4 }}>
-            Когда произошло событие
-            <InfoTip text="Удобно, если знаете точное время события — «Осталось до события» пересчитается само" />
-          </label>
-          <div className="datetime-field">
-            <input
-              className="input datetime-field-input"
-              type="datetime-local"
-              value={lastResetLocal}
-              onChange={e => handleLastResetChange(e.target.value)}
-            />
-            <div className="input datetime-field-display">
-              <span>{formatLastReset(lastResetLocal)}</span>
-              <CalendarIcon />
-            </div>
-          </div>
-          <div className="modal-hint">Если известно точное время события, укажите его — таймер пересчитается автоматически.</div>
 
           {error && <div className="modal-error">{error}</div>}
         </div>
@@ -471,12 +403,21 @@ function TimerRow({
           <PeriodInlineEdit timer={timer} onEdit={onEdit} />
         </div>
         <div className={`timer-row-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
-          {isEmpty ? '-- : -- : --' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
-          {!isEmpty && !isExpired && (
-            <div className="timer-mini-bar">
-              <div className="timer-mini-fill" style={{ width: `${progressPct}%` }} />
-            </div>
-          )}
+          <div
+            className="timer-row-ring"
+            style={{
+              background: isEmpty
+                ? 'conic-gradient(var(--border) 0 100%)'
+                : isExpired
+                  ? 'conic-gradient(var(--red) 0 100%)'
+                  : `conic-gradient(var(--green) ${progressPct}%, var(--bg3) ${progressPct}% 100%)`
+            }}
+          >
+            <div className="timer-row-ring-hole" />
+          </div>
+          <span className="timer-row-remaining-text">
+            {isEmpty ? '-- : -- : --' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
+          </span>
         </div>
         <div className="timer-row-forecast">
           {isEmpty ? '-- : -- : --' : isExpired ? 'Уже!' :

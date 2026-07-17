@@ -1167,25 +1167,31 @@ body {
   font-size: 15px;
   color: var(--green);
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 .timer-row-remaining.expired { color: var(--red); font-weight: 700; }
 .timer-row-remaining.empty { color: var(--text3); }
+.timer-row-remaining-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.timer-mini-bar {
-  width: 100%;
-  height: 3px;
-  background: var(--bg3);
-  border-radius: 2px;
-  overflow: hidden;
+/* Кольцо-циферблат вместо линейной полоски прогресса — то же решение,
+   что и в мобильных карточках (см. .timer-mcard-ring), только компактнее,
+   чтобы уместиться в строке таблицы. */
+.timer-row-ring {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
 }
-.timer-mini-fill {
+.timer-row-ring-hole {
+  width: 100%;
   height: 100%;
-  background: var(--green);
-  border-radius: 2px;
-  transition: width 1s linear;
+  border-radius: 50%;
+  background: var(--bg2);
+  /* "прогрызаем" внутренний круг через padding-эквивалент за счёт transform,
+     чтобы толщина кольца была одинаковой независимо от размера контейнера */
+  transform: scale(0.62);
 }
 
 .timer-row-forecast {
@@ -2565,25 +2571,6 @@ body {
 .row-menu-item:hover { background: var(--bg3); }
 .row-menu-item-danger { color: var(--red); }
 .row-menu-item-danger:hover { background: rgba(248,81,73,0.12); }
-
-/* === REDESIGN: «Последнее обновление» — читаемый формат вместо системного datetime-local === */
-.datetime-field { position: relative; }
-.datetime-field-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
-}
-.datetime-field-display {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  pointer-events: none;
-  color: var(--text);
-}
-.datetime-field-display svg { color: var(--text3); flex-shrink: 0; }
 
 /* === REDESIGN: единая "нарядная" синяя кнопка для ключевых действий ===
    Добавляется КАК ДОПОЛНИТЕЛЬНЫЙ класс поверх существующих (.btn-primary,
