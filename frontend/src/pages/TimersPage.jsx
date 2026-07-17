@@ -91,29 +91,67 @@ function InfoTip({ text }) {
 }
 
 // "···" меню действий строки (Изменить / Удалить) — закрывается по клику снаружи или Esc
+//
+// Раньше меню позиционировалось position:absolute внутри строки, а строка лежит
+// внутри .timers-table с overflow:hidden (это нужно для скруглённых углов таблицы).
+// Из-за этого у нижних строк выпадающий список обрезался этим overflow и был не
+// виден. Теперь меню рисуется через position:fixed по координатам самой кнопки —
+// оно всегда поверх всего и не зависит от overflow родителей.
 function RowActionsMenu({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  function openMenu() {
+    const rect = btnRef.current.getBoundingClientRect();
+    const openUpward = window.innerHeight - rect.bottom < 110;
+    setPos({
+      top: openUpward ? null : rect.bottom + 6,
+      bottom: openUpward ? (window.innerHeight - rect.top + 6) : null,
+      right: window.innerWidth - rect.right,
+    });
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
-    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    function onDocClick(e) {
+      if (menuRef.current?.contains(e.target) || btnRef.current?.contains(e.target)) return;
+      setOpen(false);
+    }
     function onKey(e) { if (e.key === 'Escape') setOpen(false); }
+    function onScrollOrResize() { setOpen(false); }
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
     };
   }, [open]);
 
   return (
-    <div className="row-menu" ref={ref}>
-      <button className="icon-btn" onClick={() => setOpen(v => !v)} title="Ещё" aria-haspopup="true" aria-expanded={open}>
+    <div className="row-menu">
+      <button
+        ref={btnRef}
+        className="icon-btn"
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        title="Ещё"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
         <DotsIcon />
       </button>
-      {open && (
-        <div className="row-menu-dropdown">
+      {open && pos && (
+        <div
+          className="row-menu-dropdown"
+          ref={menuRef}
+          style={{ position: 'fixed', top: pos.top ?? undefined, bottom: pos.bottom ?? undefined, right: pos.right }}
+        >
           <button className="row-menu-item" onClick={() => { setOpen(false); onEdit(); }}>Изменить</button>
           <button className="row-menu-item row-menu-item-danger" onClick={() => { setOpen(false); onDelete(); }}>Удалить</button>
         </div>
