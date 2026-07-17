@@ -2342,19 +2342,6 @@ body {
   color: var(--text2);
 }
 
-/* === REDESIGN: emoji-аватарка таймера === */
-.timer-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  font-size: 15px;
-}
 .timer-row-name {
   display: flex;
   align-items: center;
