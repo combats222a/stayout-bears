@@ -1,5 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { STEAM_URL, SteamIcon } from './SteamIcon';
+
+// Ключ для запоминания состояния десктопного сайдбара между перезагрузками
+// страницы. На телефоне это состояние не читаем и не пишем — там панель
+// всегда стартует свёрнутой, как и раньше (см. useState ниже и эффект записи).
+const SIDEBAR_STORAGE_KEY = 'sidebarOpen';
+const isDesktopViewport = () =>
+  typeof window !== 'undefined' && window.matchMedia('(min-width: 641px)').matches;
 
 // Один и тот же полный список разделов для всех — и авторизованных, и
 // гостей. Гость видит те же разделы и может их открыть — Медведи, Сияние,
@@ -31,8 +38,36 @@ const MENU_ONLY_ITEMS = [
 ];
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  // На десктопе состояние сайдбара запоминается (localStorage) и переживает
+  // обновление страницы. На телефоне — всегда стартует свёрнутым, без
+  // запоминания (см. isDesktopViewport() ниже).
+  const [menuOpen, setMenuOpen] = useState(() => {
+    if (!isDesktopViewport()) return false;
+    try {
+      return localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
   const isGuest = !user;
+
+  // Запоминаем состояние только на десктопе — на телефоне панель ведёт себя
+  // как раньше (обычное открывающееся/закрывающееся меню без сохранения).
+  useEffect(() => {
+    if (!isDesktopViewport()) return;
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, menuOpen ? '1' : '0');
+    } catch {
+      // localStorage недоступен (приватный режим и т.п.) — просто не сохраняем
+    }
+  }, [menuOpen]);
+
+  // Класс на <body> нужен, чтобы сдвигать основной контент вправо на
+  // десктопе, когда сайдбар открыт (см. .main в styles.css).
+  useEffect(() => {
+    document.body.classList.toggle('sidebar-open', menuOpen);
+    return () => document.body.classList.remove('sidebar-open');
+  }, [menuOpen]);
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
   const adminItems = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
@@ -45,7 +80,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
     setMenuOpen(false);
   }
 
-  function renderNavItem(item, className, extraClass = '') {
+  function renderNavItem(item, className, extraClass = '', { keepOpen = false } = {}) {
     const cls = `${className} ${extraClass} ${page === item.key ? 'active' : ''}`;
     if (isGuest && item.guestHref) {
       return <a key={item.key} className={cls} href={item.guestHref}>{item.label}</a>;
@@ -60,7 +95,11 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
       );
     }
     return (
-      <button key={item.key} className={cls} onClick={() => handleNav(item.key)}>
+      <button
+        key={item.key}
+        className={cls}
+        onClick={() => (keepOpen ? onNavigate?.(item.key) : handleNav(item.key))}
+      >
         {item.label}
       </button>
     );
@@ -163,6 +202,16 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
           </div>
         </div>
       )}
+
+      {/* Сайдбар второстепенных разделов — только на десктопе (на телефоне
+          скрыт через CSS, там используется панель выше). Рендерится всегда,
+          открытие/закрытие — через CSS-класс "open", чтобы анимация выезда
+          отрабатывала и при открытии, и при закрытии. */}
+      <aside className={`desktop-sidebar ${menuOpen ? 'open' : ''}`}>
+        <nav className="desktop-sidebar-list">
+          {MENU_ONLY_ITEMS.map(item => renderNavItem(item, 'nav-panel-btn', '', { keepOpen: true }))}
+        </nav>
+      </aside>
     </>
   );
 }
