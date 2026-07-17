@@ -62,9 +62,8 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
     }
   }, [menuOpen]);
 
-  // Класс на <body> нужен, чтобы отодвигать основной контент вправо на
-  // десктопе, когда сайдбар открыт (см. .main в styles.css) — иначе сайдбар
-  // перекрывает таблицы и другое содержимое страницы.
+  // Класс на <body> нужен, чтобы сдвигать основной контент вправо на
+  // десктопе, когда сайдбар открыт (см. .main в styles.css).
   useEffect(() => {
     document.body.classList.toggle('sidebar-open', menuOpen);
     return () => document.body.classList.remove('sidebar-open');
