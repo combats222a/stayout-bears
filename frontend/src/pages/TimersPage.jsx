@@ -38,6 +38,90 @@ function toLocalDatetimeValue(date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
+// Набор emoji-аватарок для строк таймеров — чисто косметическая деталь
+// (в БД нет поля под иконку), поэтому подбираем стабильно по id/названию,
+// чтобы у конкретного таймера иконка не "прыгала" между перезагрузками.
+const TIMER_EMOJIS = ['📚', '🐼', '🪙', '⚔️', '🥫', '🌸', '🐂', '🧶', '🎯', '🔥', '💧', '🍀', '⭐', '🎁', '🗡️', '🛡️', '🌊', '🌙'];
+function pickEmoji(seed) {
+  const str = String(seed ?? '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return TIMER_EMOJIS[hash % TIMER_EMOJIS.length];
+}
+
+function RefreshIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 11a8 8 0 0 0-14.6-4.6M4 4v5h5" />
+      <path d="M4 13a8 8 0 0 0 14.6 4.6M20 20v-5h-5" />
+    </svg>
+  );
+}
+
+function DotsIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
+  );
+}
+
+function InfoIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5.5" />
+      <circle cx="12" cy="7.5" r="0.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+// Небольшая подсказка: значок ⓘ с нативным title-тултипом на ховере —
+// без отдельного тяжёлого абзаца текста под полем.
+function InfoTip({ text }) {
+  return (
+    <span className="info-tip" title={text} tabIndex={0}>
+      <InfoIcon />
+    </span>
+  );
+}
+
+// "···" меню действий строки (Изменить / Удалить) — закрывается по клику снаружи или Esc
+function RowActionsMenu({ onEdit, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="row-menu" ref={ref}>
+      <button className="icon-btn" onClick={() => setOpen(v => !v)} title="Ещё" aria-haspopup="true" aria-expanded={open}>
+        <DotsIcon />
+      </button>
+      {open && (
+        <div className="row-menu-dropdown">
+          <button className="row-menu-item" onClick={() => { setOpen(false); onEdit(); }}>Изменить</button>
+          <button className="row-menu-item row-menu-item-danger" onClick={() => { setOpen(false); onDelete(); }}>Удалить</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Инпут периода: клик/фокус выделяет значение целиком,
 // чтобы ввод любой цифры сразу заменял стоящий там 0
 function PeriodNumberInput({ value, onChange, max, className = 'input timer-period-num' }) {
@@ -127,7 +211,10 @@ function EditTimerModal({ timer, onCommit, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
-        <div className="modal-title">✎ Изменить таймер</div>
+        <div className="modal-title">
+          <span>✎ Изменить таймер</span>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Закрыть">✕</button>
+        </div>
         <div className="modal-body">
           <label className="modal-label">Название таймера</label>
           <input
@@ -147,7 +234,10 @@ function EditTimerModal({ timer, onCommit, onClose }) {
             <span className="timer-period-unit">м</span>
           </div>
 
-          <label className="modal-label" style={{ marginTop: 8 }}>Осталось до конца</label>
+          <label className="modal-label" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+            Осталось до конца
+            <InfoTip text="Поправьте, если забыли вовремя нажать «Обновить» — период при этом не изменится" />
+          </label>
           <div className="timer-period-inputs">
             <PeriodNumberInput value={remDays} onChange={d => updateRemaining(d, remHours, remMinutes)} />
             <span className="timer-period-unit">д</span>
@@ -156,20 +246,17 @@ function EditTimerModal({ timer, onCommit, onClose }) {
             <PeriodNumberInput value={remMinutes} onChange={m => updateRemaining(remDays, remHours, m)} max={59} />
             <span className="timer-period-unit">м</span>
           </div>
-          <div className="modal-hint" style={{ marginTop: 4, fontSize: 12, opacity: 0.6 }}>
-            Поправьте, если забыли вовремя нажать «Обновить» — период при этом не изменится
-          </div>
 
-          <label className="modal-label" style={{ marginTop: 8 }}>Точное время последнего обновления</label>
+          <label className="modal-label" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+            Последнее обновление
+            <InfoTip text="Удобно, если знаете точное время события — «Осталось до конца» пересчитается само" />
+          </label>
           <input
             className="input"
             type="datetime-local"
             value={lastResetLocal}
             onChange={e => handleLastResetChange(e.target.value)}
           />
-          <div className="modal-hint" style={{ marginTop: 4, fontSize: 12, opacity: 0.6 }}>
-            Удобно, если знаете точное время события — «Осталось до конца» пересчитается само
-          </div>
 
           {error && <div className="modal-error">{error}</div>}
         </div>
@@ -199,6 +286,7 @@ function TimerRow({
   const forecast = getForecast(timer);
   const isExpired = remaining !== null && remaining <= 0;
   const isEmpty = remaining === null;
+  const rowEmoji = pickEmoji(timer.id ?? timer.name);
 
   // Звук по истечении теперь проигрывает только глобальный вотчер
   // (useGlobalSoundWatcher, живёт на уровне App) — он срабатывает независимо
@@ -228,7 +316,10 @@ function TimerRow({
           onDragEnd={onDragEnd}
           title="Перетащи чтобы изменить порядок"
         >≡</div>
-        <div className="timer-row-name">{timer.name}</div>
+        <div className="timer-row-name">
+          <span className="timer-avatar" aria-hidden="true">{rowEmoji}</span>
+          <span className="timer-row-name-text">{timer.name}</span>
+        </div>
         <div className="timer-row-period">{formatDuration(timer.period_seconds)}</div>
         <div className={`timer-row-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
           {isEmpty ? '-- : -- : --' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
@@ -243,9 +334,9 @@ function TimerRow({
             forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
         <div className="timer-row-actions">
-          <button className="btn btn-sm btn-primary btn-anim" onClick={() => onReset(timer.id)}>Обновить</button>
-          <button className="btn btn-sm btn-orange btn-anim" onClick={() => setShowEdit(true)}>Изменить</button>
-          <button className="btn btn-sm btn-danger btn-anim" onClick={() => onDelete(timer.id)}>Удалить</button>
+          <button className="icon-btn icon-btn-primary" onClick={() => onReset(timer.id)} title="Обновить">
+            <RefreshIcon />
+          </button>
           <button
             className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
             onClick={() => onToggleSound(timer)}
@@ -253,12 +344,14 @@ function TimerRow({
           >
             <SoundIcon on={timer.sound_enabled} />
           </button>
+          <RowActionsMenu onEdit={() => setShowEdit(true)} onDelete={() => onDelete(timer.id)} />
         </div>
       </div>
 
       {/* Mobile card */}
       <div className="timer-card-mobile">
         <div className="timer-card-header">
+          <span className="timer-avatar" aria-hidden="true">{rowEmoji}</span>
           <span className="timer-card-name">{timer.name}</span>
           <span className="timer-card-period">каждые {formatDuration(timer.period_seconds)}</span>
         </div>
@@ -274,9 +367,9 @@ function TimerRow({
           <span>🎯 В {isEmpty ? '--' : isExpired ? 'Уже!' : forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         <div className="timer-card-actions">
-          <button className="btn btn-sm btn-primary btn-anim" onClick={() => onReset(timer.id)}>Обновить</button>
-          <button className="btn btn-sm btn-orange btn-anim" onClick={() => setShowEdit(true)}>Изменить</button>
-          <button className="btn btn-sm btn-danger btn-anim" onClick={() => onDelete(timer.id)}>Удалить</button>
+          <button className="icon-btn icon-btn-primary" onClick={() => onReset(timer.id)} title="Обновить">
+            <RefreshIcon />
+          </button>
           <button
             className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
             onClick={() => onToggleSound(timer)}
@@ -284,6 +377,7 @@ function TimerRow({
           >
             <SoundIcon on={timer.sound_enabled} />
           </button>
+          <RowActionsMenu onEdit={() => setShowEdit(true)} onDelete={() => onDelete(timer.id)} />
         </div>
       </div>
 
@@ -309,6 +403,12 @@ export default function TimersPage({ user, onLoginClick }) {
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [creating, setCreating] = useState(false);
+  const createNameInputRef = useRef(null);
+
+  function scrollToCreateForm() {
+    createNameInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    createNameInputRef.current?.focus();
+  }
 
   // Drag & drop state
   const [dragState, setDragState] = useState({ draggedIndex: null, overIndex: null });
@@ -485,7 +585,13 @@ export default function TimersPage({ user, onLoginClick }) {
 
   return (
     <div className="page">
-      <div className="page-title">⏱️ Мои таймеры</div>
+      <div className="page-header-row">
+        <div>
+          <div className="page-title">⏱️ Таймеры</div>
+          <div className="page-subtitle">Создавайте таймеры, отслеживайте время и получайте уведомления</div>
+        </div>
+        <button className="btn btn-primary btn-anim" onClick={scrollToCreateForm}>+ Создать таймер</button>
+      </div>
       <div className="timer-owner-note">
         🔒 Таймеры видит только их создатель — <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
       </div>
@@ -542,6 +648,7 @@ export default function TimersPage({ user, onLoginClick }) {
           <div className="timer-create-field">
             <label className="timer-field-label">Название таймера</label>
             <input
+              ref={createNameInputRef}
               className="input"
               placeholder="Введите название"
               value={name}
