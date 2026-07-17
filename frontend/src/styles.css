@@ -999,7 +999,7 @@ body {
 
 .timer-row {
   display: grid;
-  grid-template-columns: 32px 1fr 100px 180px 150px 130px;
+  grid-template-columns: 32px 1fr 156px 180px 150px 130px;
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
@@ -1120,6 +1120,47 @@ body {
   color: var(--text2);
   text-align: center;
 }
+
+/* Редактируемый период прямо в колонке таблицы — компактная группа из трёх
+   полей (дн./ч./мин.) в общей рамке, похожей на обычный .input */
+.timer-row-period-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.timer-row-period-edit:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(88,166,255,0.1);
+}
+.timer-row-period-num {
+  width: 22px;
+  min-height: unset;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.timer-row-period-num::-webkit-inner-spin-button,
+.timer-row-period-num::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.timer-row-period-unit {
+  font-size: 11px;
+  color: var(--text3);
+  padding-right: 3px;
+}
+.timer-row-period-unit:last-child { padding-right: 0; }
 
 .timer-row-remaining {
   font-family: var(--font-mono);

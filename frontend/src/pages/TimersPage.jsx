@@ -225,12 +225,74 @@ function PeriodNumberInput({ value, onChange, max, className = 'input timer-peri
   );
 }
 
-// ── Модалка редактирования таймера (название + период + оставшееся время) ──
-function EditTimerModal({ timer, onCommit, onClose }) {
-  const [name, setName] = useState(timer.name);
+// Компактный редактируемый "Период" прямо в столбце таблицы — три коротких
+// поля дн./ч./мин. без стрелок (не помещаются в узкую колонку). Правки не
+// летят на сервер при каждом нажатии клавиши — небольшой debounce, а дальше
+// как и раньше в модалке: если период уменьшили меньше текущего остатка,
+// остаток подрезаем, чтобы прогресс-бар не зашкаливал.
+function PeriodInlineEdit({ timer, onEdit }) {
   const [days, setDays] = useState(Math.floor(timer.period_seconds / 86400));
   const [hours, setHours] = useState(Math.floor((timer.period_seconds % 86400) / 3600));
   const [minutes, setMinutes] = useState(Math.floor((timer.period_seconds % 3600) / 60));
+  const pendingRef = useRef(false);
+  const debounceRef = useRef(null);
+
+  // Подхватываем период, если он поменялся снаружи (автообновление раз в 30с,
+  // правка на другой вкладке) — но не пока пользователь сам сейчас печатает.
+  useEffect(() => {
+    if (pendingRef.current) return;
+    setDays(Math.floor(timer.period_seconds / 86400));
+    setHours(Math.floor((timer.period_seconds % 86400) / 3600));
+    setMinutes(Math.floor((timer.period_seconds % 3600) / 60));
+  }, [timer.period_seconds]);
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  function commit(nextDays, nextHours, nextMinutes) {
+    setDays(nextDays);
+    setHours(nextHours);
+    setMinutes(nextMinutes);
+    pendingRef.current = true;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      pendingRef.current = false;
+      const newPeriodSeconds = nextDays * 86400 + nextHours * 3600 + nextMinutes * 60;
+      if (newPeriodSeconds < 60) return; // период меньше минуты не отправляем
+      const currentRemaining = getRemaining(timer);
+      const clampedRemaining = currentRemaining === null
+        ? newPeriodSeconds
+        : Math.min(Math.max(0, Math.round(currentRemaining)), newPeriodSeconds);
+      onEdit(timer.id, { period_seconds: newPeriodSeconds, remaining_seconds: clampedRemaining });
+    }, 500);
+  }
+
+  return (
+    <div className="timer-row-period-edit" title="Период таймера">
+      <input
+        className="timer-row-period-num" type="number" min="0" max="999"
+        value={days} onFocus={e => e.target.select()}
+        onChange={e => commit(Math.max(0, parseInt(e.target.value) || 0), hours, minutes)}
+      />
+      <span className="timer-row-period-unit">д</span>
+      <input
+        className="timer-row-period-num" type="number" min="0" max="23"
+        value={hours} onFocus={e => e.target.select()}
+        onChange={e => commit(days, Math.min(23, Math.max(0, parseInt(e.target.value) || 0)), minutes)}
+      />
+      <span className="timer-row-period-unit">ч</span>
+      <input
+        className="timer-row-period-num" type="number" min="0" max="59"
+        value={minutes} onFocus={e => e.target.select()}
+        onChange={e => commit(days, hours, Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+      />
+      <span className="timer-row-period-unit">м</span>
+    </div>
+  );
+}
+
+// ── Модалка редактирования таймера (название + оставшееся время) ──
+function EditTimerModal({ timer, onCommit, onClose }) {
+  const [name, setName] = useState(timer.name);
 
   // Оставшееся время — отдельное поле, не связанное с периодом. Предзаполняем
   // тем, сколько реально осталось прямо сейчас (а не полным периодом), чтобы
@@ -256,35 +318,15 @@ function EditTimerModal({ timer, onCommit, onClose }) {
 
   const [error, setError] = useState('');
 
-  function periodSecondsNow() {
-    return days * 86400 + hours * 3600 + minutes * 60;
-  }
-
-  // Правим период → «Осталось» не может быть больше нового периода, иначе
-  // прогресс-бар зашкаливает (например, период уменьшили до 45 минут, а
-  // осталось всё ещё 3 часа с прошлого раза). Клэмпим остаток и синхронно
-  // пересчитываем точное время последнего обновления.
-  function handlePeriodChange(nextDays, nextHours, nextMinutes) {
-    setDays(nextDays);
-    setHours(nextHours);
-    setMinutes(nextMinutes);
-    const newPeriodSeconds = nextDays * 86400 + nextHours * 3600 + nextMinutes * 60;
-    const currentRemaining = remDays * 86400 + remHours * 3600 + remMinutes * 60;
-    const clampedRemaining = Math.min(currentRemaining, newPeriodSeconds);
-    setRemDays(Math.floor(clampedRemaining / 86400));
-    setRemHours(Math.floor((clampedRemaining % 86400) / 3600));
-    setRemMinutes(Math.floor((clampedRemaining % 3600) / 60));
-    const lastReset = new Date(Date.now() + clampedRemaining * 1000 - newPeriodSeconds * 1000);
-    setLastResetLocal(toLocalDatetimeValue(lastReset));
-  }
-
-  // Правим "Осталось до конца" → пересчитываем поле точного времени
+  // Правим "Осталось до конца" → пересчитываем поле точного времени.
+  // Период здесь больше не редактируется (это теперь делается прямо в
+  // таблице), поэтому используем неизменный timer.period_seconds.
   function updateRemaining(nextRemDays, nextRemHours, nextRemMinutes) {
     setRemDays(nextRemDays);
     setRemHours(nextRemHours);
     setRemMinutes(nextRemMinutes);
     const remainingSeconds = nextRemDays * 86400 + nextRemHours * 3600 + nextRemMinutes * 60;
-    const lastReset = new Date(Date.now() + remainingSeconds * 1000 - periodSecondsNow() * 1000);
+    const lastReset = new Date(Date.now() + remainingSeconds * 1000 - timer.period_seconds * 1000);
     setLastResetLocal(toLocalDatetimeValue(lastReset));
   }
 
@@ -293,7 +335,7 @@ function EditTimerModal({ timer, onCommit, onClose }) {
     setLastResetLocal(value);
     const dt = new Date(value);
     if (isNaN(dt.getTime())) return;
-    const remainingSeconds = Math.max(0, Math.round((dt.getTime() + periodSecondsNow() * 1000 - Date.now()) / 1000));
+    const remainingSeconds = Math.max(0, Math.round((dt.getTime() + timer.period_seconds * 1000 - Date.now()) / 1000));
     setRemDays(Math.floor(remainingSeconds / 86400));
     setRemHours(Math.floor((remainingSeconds % 86400) / 3600));
     setRemMinutes(Math.floor((remainingSeconds % 3600) / 60));
@@ -301,10 +343,8 @@ function EditTimerModal({ timer, onCommit, onClose }) {
 
   function handleSubmit() {
     if (!name.trim()) { setError('Введите название таймера'); return; }
-    const totalSeconds = days * 86400 + hours * 3600 + minutes * 60;
-    if (totalSeconds < 60) { setError('Период должен быть не менее 1 минуты'); return; }
     const remainingSeconds = remDays * 86400 + remHours * 3600 + remMinutes * 60;
-    onCommit({ name: name.trim(), period_seconds: totalSeconds, remaining_seconds: remainingSeconds });
+    onCommit({ name: name.trim(), remaining_seconds: remainingSeconds });
     onClose();
   }
 
@@ -332,19 +372,6 @@ function EditTimerModal({ timer, onCommit, onClose }) {
             onKeyDown={onKey}
             autoFocus
           />
-
-          <label className="modal-label">
-            Период таймера
-            <InfoTip text="Как часто повторяется событие — раз в сколько дней/часов/минут" />
-          </label>
-          <div className="timer-period-inputs">
-            <SteppedNumberInput value={days} onChange={d => handlePeriodChange(d, hours, minutes)} />
-            <span className="timer-period-unit">дн.</span>
-            <SteppedNumberInput value={hours} onChange={h => handlePeriodChange(days, h, minutes)} max={23} />
-            <span className="timer-period-unit">ч.</span>
-            <SteppedNumberInput value={minutes} onChange={m => handlePeriodChange(days, hours, m)} max={59} />
-            <span className="timer-period-unit">мин.</span>
-          </div>
 
           <div className="modal-divider" />
 
@@ -440,7 +467,9 @@ function TimerRow({
         <div className="timer-row-name">
           <span className="timer-row-name-text">{timer.name}</span>
         </div>
-        <div className="timer-row-period">{formatDuration(timer.period_seconds)}</div>
+        <div className="timer-row-period">
+          <PeriodInlineEdit timer={timer} onEdit={onEdit} />
+        </div>
         <div className={`timer-row-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
           {isEmpty ? '-- : -- : --' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
           {!isEmpty && !isExpired && (
