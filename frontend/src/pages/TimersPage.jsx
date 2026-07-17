@@ -32,6 +32,12 @@ function getForecast(timer) {
   return new Date(expireMs);
 }
 
+// Формат для <input type="datetime-local">: "YYYY-MM-DDTHH:mm" в локальном времени
+function toLocalDatetimeValue(date) {
+  const pad2 = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
 // Инпут периода: клик/фокус выделяет значение целиком,
 // чтобы ввод любой цифры сразу заменял стоящий там 0
 function PeriodNumberInput({ value, onChange, max, className = 'input timer-period-num' }) {
@@ -68,7 +74,41 @@ function EditTimerModal({ timer, onCommit, onClose }) {
   const [remHours, setRemHours] = useState(Math.floor((initialRemaining % 86400) / 3600));
   const [remMinutes, setRemMinutes] = useState(Math.floor((initialRemaining % 3600) / 60));
 
+  // Точное время, когда таймер реально был обновлён (last_reset_at) — то же
+  // самое значение, что и «Осталось до конца», просто другой способ его
+  // задать: не длительностью, а конкретной датой/временем. Оба поля живут
+  // синхронно: правишь одно — пересчитывается другое.
+  const initialLastReset = timer.last_reset_at
+    ? new Date(timer.last_reset_at)
+    : new Date(Date.now() - (timer.period_seconds - initialRemaining) * 1000);
+  const [lastResetLocal, setLastResetLocal] = useState(toLocalDatetimeValue(initialLastReset));
+
   const [error, setError] = useState('');
+
+  function periodSecondsNow() {
+    return days * 86400 + hours * 3600 + minutes * 60;
+  }
+
+  // Правим "Осталось до конца" → пересчитываем поле точного времени
+  function updateRemaining(nextRemDays, nextRemHours, nextRemMinutes) {
+    setRemDays(nextRemDays);
+    setRemHours(nextRemHours);
+    setRemMinutes(nextRemMinutes);
+    const remainingSeconds = nextRemDays * 86400 + nextRemHours * 3600 + nextRemMinutes * 60;
+    const lastReset = new Date(Date.now() + remainingSeconds * 1000 - periodSecondsNow() * 1000);
+    setLastResetLocal(toLocalDatetimeValue(lastReset));
+  }
+
+  // Правим точное время обновления → пересчитываем "Осталось до конца"
+  function handleLastResetChange(value) {
+    setLastResetLocal(value);
+    const dt = new Date(value);
+    if (isNaN(dt.getTime())) return;
+    const remainingSeconds = Math.max(0, Math.round((dt.getTime() + periodSecondsNow() * 1000 - Date.now()) / 1000));
+    setRemDays(Math.floor(remainingSeconds / 86400));
+    setRemHours(Math.floor((remainingSeconds % 86400) / 3600));
+    setRemMinutes(Math.floor((remainingSeconds % 3600) / 60));
+  }
 
   function handleSubmit() {
     if (!name.trim()) { setError('Введите название таймера'); return; }
@@ -109,15 +149,26 @@ function EditTimerModal({ timer, onCommit, onClose }) {
 
           <label className="modal-label" style={{ marginTop: 8 }}>Осталось до конца</label>
           <div className="timer-period-inputs">
-            <PeriodNumberInput value={remDays} onChange={setRemDays} />
+            <PeriodNumberInput value={remDays} onChange={d => updateRemaining(d, remHours, remMinutes)} />
             <span className="timer-period-unit">д</span>
-            <PeriodNumberInput value={remHours} onChange={setRemHours} max={23} />
+            <PeriodNumberInput value={remHours} onChange={h => updateRemaining(remDays, h, remMinutes)} max={23} />
             <span className="timer-period-unit">ч</span>
-            <PeriodNumberInput value={remMinutes} onChange={setRemMinutes} max={59} />
+            <PeriodNumberInput value={remMinutes} onChange={m => updateRemaining(remDays, remHours, m)} max={59} />
             <span className="timer-period-unit">м</span>
           </div>
           <div className="modal-hint" style={{ marginTop: 4, fontSize: 12, opacity: 0.6 }}>
             Поправьте, если забыли вовремя нажать «Обновить» — период при этом не изменится
+          </div>
+
+          <label className="modal-label" style={{ marginTop: 8 }}>Точное время последнего обновления</label>
+          <input
+            className="input"
+            type="datetime-local"
+            value={lastResetLocal}
+            onChange={e => handleLastResetChange(e.target.value)}
+          />
+          <div className="modal-hint" style={{ marginTop: 4, fontSize: 12, opacity: 0.6 }}>
+            Удобно, если знаете точное время события — «Осталось до конца» пересчитается само
           </div>
 
           {error && <div className="modal-error">{error}</div>}
