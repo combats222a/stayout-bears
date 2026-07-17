@@ -602,11 +602,12 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
           background: 'rgba(0,0,0,.1)', borderRadius: '0 0 10px 10px',
         }}>
           <div style={{ position: 'relative' }}>
-            <button ref={addBtnRef} onClick={() => setShowAdd(o => !o)} style={{
+            <button ref={addBtnRef} onClick={() => setShowAdd(o => !o)}
+              className={showAdd ? '' : 'btn-shiny'}
+              style={{
               padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-              background: showAdd ? 'var(--bg3)' : 'var(--accent)',
-              color: showAdd ? 'var(--text)' : '#0d1117',
-              border: 'none', cursor: 'pointer', transition: 'all .15s',
+              ...(showAdd ? { background: 'var(--bg3)', color: 'var(--text)', border: 'none' } : {}),
+              cursor: 'pointer', transition: 'all .15s',
             }}>
               + Добавить участника
             </button>

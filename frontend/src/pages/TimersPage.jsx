@@ -384,7 +384,7 @@ function EditTimerModal({ timer, onCommit, onClose }) {
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok" onClick={handleSubmit}>Сохранить изменения</button>
+          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>Сохранить изменения</button>
         </div>
       </div>
     </div>
@@ -777,7 +777,7 @@ export default function TimersPage({ user, onLoginClick }) {
             </div>
           </div>
           <button
-            className="btn btn-primary timer-create-btn btn-anim"
+            className="btn btn-primary btn-shiny timer-create-btn btn-anim"
             onClick={handleCreate}
             disabled={creating}
             style={{ width: '100%' }}

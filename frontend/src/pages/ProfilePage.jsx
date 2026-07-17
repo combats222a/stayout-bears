@@ -99,7 +99,7 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }) {
             </div>
           )}
 
-          <button className="btn btn-primary" type="submit" disabled={loading} style={{ marginTop: 4 }}>
+          <button className="btn btn-primary btn-shiny" type="submit" disabled={loading} style={{ marginTop: 4 }}>
             {loading ? 'Сохранение...' : 'Сохранить'}
           </button>
         </form>

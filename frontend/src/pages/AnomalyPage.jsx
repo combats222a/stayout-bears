@@ -50,7 +50,7 @@ function SetAnomalyTimeModal({ onCommit, onClose }) {
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok" onClick={handleSubmit}>Сохранить</button>
+          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>Сохранить</button>
         </div>
       </div>
     </div>
@@ -310,7 +310,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
             </div>
           )}
         </div>
-        <button className="modal-btn-ok"
+        <button className="modal-btn-ok btn-shiny"
           style={{ padding: '8px 20px', whiteSpace: 'nowrap' }}
           onClick={() => setShowModal(true)}
         >

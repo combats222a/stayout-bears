@@ -2429,3 +2429,33 @@ body {
   color: var(--text);
 }
 .datetime-field-display svg { color: var(--text3); flex-shrink: 0; }
+
+/* === REDESIGN: единая "нарядная" синяя кнопка для ключевых действий ===
+   Добавляется КАК ДОПОЛНИТЕЛЬНЫЙ класс поверх существующих (.btn-primary,
+   .modal-btn-ok и т.д.) — только переопределяет цвет/тень/бордер, размеры и
+   отступы по-прежнему берутся из старых классов, так что вёрстка не ломается.
+   Специально размещён в конце файла, чтобы при равной специфичности
+   побеждать более ранние правила .btn-primary / .modal-btn-ok. */
+.btn-shiny {
+  background: linear-gradient(180deg, #2f5ed6 0%, #244ba1 100%);
+  border: 1px solid #1c3d85;
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.10) inset, 0 4px 14px rgba(36,75,161,0.4);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.05s, border-color 0.15s;
+}
+.btn-shiny:hover {
+  background: linear-gradient(180deg, #3f6fe6 0%, #2c56b8 100%);
+  border-color: #2c56b8;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.14) inset, 0 6px 18px rgba(36,75,161,0.5);
+}
+.btn-shiny:active {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #244ba1 0%, #1c3d85 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 6px rgba(36,75,161,0.35);
+}
+.btn-shiny:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

@@ -95,7 +95,7 @@ export default function PromoPage() {
           <div className="card promo-code-card" key={p.code}>
             <div className="promo-code-label">{p.label}</div>
             <div className="promo-code-value">{p.code}</div>
-            <button className="btn btn-primary promo-copy-btn" onClick={() => copy(p.code)}>
+            <button className="btn btn-primary btn-shiny promo-copy-btn" onClick={() => copy(p.code)}>
               {copiedCode === p.code ? '✓ Скопировано' : 'Скопировать'}
             </button>
           </div>
