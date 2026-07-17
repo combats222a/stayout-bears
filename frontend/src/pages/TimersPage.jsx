@@ -232,6 +232,24 @@ function EditTimerModal({ timer, onCommit, onClose }) {
     return days * 86400 + hours * 3600 + minutes * 60;
   }
 
+  // Правим период → «Осталось» не может быть больше нового периода, иначе
+  // прогресс-бар зашкаливает (например, период уменьшили до 45 минут, а
+  // осталось всё ещё 3 часа с прошлого раза). Клэмпим остаток и синхронно
+  // пересчитываем точное время последнего обновления.
+  function handlePeriodChange(nextDays, nextHours, nextMinutes) {
+    setDays(nextDays);
+    setHours(nextHours);
+    setMinutes(nextMinutes);
+    const newPeriodSeconds = nextDays * 86400 + nextHours * 3600 + nextMinutes * 60;
+    const currentRemaining = remDays * 86400 + remHours * 3600 + remMinutes * 60;
+    const clampedRemaining = Math.min(currentRemaining, newPeriodSeconds);
+    setRemDays(Math.floor(clampedRemaining / 86400));
+    setRemHours(Math.floor((clampedRemaining % 86400) / 3600));
+    setRemMinutes(Math.floor((clampedRemaining % 3600) / 60));
+    const lastReset = new Date(Date.now() + clampedRemaining * 1000 - newPeriodSeconds * 1000);
+    setLastResetLocal(toLocalDatetimeValue(lastReset));
+  }
+
   // Правим "Осталось до конца" → пересчитываем поле точного времени
   function updateRemaining(nextRemDays, nextRemHours, nextRemMinutes) {
     setRemDays(nextRemDays);
@@ -285,11 +303,11 @@ function EditTimerModal({ timer, onCommit, onClose }) {
           />
           <label className="modal-label" style={{ marginTop: 8 }}>Период таймера</label>
           <div className="timer-period-inputs">
-            <PeriodNumberInput value={days} onChange={setDays} />
+            <PeriodNumberInput value={days} onChange={d => handlePeriodChange(d, hours, minutes)} />
             <span className="timer-period-unit">д</span>
-            <PeriodNumberInput value={hours} onChange={setHours} max={23} />
+            <PeriodNumberInput value={hours} onChange={h => handlePeriodChange(days, h, minutes)} max={23} />
             <span className="timer-period-unit">ч</span>
-            <PeriodNumberInput value={minutes} onChange={setMinutes} max={59} />
+            <PeriodNumberInput value={minutes} onChange={m => handlePeriodChange(days, hours, m)} max={59} />
             <span className="timer-period-unit">м</span>
           </div>
 
