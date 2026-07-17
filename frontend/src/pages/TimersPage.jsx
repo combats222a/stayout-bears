@@ -111,6 +111,45 @@ function InfoTip({ text }) {
   );
 }
 
+function EditPencilIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+// Числовое поле со стрелками вверх/вниз (вместо нативного OS-спиннера) —
+// как в макете обновлённой модалки редактирования таймера.
+function SteppedNumberInput({ value, onChange, max = 999 }) {
+  function clamp(v) { return Math.min(max, Math.max(0, v)); }
+  return (
+    <div className="stepped-input">
+      <input
+        className="input stepped-input-field"
+        type="number"
+        min="0"
+        max={max}
+        value={value}
+        onFocus={e => e.target.select()}
+        onChange={e => onChange(clamp(parseInt(e.target.value) || 0))}
+      />
+      <div className="stepped-input-arrows">
+        <button type="button" className="stepped-input-arrow" tabIndex={-1} aria-label="Увеличить"
+          onClick={() => onChange(clamp(value + 1))}>
+          <svg width="9" height="6" viewBox="0 0 9 6" fill="currentColor" aria-hidden="true"><path d="M4.5 0L9 6H0z" /></svg>
+        </button>
+        <button type="button" className="stepped-input-arrow" tabIndex={-1} aria-label="Уменьшить"
+          onClick={() => onChange(clamp(value - 1))}>
+          <svg width="9" height="6" viewBox="0 0 9 6" fill="currentColor" aria-hidden="true"><path d="M4.5 6L0 0h9z" /></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // "···" меню действий строки (Изменить / Удалить) — закрывается по клику снаружи или Esc
 //
 // Раньше меню позиционировалось position:absolute внутри строки, а строка лежит
@@ -287,9 +326,12 @@ function EditTimerModal({ timer, onCommit, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+      <div className="modal-box edit-timer-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-title">
-          <span>✎ Изменить таймер</span>
+          <div className="modal-title-main">
+            <span className="modal-title-icon-box"><EditPencilIcon /></span>
+            <span className="modal-title-text">Редактировать таймер</span>
+          </div>
           <button className="modal-close-btn" onClick={onClose} aria-label="Закрыть">✕</button>
         </div>
         <div className="modal-body">
@@ -301,32 +343,39 @@ function EditTimerModal({ timer, onCommit, onClose }) {
             onKeyDown={onKey}
             autoFocus
           />
-          <label className="modal-label" style={{ marginTop: 8 }}>Период таймера</label>
+
+          <label className="modal-label">
+            Период таймера
+            <InfoTip text="Как часто повторяется событие — раз в сколько дней/часов/минут" />
+          </label>
           <div className="timer-period-inputs">
-            <PeriodNumberInput value={days} onChange={d => handlePeriodChange(d, hours, minutes)} />
-            <span className="timer-period-unit">д</span>
-            <PeriodNumberInput value={hours} onChange={h => handlePeriodChange(days, h, minutes)} max={23} />
-            <span className="timer-period-unit">ч</span>
-            <PeriodNumberInput value={minutes} onChange={m => handlePeriodChange(days, hours, m)} max={59} />
-            <span className="timer-period-unit">м</span>
+            <SteppedNumberInput value={days} onChange={d => handlePeriodChange(d, hours, minutes)} />
+            <span className="timer-period-unit">дн.</span>
+            <SteppedNumberInput value={hours} onChange={h => handlePeriodChange(days, h, minutes)} max={23} />
+            <span className="timer-period-unit">ч.</span>
+            <SteppedNumberInput value={minutes} onChange={m => handlePeriodChange(days, hours, m)} max={59} />
+            <span className="timer-period-unit">мин.</span>
           </div>
 
-          <label className="modal-label" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-            Осталось до конца
+          <div className="modal-divider" />
+
+          <label className="modal-label">
+            Осталось до события
             <InfoTip text="Поправьте, если забыли вовремя нажать «Обновить» — период при этом не изменится" />
           </label>
           <div className="timer-period-inputs">
-            <PeriodNumberInput value={remDays} onChange={d => updateRemaining(d, remHours, remMinutes)} />
-            <span className="timer-period-unit">д</span>
-            <PeriodNumberInput value={remHours} onChange={h => updateRemaining(remDays, h, remMinutes)} max={23} />
-            <span className="timer-period-unit">ч</span>
-            <PeriodNumberInput value={remMinutes} onChange={m => updateRemaining(remDays, remHours, m)} max={59} />
-            <span className="timer-period-unit">м</span>
+            <SteppedNumberInput value={remDays} onChange={d => updateRemaining(d, remHours, remMinutes)} />
+            <span className="timer-period-unit">дн.</span>
+            <SteppedNumberInput value={remHours} onChange={h => updateRemaining(remDays, h, remMinutes)} max={23} />
+            <span className="timer-period-unit">ч.</span>
+            <SteppedNumberInput value={remMinutes} onChange={m => updateRemaining(remDays, remHours, m)} max={59} />
+            <span className="timer-period-unit">мин.</span>
           </div>
+          <div className="modal-hint">Введите время, которое показывает игра.</div>
 
-          <label className="modal-label" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-            Последнее обновление
-            <InfoTip text="Удобно, если знаете точное время события — «Осталось до конца» пересчитается само" />
+          <label className="modal-label" style={{ marginTop: 4 }}>
+            Когда произошло событие
+            <InfoTip text="Удобно, если знаете точное время события — «Осталось до события» пересчитается само" />
           </label>
           <div className="datetime-field">
             <input
@@ -340,12 +389,13 @@ function EditTimerModal({ timer, onCommit, onClose }) {
               <CalendarIcon />
             </div>
           </div>
+          <div className="modal-hint">Если известно точное время события, укажите его — таймер пересчитается автоматически.</div>
 
           {error && <div className="modal-error">{error}</div>}
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok" onClick={handleSubmit}>Сохранить</button>
+          <button className="modal-btn-ok" onClick={handleSubmit}>Сохранить изменения</button>
         </div>
       </div>
     </div>
