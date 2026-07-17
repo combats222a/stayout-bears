@@ -1,12 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { STEAM_URL, SteamIcon } from './SteamIcon';
-
-// Ключ для запоминания состояния десктопного сайдбара между перезагрузками
-// страницы. На телефоне это состояние не читаем и не пишем — там панель
-// всегда стартует свёрнутой, как и раньше (см. useState ниже и эффект записи).
-const SIDEBAR_STORAGE_KEY = 'sidebarOpen';
-const isDesktopViewport = () =>
-  typeof window !== 'undefined' && window.matchMedia('(min-width: 641px)').matches;
 
 // Один и тот же полный список разделов для всех — и авторизованных, и
 // гостей. Гость видит те же разделы и может их открыть — Медведи, Сияние,
@@ -38,29 +31,11 @@ const MENU_ONLY_ITEMS = [
 ];
 
 export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
-  // На десктопе состояние сайдбара запоминается (localStorage) и переживает
-  // обновление страницы. На телефоне — всегда стартует свёрнутым, без
-  // запоминания (см. isDesktopViewport() ниже).
-  const [menuOpen, setMenuOpen] = useState(() => {
-    if (!isDesktopViewport()) return false;
-    try {
-      return localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  // Панель разделов (и на десктопе, и на телефоне) всегда стартует
+  // свёрнутой при каждой загрузке страницы — состояние нигде не
+  // запоминается. Открывается только явным кликом пользователя на «☰».
+  const [menuOpen, setMenuOpen] = useState(false);
   const isGuest = !user;
-
-  // Запоминаем состояние только на десктопе — на телефоне панель ведёт себя
-  // как раньше (обычное открывающееся/закрывающееся меню без сохранения).
-  useEffect(() => {
-    if (!isDesktopViewport()) return;
-    try {
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, menuOpen ? '1' : '0');
-    } catch {
-      // localStorage недоступен (приватный режим и т.п.) — просто не сохраняем
-    }
-  }, [menuOpen]);
 
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
@@ -201,10 +176,11 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
           скрыт через CSS, там используется панель выше). Рендерится всегда,
           открытие/закрытие — через CSS-класс "open", чтобы анимация выезда
           отрабатывала и при открытии, и при закрытии.
-          Подложка-затемнение под ним появляется только когда панель открыта:
-          клик по ней закрывает сайдбар, а сама страница при этом никак не
-          двигается и не пересчитывается — сайдбар просто лежит поверх. */}
-      {menuOpen && <div className="desktop-sidebar-backdrop" onClick={() => setMenuOpen(false)} />}
+          Никакой подложки-перехватчика под ним нет: страница под сайдбаром
+          остаётся полностью кликабельной (клик на «Медведи», «Уровень» и
+          т.п. в шапке работает как обычно), а сам сайдбар не закрывается
+          сам по себе — только явным повторным кликом пользователя на
+          «☰»/«✕» в шапке. */}
       <aside className={`desktop-sidebar ${menuOpen ? 'open' : ''}`}>
         <nav className="desktop-sidebar-list">
           {MENU_ONLY_ITEMS.map(item => renderNavItem(item, 'nav-panel-btn', '', { keepOpen: true }))}
