@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { STEAM_URL, SteamIcon } from './SteamIcon';
 
 // Один и тот же полный список разделов для всех — и авторизованных, и
@@ -36,6 +36,27 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
   // запоминается. Открывается только явным кликом пользователя на «☰».
   const [menuOpen, setMenuOpen] = useState(false);
   const isGuest = !user;
+
+  // Шапка обычно 56px, но при увеличении масштаба страницы в браузере
+  // (Ctrl + колесо в Chrome) или на узких окнах верхняя навигация может не
+  // поместиться в одну строку и перенестись на вторую — тогда реальная
+  // высота шапки становится больше 56px. Сайдбар слева был жёстко прибит
+  // к top:56px и в этом случае наезжал на вторую строку меню и на текст
+  // страницы. Отслеживаем реальную высоту шапки и прокидываем её в CSS-
+  // переменную — сайдбар всегда начинается точно под шапкой, какой бы
+  // высоты она ни была.
+  const headerRef = useRef(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const syncHeaderHeight = () => {
+      document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`);
+    };
+    syncHeaderHeight();
+    const ro = new ResizeObserver(syncHeaderHeight);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
@@ -76,7 +97,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
 
   return (
     <>
-      <header className="header">
+      <header className="header" ref={headerRef}>
         {/* Кнопка-триггер панели разделов — квадратная, только иконка,
             стоит перед логотипом (по аналогии с гамбургером Википедии). */}
         <button
