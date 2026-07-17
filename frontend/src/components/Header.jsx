@@ -132,7 +132,7 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
         {/* Разделы всегда видны в шапке на десктопе; на телефоне скрыты —
             там для них не хватает места, доступ через кнопку выше. */}
         <nav className="header-nav-desktop">
-          {navItems.map(item => renderNavItem(item, 'header-nav-btn'))}
+          {navItems.map(item => renderNavItem(item, 'header-nav-btn', '', { keepOpen: true }))}
         </nav>
 
         <div className="header-user">
