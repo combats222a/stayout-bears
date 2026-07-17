@@ -376,6 +376,10 @@ function TimerRow({
   const progressPct = remaining !== null
     ? Math.min(100, Math.max(0, (remaining / timer.period_seconds) * 100))
     : 0;
+  // Кольцо теперь заполняется зелёным по мере прохождения времени (а не
+  // "убывает" от полного круга к пустому) — так нагляднее читается
+  // приближение к завершению отсчёта.
+  const elapsedPct = 100 - progressPct;
 
   const isDragging = dragState?.draggedIndex === index;
   const isDragOver = dragState?.overIndex === index && dragState?.draggedIndex !== index;
@@ -410,7 +414,7 @@ function TimerRow({
                 ? 'conic-gradient(var(--border) 0 100%)'
                 : isExpired
                   ? 'conic-gradient(var(--red) 0 100%)'
-                  : `conic-gradient(var(--green) ${progressPct}%, var(--bg3) ${progressPct}% 100%)`
+                  : `conic-gradient(var(--green) ${elapsedPct}%, var(--bg3) ${elapsedPct}% 100%)`
             }}
           >
             <div className="timer-row-ring-hole" />
@@ -456,10 +460,7 @@ function TimerRow({
                 ? 'conic-gradient(var(--border) 0 100%)'
                 : isExpired
                   ? 'conic-gradient(var(--red) 0 100%)'
-                  : `conic-gradient(var(--green) ${progressPct}%, var(--bg3) ${progressPct}% 100%)`
-            }}
-          >
-            <div className="timer-mcard-ring-hole">
+                  : `conic-gradient(var(--green) ${elapsedPct}%, var(--bg3) ${elapsedPct}% 100%)`
               {isExpired ? '⚡' : isEmpty ? '–' : '⏳'}
             </div>
           </div>
