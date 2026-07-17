@@ -1168,7 +1168,7 @@ body {
   color: var(--green);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
   min-width: 0;
 }
 .timer-row-remaining.expired { color: var(--red); font-weight: 700; }
