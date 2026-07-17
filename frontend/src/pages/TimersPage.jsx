@@ -282,6 +282,14 @@ function EditTimerModal({ timer, onCommit, onClose }) {
 
   const [error, setError] = useState('');
 
+  // Пока пользователь трогает только «Название», «Осталось до события» не
+  // отправляем вовсе — иначе в бэк уходил бы remainingSeconds, снятый ещё в
+  // момент ОТКРЫТИЯ модалки. Пока модалка открыта (человек печатает название),
+  // реальное время утекает, и при сохранении таймер откатывался назад на
+  // эти секунды/минуты. Теперь остаток идёт в изменения, только если его
+  // реально трогали через стрелки/поле.
+  const [remainingTouched, setRemainingTouched] = useState(false);
+
   // Правим "Осталось до конца" → пересчитываем поле точного времени.
   // Период здесь больше не редактируется (это теперь делается прямо в
   // таблице), поэтому используем неизменный timer.period_seconds.
@@ -289,12 +297,16 @@ function EditTimerModal({ timer, onCommit, onClose }) {
     setRemDays(nextRemDays);
     setRemHours(nextRemHours);
     setRemMinutes(nextRemMinutes);
+    setRemainingTouched(true);
   }
 
   function handleSubmit() {
     if (!name.trim()) { setError('Введите название таймера'); return; }
-    const remainingSeconds = remDays * 86400 + remHours * 3600 + remMinutes * 60;
-    onCommit({ name: name.trim(), remaining_seconds: remainingSeconds });
+    const changes = { name: name.trim() };
+    if (remainingTouched) {
+      changes.remaining_seconds = remDays * 86400 + remHours * 3600 + remMinutes * 60;
+    }
+    onCommit(changes);
     onClose();
   }
 
