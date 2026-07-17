@@ -38,17 +38,6 @@ function toLocalDatetimeValue(date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-// Набор emoji-аватарок для строк таймеров — чисто косметическая деталь
-// (в БД нет поля под иконку), поэтому подбираем стабильно по id/названию,
-// чтобы у конкретного таймера иконка не "прыгала" между перезагрузками.
-const TIMER_EMOJIS = ['📚', '🐼', '🪙', '⚔️', '🥫', '🌸', '🐂', '🧶', '🎯', '🔥', '💧', '🍀', '⭐', '🎁', '🗡️', '🛡️', '🌊', '🌙'];
-function pickEmoji(seed) {
-  const str = String(seed ?? '');
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-  return TIMER_EMOJIS[hash % TIMER_EMOJIS.length];
-}
-
 function RefreshIcon({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -419,7 +408,6 @@ function TimerRow({
   const forecast = getForecast(timer);
   const isExpired = remaining !== null && remaining <= 0;
   const isEmpty = remaining === null;
-  const rowEmoji = pickEmoji(timer.id ?? timer.name);
 
   // Звук по истечении теперь проигрывает только глобальный вотчер
   // (useGlobalSoundWatcher, живёт на уровне App) — он срабатывает независимо
@@ -450,7 +438,6 @@ function TimerRow({
           title="Перетащи чтобы изменить порядок"
         >≡</div>
         <div className="timer-row-name">
-          <span className="timer-avatar" aria-hidden="true">{rowEmoji}</span>
           <span className="timer-row-name-text">{timer.name}</span>
         </div>
         <div className="timer-row-period">{formatDuration(timer.period_seconds)}</div>
@@ -484,7 +471,6 @@ function TimerRow({
       {/* Mobile card */}
       <div className="timer-card-mobile">
         <div className="timer-card-header">
-          <span className="timer-avatar" aria-hidden="true">{rowEmoji}</span>
           <span className="timer-card-name">{timer.name}</span>
           <span className="timer-card-period">каждые {formatDuration(timer.period_seconds)}</span>
         </div>
