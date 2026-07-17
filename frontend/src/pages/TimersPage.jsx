@@ -420,7 +420,7 @@ function TimerRow({
             <div className="timer-row-ring-hole" />
           </div>
           <span className="timer-row-remaining-text">
-            {isEmpty ? '-- : -- : --' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
+            {isEmpty ? '-- : -- : --' : isExpired ? 'Готово!' : formatDuration(remaining)}
           </span>
         </div>
         <div className="timer-row-forecast">
