@@ -80,6 +80,27 @@ function InfoIcon({ size = 13 }) {
   );
 }
 
+function CalendarIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
+// "17 июля 2026 • 05:18" — человекочитаемый формат вместо системного
+// вида datetime-local, который в разных браузерах/ОС выглядит по-разному
+// (то точки, то слэши, то 24-часовой формат вперемешку с 12-часовым).
+function formatLastReset(localValue) {
+  const d = new Date(localValue);
+  if (isNaN(d.getTime())) return '—';
+  const datePart = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const timePart = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return `${datePart} • ${timePart}`;
+}
+
 // Небольшая подсказка: значок ⓘ с нативным title-тултипом на ховере —
 // без отдельного тяжёлого абзаца текста под полем.
 function InfoTip({ text }) {
@@ -289,12 +310,18 @@ function EditTimerModal({ timer, onCommit, onClose }) {
             Последнее обновление
             <InfoTip text="Удобно, если знаете точное время события — «Осталось до конца» пересчитается само" />
           </label>
-          <input
-            className="input"
-            type="datetime-local"
-            value={lastResetLocal}
-            onChange={e => handleLastResetChange(e.target.value)}
-          />
+          <div className="datetime-field">
+            <input
+              className="input datetime-field-input"
+              type="datetime-local"
+              value={lastResetLocal}
+              onChange={e => handleLastResetChange(e.target.value)}
+            />
+            <div className="input datetime-field-display">
+              <span>{formatLastReset(lastResetLocal)}</span>
+              <CalendarIcon />
+            </div>
+          </div>
 
           {error && <div className="modal-error">{error}</div>}
         </div>
@@ -441,12 +468,6 @@ export default function TimersPage({ user, onLoginClick }) {
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [creating, setCreating] = useState(false);
-  const createNameInputRef = useRef(null);
-
-  function scrollToCreateForm() {
-    createNameInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    createNameInputRef.current?.focus();
-  }
 
   // Drag & drop state
   const [dragState, setDragState] = useState({ draggedIndex: null, overIndex: null });
@@ -623,12 +644,9 @@ export default function TimersPage({ user, onLoginClick }) {
 
   return (
     <div className="page">
-      <div className="page-header-row">
-        <div>
-          <div className="page-title">⏱️ Таймеры</div>
-          <div className="page-subtitle">Создавайте таймеры, отслеживайте время и получайте уведомления</div>
-        </div>
-        <button className="btn btn-primary btn-anim" onClick={scrollToCreateForm}>+ Создать таймер</button>
+      <div>
+        <div className="page-title">⏱️ Таймеры</div>
+        <div className="page-subtitle">Создавайте таймеры, отслеживайте время и получайте уведомления</div>
       </div>
       <div className="timer-owner-note">
         🔒 Таймеры видит только их создатель — <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
@@ -686,7 +704,6 @@ export default function TimersPage({ user, onLoginClick }) {
           <div className="timer-create-field">
             <label className="timer-field-label">Название таймера</label>
             <input
-              ref={createNameInputRef}
               className="input"
               placeholder="Введите название"
               value={name}
