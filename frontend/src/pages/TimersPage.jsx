@@ -497,35 +497,56 @@ function TimerRow({
         </div>
       </div>
 
-      {/* Mobile card */}
-      <div className="timer-card-mobile">
-        <div className="timer-card-header">
-          <span className="timer-card-name">{timer.name}</span>
-          <span className="timer-card-period">каждые {formatDuration(timer.period_seconds)}</span>
+      {/* Mobile card — редизайн: отдельная "плитка" на таймер с кольцом-циферблатом
+          вместо плоского списка со строкой-прогрессбаром снизу. Кольцо строится
+          на conic-gradient и даёт мгновенное визуальное чтение остатка (как
+          индикатор заряда), а не просто полоску. */}
+      <div className={`timer-mcard ${isExpired ? 'timer-mcard-expired' : ''} ${isEmpty ? 'timer-mcard-empty' : ''}`}>
+        <div className="timer-mcard-head">
+          <span className="timer-mcard-name">{timer.name}</span>
+          <RowActionsMenu onEdit={() => setShowEdit(true)} onDelete={() => onDelete(timer.id)} />
         </div>
-        <div className={`timer-card-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
-          {isEmpty ? '--:--:--' : isExpired ? '⚡ Готово!' : formatDuration(remaining)}
-        </div>
-        {!isEmpty && !isExpired && (
-          <div className="timer-mini-bar" style={{ margin: '4px 0' }}>
-            <div className="timer-mini-fill" style={{ width: `${progressPct}%` }} />
+
+        <div className="timer-mcard-body">
+          <div
+            className="timer-mcard-ring"
+            style={{
+              background: isEmpty
+                ? 'conic-gradient(var(--border) 0 100%)'
+                : isExpired
+                  ? 'conic-gradient(var(--red) 0 100%)'
+                  : `conic-gradient(var(--green) ${progressPct}%, var(--bg3) ${progressPct}% 100%)`
+            }}
+          >
+            <div className="timer-mcard-ring-hole">
+              {isExpired ? '⚡' : isEmpty ? '–' : '⏳'}
+            </div>
           </div>
-        )}
-        <div className="timer-card-meta">
-          <span>🎯 В {isEmpty ? '--' : isExpired ? 'Уже!' : forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+
+          <div className="timer-mcard-info">
+            <div className={`timer-mcard-time ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
+              {isEmpty ? '--:--:--' : isExpired ? 'Готово!' : formatDuration(remaining)}
+            </div>
+            <div className="timer-mcard-sub">
+              <span className="timer-mcard-period-tag">каждые {formatDuration(timer.period_seconds)}</span>
+              <span className="timer-mcard-forecast">
+                🎯 {isEmpty ? '--:--' : isExpired ? 'уже!' : forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="timer-card-actions">
-          <button className="icon-btn icon-btn-primary" onClick={() => onReset(timer.id)} title="Обновить">
-            <RefreshIcon />
+
+        <div className="timer-mcard-actions">
+          <button className="btn btn-reset timer-mcard-reset-btn btn-anim" onClick={() => onReset(timer.id)}>
+            <RefreshIcon size={15} /> Обновить
           </button>
           <button
-            className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
+            className={`rupor-btn timer-mcard-sound-btn ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
             onClick={() => onToggleSound(timer)}
             title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
           >
             <SoundIcon on={timer.sound_enabled} />
           </button>
-          <RowActionsMenu onEdit={() => setShowEdit(true)} onDelete={() => onDelete(timer.id)} />
         </div>
       </div>
 

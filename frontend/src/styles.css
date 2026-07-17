@@ -1522,24 +1522,39 @@ body {
     text-align: center;
   }
 
-  /* === ТАЙМЕРЫ — скрываем таблицу, показываем карточки === */
+  /* === ТАЙМЕРЫ — скрываем десктопную таблицу, показываем карточки === */
   .timers-thead-desktop { display: none !important; }
   .timer-row-desktop { display: none !important; }
-  .timer-card-mobile {
+  /* Раньше таймеры на телефоне лежали единым списком внутри общей рамки
+     .timers-table (плоские строки + тонкая полоска-прогрессбар снизу) — на
+     мобильном экране это читалось плохо: узкие строки, мелкий прогресс.
+     Теперь .timers-table на телефоне становится просто "холстом" без своей
+     рамки, а каждый таймер — отдельная приподнятая плитка (см. .timer-mcard
+     ниже) с круговым циферблатом остатка вместо линейной полоски. */
+  .timers-table { background: transparent; border: none; border-radius: 0; }
+  .timers-tbody { display: flex; flex-direction: column; gap: 10px; }
+
+  .timer-mcard {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
   }
-  .timer-card-mobile:last-child { border-bottom: none; }
-  .timer-card-header {
+  .timer-mcard-expired {
+    border-color: rgba(248,81,73,0.4);
+    box-shadow: 0 0 0 1px rgba(248,81,73,0.15);
+  }
+
+  .timer-mcard-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
   }
-  .timer-card-name {
+  .timer-mcard-name {
     flex: 1;
     min-width: 0;
     font-size: 15px;
@@ -1549,32 +1564,81 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .timer-card-period {
-    font-size: 11px;
-    color: var(--text3);
-    white-space: nowrap;
+
+  .timer-mcard-body {
+    display: flex;
+    align-items: center;
+    gap: 14px;
   }
-  .timer-card-remaining {
+
+  /* Циферблат: наружный круг — conic-gradient, "прогрызенный" внутренним
+     кругом цвета плитки, чтобы получилось кольцо (donut), а не заливка. */
+  .timer-mcard-ring {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .timer-mcard-ring-hole {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+  }
+  .timer-mcard-expired .timer-mcard-ring {
+    animation: timer-mcard-pulse 1.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .timer-mcard-expired .timer-mcard-ring { animation: none; }
+  }
+  @keyframes timer-mcard-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(248,81,73,0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(248,81,73,0); }
+  }
+
+  .timer-mcard-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .timer-mcard-time {
     font-family: var(--font-mono);
-    font-size: 22px;
+    font-size: 23px;
     font-weight: 700;
     color: var(--green);
+    line-height: 1.1;
   }
-  .timer-card-remaining.expired { color: var(--red); }
-  .timer-card-remaining.empty { color: var(--text3); font-size: 16px; }
-  .timer-card-meta {
+  .timer-mcard-time.expired { color: var(--red); }
+  .timer-mcard-time.empty { color: var(--text3); font-size: 17px; }
+  .timer-mcard-sub {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 16px;
+    align-items: center;
+    gap: 4px 12px;
     font-size: 12px;
     color: var(--text2);
   }
-  .timer-card-actions {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+  .timer-mcard-period-tag {
+    color: var(--text3);
+    white-space: nowrap;
   }
-  .timer-card-actions .btn { flex: 1; justify-content: center; }
+  .timer-mcard-forecast { white-space: nowrap; }
+
+  .timer-mcard-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .timer-mcard-reset-btn {
+    flex: 1;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .timer-mcard-sound-btn { flex-shrink: 0; }
 
   /* Форма создания таймера */
   .timer-create-row { flex-direction: column; gap: 12px; }
@@ -1628,7 +1692,7 @@ body {
 
 /* На desktop скрываем мобильные карточки */
 @media (min-width: 641px) {
-  .timer-card-mobile { display: none !important; }
+  .timer-mcard { display: none !important; }
   .header-logout-desktop { display: inline-flex !important; }
   /* Основные разделы и так видны строкой в шапке — не дублируем их внутри
      панели «Разделы» на десктопе, там остаются только Достижения, Уровень и Драуги. */
