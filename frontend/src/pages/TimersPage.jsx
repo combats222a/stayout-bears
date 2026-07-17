@@ -461,6 +461,9 @@ function TimerRow({
                 : isExpired
                   ? 'conic-gradient(var(--red) 0 100%)'
                   : `conic-gradient(var(--green) ${elapsedPct}%, var(--bg3) ${elapsedPct}% 100%)`
+            }}
+          >
+            <div className="timer-mcard-ring-hole">
               {isExpired ? '⚡' : isEmpty ? '–' : '⏳'}
             </div>
           </div>
