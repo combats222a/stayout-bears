@@ -61,6 +61,14 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
       // localStorage недоступен (приватный режим и т.п.) — просто не сохраняем
     }
   }, [menuOpen]);
+
+  // Класс на <body> нужен, чтобы отодвигать основной контент вправо на
+  // десктопе, когда сайдбар открыт (см. .main в styles.css) — иначе сайдбар
+  // перекрывает таблицы и другое содержимое страницы.
+  useEffect(() => {
+    document.body.classList.toggle('sidebar-open', menuOpen);
+    return () => document.body.classList.remove('sidebar-open');
+  }, [menuOpen]);
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
   const adminItems = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
