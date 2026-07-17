@@ -1317,18 +1317,10 @@ body {
 .nav-panel-logout { display: none; color: var(--red); }
 
 /* === ДЕСКТОПНЫЙ САЙДБАР («Достижения», «Уровень», «Драуги», «Аномальные
-   прорывы») — выезжает слева при клике на «☰».
-   Пробовали постоянно резервировать под него место в .main — ломало
-   центрирование на страницах, которые сверстаны как отдельная центрированная
-   колонка (Промокод и т.п.): контент на них уезжал влево и выглядел криво.
-   Поэтому вернулись к простому оверлею: .main вообще никогда не трогаем —
-   ни margin, ни padding, ни width, страница отзывается ТОЛЬКО так же, как
-   отзывалась бы без сайдбара вообще. Сам сайдбар уменьшили (190px вместо
-   230px), чтобы при открытии он перекрывал как можно меньше полезной
-   области. По умолчанию свёрнут (translateX(-100%), полностью за кадром);
-   состояние запоминается в localStorage (см. Header.jsx) и восстанавливается
-   при обновлении страницы. На телефоне не используется — там остаётся
-   прежняя выпадающая панель (.nav-panel-overlay). === */
+   прорывы») — выезжает слева поверх контента при клике на «☰». По
+   умолчанию свёрнут; состояние запоминается в localStorage (см. Header.jsx)
+   и восстанавливается при обновлении страницы. На телефоне не используется —
+   там остаётся прежняя выпадающая панель (.nav-panel-overlay). === */
 .desktop-sidebar { display: none; }
 @media (min-width: 641px) {
   .desktop-sidebar {
@@ -1337,31 +1329,24 @@ body {
     top: 56px;
     left: 0;
     bottom: 0;
-    width: 190px;
+    width: 230px;
     padding: 14px 10px;
     background: var(--bg2);
     border-right: 1px solid var(--border);
     box-shadow: 4px 0 20px rgba(0,0,0,0.4);
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    transition: transform 0.25s ease;
     z-index: 90;
     overflow-y: auto;
   }
   .desktop-sidebar.open { transform: translateX(0); }
   .desktop-sidebar-list { display: flex; flex-direction: column; gap: 2px; }
-  .desktop-sidebar-list .nav-panel-btn { width: 100%; font-size: 14px; padding: 9px 12px; }
+  .desktop-sidebar-list .nav-panel-btn { width: 100%; }
 
-  /* Заголовок страницы (.page-title — «Медведи», «Драуги» и т.п.) и обёртка
-     таблицы (.tbl-wrap) — единственные элементы, которые реально оказывались
-     под сайдбаром на «плотных» страницах (сравни с Промокодом — там контент
-     и так с большими отступами, поэтому его трогать не нужно и не стали).
-     Сдвигаем именно их вправо ровно на ширину сайдбара, но только пока он
-     открыт — остальная страница (.main) по-прежнему не трогается. */
-  .page-title, .tbl-wrap { transition: margin-left 0.2s ease; }
-  body.sidebar-open .page-title,
-  body.sidebar-open .tbl-wrap {
-    margin-left: 190px;
-  }
+  /* Контент сдвигается вправо, когда сайдбар открыт — без анимации/скачков
+     сама открытая панель не перекрывает содержимое. */
+  .main { transition: margin-left 0.25s ease; }
+  body.sidebar-open .main { margin-left: 230px; }
 }
 
 /* === MODAL — корректный размер на мобиле === */
