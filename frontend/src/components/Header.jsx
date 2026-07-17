@@ -62,12 +62,6 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
     }
   }, [menuOpen]);
 
-  // Класс на <body> нужен, чтобы сдвигать основной контент вправо на
-  // десктопе, когда сайдбар открыт (см. .main в styles.css).
-  useEffect(() => {
-    document.body.classList.toggle('sidebar-open', menuOpen);
-    return () => document.body.classList.remove('sidebar-open');
-  }, [menuOpen]);
   const isMenuOnlyPage = MENU_ONLY_ITEMS.some(item => item.key === page);
 
   const adminItems = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
@@ -206,7 +200,11 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
       {/* Сайдбар второстепенных разделов — только на десктопе (на телефоне
           скрыт через CSS, там используется панель выше). Рендерится всегда,
           открытие/закрытие — через CSS-класс "open", чтобы анимация выезда
-          отрабатывала и при открытии, и при закрытии. */}
+          отрабатывала и при открытии, и при закрытии.
+          Подложка-затемнение под ним появляется только когда панель открыта:
+          клик по ней закрывает сайдбар, а сама страница при этом никак не
+          двигается и не пересчитывается — сайдбар просто лежит поверх. */}
+      {menuOpen && <div className="desktop-sidebar-backdrop" onClick={() => setMenuOpen(false)} />}
       <aside className={`desktop-sidebar ${menuOpen ? 'open' : ''}`}>
         <nav className="desktop-sidebar-list">
           {MENU_ONLY_ITEMS.map(item => renderNavItem(item, 'nav-panel-btn', '', { keepOpen: true }))}
