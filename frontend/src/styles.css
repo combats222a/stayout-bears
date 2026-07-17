@@ -1317,11 +1317,18 @@ body {
 .nav-panel-logout { display: none; color: var(--red); }
 
 /* === ДЕСКТОПНЫЙ САЙДБАР («Достижения», «Уровень», «Драуги», «Аномальные
-   прорывы») — выезжает слева поверх контента при клике на «☰». По
-   умолчанию свёрнут; состояние запоминается в localStorage (см. Header.jsx)
-   и восстанавливается при обновлении страницы. На телефоне не используется —
-   там остаётся прежняя выпадающая панель (.nav-panel-overlay). === */
+   прорывы») — выезжает слева ПОВЕРХ контента при клике на «☰», как обычная
+   выдвижная панель. По умолчанию свёрнут; состояние запоминается в
+   localStorage (см. Header.jsx) и восстанавливается при обновлении страницы.
+   На телефоне не используется — там остаётся прежняя выпадающая панель
+   (.nav-panel-overlay).
+   ВАЖНО: сайдбар больше НЕ двигает и не сжимает .main — раскладка страниц
+   (позиция и ширина контента) всегда одинаковая, открыт сайдбар или нет.
+   Вместо сдвига контента используется лёгкое затемнение фона
+   (.desktop-sidebar-backdrop), которое гасится по клику мимо панели или
+   повторному клику на «☰», ничего в самой странице не меняя. === */
 .desktop-sidebar { display: none; }
+.desktop-sidebar-backdrop { display: none; }
 @media (min-width: 641px) {
   .desktop-sidebar {
     display: block;
@@ -1329,8 +1336,8 @@ body {
     top: 56px;
     left: 0;
     bottom: 0;
-    width: 230px;
-    padding: 14px 10px;
+    width: 140px;
+    padding: 10px 6px;
     background: var(--bg2);
     border-right: 1px solid var(--border);
     box-shadow: 4px 0 20px rgba(0,0,0,0.4);
@@ -1340,13 +1347,27 @@ body {
     overflow-y: auto;
   }
   .desktop-sidebar.open { transform: translateX(0); }
-  .desktop-sidebar-list { display: flex; flex-direction: column; gap: 2px; }
-  .desktop-sidebar-list .nav-panel-btn { width: 100%; }
+  .desktop-sidebar-list { display: flex; flex-direction: column; gap: 3px; }
+  .desktop-sidebar-list .nav-panel-btn {
+    width: 100%;
+    font-size: 12px;
+    padding: 7px 8px;
+    line-height: 1.25;
+    white-space: normal;
+    text-align: left;
+  }
 
-  /* Контент сдвигается вправо, когда сайдбар открыт — без анимации/скачков
-     сама открытая панель не перекрывает содержимое. */
-  .main { transition: margin-left 0.25s ease; }
-  body.sidebar-open .main { margin-left: 230px; }
+  /* Прозрачный клик-перехватчик за сайдбаром с лёгким затемнением остальной
+     страницы — видно, что панель это временный слой поверх, а не часть
+     разметки. Клик по нему закрывает панель. Контент под ним не двигается
+     и не пересчитывается. */
+  .desktop-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 56px 0 0 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 89;
+  }
 }
 
 /* === MODAL — корректный размер на мобиле === */
