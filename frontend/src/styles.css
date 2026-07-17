@@ -173,8 +173,8 @@ body {
 }
 .btn:hover { background: #2d333b; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--accent2); border-color: var(--accent2); color: #fff; }
-.btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+.btn-primary { background: #3a6ea5; border-color: #3a6ea5; color: #fff; }
+.btn-primary:hover { background: #4a7fb8; border-color: #4a7fb8; }
 .btn-danger { background: rgba(248,81,73,0.15); border-color: var(--red); color: var(--red); }
 .btn-danger:hover { background: rgba(248,81,73,0.25); }
 .btn-kill { background: rgba(248,81,73,0.15); border-color: var(--red); color: var(--red); width: 100%; justify-content: center; }
@@ -189,8 +189,8 @@ body {
 /* === INPUTS === */
 .input {
   width: 100%;
-  min-height: 42px;
-  padding: 10px 14px;
+  min-height: 38px;
+  padding: 8px 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -200,7 +200,7 @@ body {
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,0.12); }
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(88,166,255,0.1); }
 
 /* Значок-подсказка (ⓘ) с нативным тултипом вместо абзаца текста под полем */
 .info-tip {
@@ -701,7 +701,7 @@ body {
 }
 .modal-close-btn:hover { color: var(--text); background: var(--bg3); }
 .modal-bear-name { color: #e6edf3; }
-.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
 .modal-label { font-size: 12px; color: #8b949e; }
 .modal-input {
   background: #0d1117;
@@ -2324,3 +2324,22 @@ body {
 .row-menu-item:hover { background: var(--bg3); }
 .row-menu-item-danger { color: var(--red); }
 .row-menu-item-danger:hover { background: rgba(248,81,73,0.12); }
+
+/* === REDESIGN: «Последнее обновление» — читаемый формат вместо системного datetime-local === */
+.datetime-field { position: relative; }
+.datetime-field-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+.datetime-field-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+  color: var(--text);
+}
+.datetime-field-display svg { color: var(--text3); flex-shrink: 0; }
