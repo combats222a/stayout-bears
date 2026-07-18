@@ -1,8 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import InfoSpoiler from '../components/InfoSpoiler';
+import StarIcon from '../components/StarIcon';
+import SoundIcon from '../components/SoundIcon';
 import { CAPTURES_SPOILER } from '../content/spoilerContent';
 import { CAPTURE_LOCATIONS } from '../content/captureLocations';
 import { getCaptureStatus, formatDuration, getViewerTimezoneLabel } from '../utils/captures';
+import {
+  isCaptureSoundEnabled, setCaptureSoundEnabled,
+  isCaptureFavorite, setCaptureFavorite,
+} from '../utils/soundPrefs';
 
 // Значение для сортировки колонки "До начала / до конца захвата":
 // активные точки всегда идут первыми (по возрастанию времени до конца),
@@ -24,6 +30,35 @@ export default function CapturesPage() {
   const [now, setNow] = useState(() => new Date());
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState({ key: null, dir: 'asc' });
+
+  // Избранное и звук — по умолчанию выключены у всех точек, состояние
+  // читается из localStorage при загрузке и запоминается для игрока.
+  const [favorites, setFavorites] = useState(() => {
+    const map = {};
+    for (const loc of CAPTURE_LOCATIONS) map[loc.name] = isCaptureFavorite(loc.name);
+    return map;
+  });
+  const [soundOn, setSoundOn] = useState(() => {
+    const map = {};
+    for (const loc of CAPTURE_LOCATIONS) map[loc.name] = isCaptureSoundEnabled(loc.name);
+    return map;
+  });
+
+  const toggleFavorite = (name) => {
+    setFavorites(prev => {
+      const next = !prev[name];
+      setCaptureFavorite(name, next);
+      return { ...prev, [name]: next };
+    });
+  };
+
+  const toggleSound = (name) => {
+    setSoundOn(prev => {
+      const next = !prev[name];
+      setCaptureSoundEnabled(name, next);
+      return { ...prev, [name]: next };
+    });
+  };
 
   const handleSort = (key) => {
     setSort(prev => {
@@ -60,11 +95,16 @@ export default function CapturesPage() {
   }, [rows, search]);
 
   const sorted = useMemo(() => {
-    if (!sort.key) return filtered;
-    const col = COLUMNS.find(c => c.key === sort.key);
-    if (!col) return filtered;
+    const col = sort.key ? COLUMNS.find(c => c.key === sort.key) : null;
     const list = [...filtered];
     list.sort((a, b) => {
+      // Избранные точки всегда всплывают наверх — как закреплённые
+      // закладки в браузере — независимо от того, какая колонка выбрана.
+      const af = favorites[a.loc.name] ? 1 : 0;
+      const bf = favorites[b.loc.name] ? 1 : 0;
+      if (af !== bf) return bf - af;
+
+      if (!col) return 0;
       const va = col.getValue(a);
       const vb = col.getValue(b);
       let cmp;
@@ -73,7 +113,7 @@ export default function CapturesPage() {
       return sort.dir === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [filtered, sort]);
+  }, [filtered, sort, favorites]);
 
   const activeCount = rows.filter(r => r.status.isActive).length;
   const soonCount = rows.filter(r => r.status.isSoon).length;
@@ -111,6 +151,9 @@ export default function CapturesPage() {
           <table className="bears-table captures-table">
             <thead>
               <tr>
+                <th className="captures-col-icon" title="Избранное">
+                  <StarIcon size={14} on={false} />
+                </th>
                 {COLUMNS.map(col => {
                   const isSorted = sort.key === col.key;
                   const arrow = isSorted ? (sort.dir === 'asc' ? '▲' : '▼') : '⇅';
@@ -125,17 +168,30 @@ export default function CapturesPage() {
                     </th>
                   );
                 })}
+                <th className="captures-col-icon" title="Звуковое уведомление">
+                  <SoundIcon size={14} on={false} />
+                </th>
               </tr>
             </thead>
             <tbody>
               {sorted.map(({ loc, status }) => {
-                const rowClass = status.isActive
-                  ? 'capture-row-active'
-                  : status.isSoon
-                    ? 'capture-row-soon'
-                    : '';
+                const isFav = !!favorites[loc.name];
+                const isSoundOn = !!soundOn[loc.name];
+                const rowClass = [
+                  status.isActive ? 'capture-row-active' : status.isSoon ? 'capture-row-soon' : '',
+                  isFav ? 'capture-row-favorite' : '',
+                ].filter(Boolean).join(' ');
                 return (
                   <tr key={loc.name} className={rowClass}>
+                    <td className="captures-col-icon">
+                      <button
+                        className={`star-btn ${isFav ? 'star-on' : ''}`}
+                        onClick={() => toggleFavorite(loc.name)}
+                        title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+                      >
+                        <StarIcon on={isFav} />
+                      </button>
+                    </td>
                     <td>{loc.name}</td>
                     <td>{loc.type}</td>
                     <td>{loc.location}</td>
@@ -155,12 +211,21 @@ export default function CapturesPage() {
                         </span>
                       )}
                     </td>
+                    <td className="captures-col-icon">
+                      <button
+                        className={`rupor-btn rupor-btn-sm ${isSoundOn ? 'rupor-on' : 'rupor-off'}`}
+                        onClick={() => toggleSound(loc.name)}
+                        title={isSoundOn ? 'Звук в начале захвата включён' : 'Звук в начале захвата выключен'}
+                      >
+                        <SoundIcon on={isSoundOn} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text3)', padding: 20 }}>
+                  <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text3)', padding: 20 }}>
                     Ничего не найдено
                   </td>
                 </tr>
@@ -173,6 +238,8 @@ export default function CapturesPage() {
       <div className="captures-legend">
         <span><span className="legend-swatch legend-swatch-active" /> — точка захватывается прямо сейчас</span>
         <span><span className="legend-swatch legend-swatch-soon" /> — захват начнётся в течение ближайшего часа</span>
+        <span style={{ color: '#e3b341' }}><StarIcon size={13} on /> — избранные точки поднимаются наверх таблицы</span>
+        <span style={{ color: 'var(--green)' }}><SoundIcon size={13} on /> — звук в момент начала захвата (по умолчанию выключен, включается за точку)</span>
       </div>
     </div>
   );

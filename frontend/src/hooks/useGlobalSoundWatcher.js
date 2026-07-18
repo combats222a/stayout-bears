@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { api } from '../utils/api';
-import { playSpawnSound, playShiningWarningSound, playTimerDoneSound, playAnomalyWarningSound } from '../utils/sound';
-import { isBearSoundEnabled, isDraugSoundEnabled, isShiningSoundEnabled, isAnomalySoundEnabled } from '../utils/soundPrefs';
+import { playSpawnSound, playShiningWarningSound, playTimerDoneSound, playAnomalyWarningSound, playCaptureStartSound } from '../utils/sound';
+import { isBearSoundEnabled, isDraugSoundEnabled, isShiningSoundEnabled, isAnomalySoundEnabled, isCaptureSoundEnabled } from '../utils/soundPrefs';
 import { getTimeLeftMs, WARN_BEFORE_SPAWN_MS } from '../utils/bears';
 import { getTimeLeftMs as getDraugTimeLeftMs, WARN_BEFORE_SPAWN_MS as DRAUG_WARN_BEFORE_SPAWN_MS } from '../utils/draugs';
 import { computeShiningSlots } from '../utils/shining';
 import { getNearestAnomalySlot } from '../utils/anomaly';
+import { CAPTURE_LOCATIONS } from '../content/captureLocations';
+import { getCaptureStatus } from '../utils/captures';
 
 function getTimerRemainingSeconds(timer) {
   if (!timer.last_reset_at) return null;
@@ -32,6 +34,7 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData, anoma
   const anomalyStateRef = useRef(null); // { key, warning } — независим от клана/входа
   const timersListRef = useRef([]);     // последний загруженный список таймеров
   const timerStateRef = useRef({});     // { [timer.id]: { key, wasExpired } }
+  const captureStateRef = useRef({});   // { [location.name]: { key, isActive } }
 
   // Фоновая подгрузка таймеров пользователя — независимо от того, открыта
   // ли страница "Таймеры". Только сама проверка истечения, без отображения
@@ -136,6 +139,26 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData, anoma
             if (isAnomalySoundEnabled()) playAnomalyWarningSound();
           }
           entry.warning = warning;
+        }
+      }
+
+      // ── Захваты: сигнал в момент начала захвата точки ──
+      {
+        const now = new Date();
+        for (const loc of CAPTURE_LOCATIONS) {
+          const status = getCaptureStatus(loc, now);
+          const key = status.start.getTime();
+          let entry = captureStateRef.current[loc.name];
+          if (!entry || entry.key !== key) {
+            // Смена окна захвата — инициализируем реальным текущим
+            // состоянием, чтобы не пикнуть ложно сразу после смены дня.
+            entry = { key, isActive: status.isActive };
+            captureStateRef.current[loc.name] = entry;
+          }
+          if (status.isActive && !entry.isActive) {
+            if (isCaptureSoundEnabled(loc.name)) playCaptureStartSound();
+          }
+          entry.isActive = status.isActive;
         }
       }
 

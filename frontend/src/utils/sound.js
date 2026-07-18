@@ -62,3 +62,16 @@ export function playTimerDoneSound() {
     { freq: 1180, type: 'square', t: 0.14, dur: 0.1, gain: 0.3 },
   ]);
 }
+
+// Сигнал для точки захвата (Захваты) в момент начала захвата — четыре
+// коротких пилообразных тона по нарастающей, отличается от медведей/драугов
+// (тройной sine-пинг), Сияния (двойной triangle "дин-дон"), Аномалий
+// (тройной нисходящий triangle) и Таймеров (двойной square-бип).
+export function playCaptureStartSound() {
+  playTones([
+    { freq: 523,  type: 'sawtooth', t: 0,    dur: 0.11, gain: 0.35 },
+    { freq: 659,  type: 'sawtooth', t: 0.12, dur: 0.11, gain: 0.35 },
+    { freq: 784,  type: 'sawtooth', t: 0.24, dur: 0.11, gain: 0.35 },
+    { freq: 988,  type: 'sawtooth', t: 0.36, dur: 0.18, gain: 0.35 },
+  ]);
+}
