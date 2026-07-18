@@ -50,7 +50,7 @@ function TransferModal({ members, clan, onConfirm, onClose }) {
         </div>
         <div className="modal-footer">
           <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok" disabled={!selectedId}
+          <button className="modal-btn-ok btn-shiny" disabled={!selectedId}
             onClick={() => selectedId && onConfirm(selectedId)}>
             Передать ❄️
           </button>
