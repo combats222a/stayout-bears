@@ -1099,15 +1099,20 @@ body {
 
 /* === RUPOR (звук) кнопки === */
 .rupor-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
+  margin: 0;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--bg3);
   cursor: pointer;
+  font: inherit;
   transition: transform 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
 }
 .rupor-btn svg { display: block; }
@@ -2317,6 +2322,51 @@ body {
   color: var(--red);
   font-weight: 600;
 }
+
+.capture-row-favorite { background: rgba(227,179,65,.07); }
+.capture-row-favorite:hover { background: rgba(227,179,65,.13); }
+
+.captures-table th.captures-col-icon,
+.captures-table td.captures-col-icon {
+  width: 40px;
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Иконка-звёздочка "в избранное" — минималистичная ghost-кнопка (без
+   рамки и фона в состоянии покоя, мягкая подсветка при наведении), в
+   духе современных icon-button'ов, а не системная кнопка браузера.
+   Явный сброс appearance/padding/border — чтобы мобильные браузеры не
+   подставляли свой нативный вид кнопки поверх наших стилей. */
+.star-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text3);
+  font: inherit;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.star-btn svg { display: block; }
+.star-btn:hover {
+  color: #e3b341;
+  background: rgba(227,179,65,.12);
+  transform: scale(1.08);
+}
+.star-btn:active { transform: scale(0.9); }
+.star-btn.star-on { color: #e3b341; }
+.star-btn.star-on:hover { background: rgba(227,179,65,.18); }
 
 .captures-legend {
   display: flex;
