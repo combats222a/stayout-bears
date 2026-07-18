@@ -34,11 +34,28 @@ const MENU_ONLY_ITEMS = [
 // в styles.css.
 const SIDEBAR_WIDTH = 140;
 
-export default function Header({ user, page, onNavigate, onLogout, onLoginClick }) {
+export default function Header({
+  user,
+  page,
+  onNavigate,
+  onLogout,
+  onLoginClick,
+  // Состояние панели разделов теперь управляется снаружи, из App —
+  // раньше оно жило прямо здесь через useState, но у гостя разные
+  // разделы рендерят Header в разных ветках дерева (см. App.jsx и
+  // PublicLandingPage.jsx), и при переключении между ними React
+  // пересоздавал этот компонент с нуля, теряя открытость панели.
+  // Пропсы опциональны и по умолчанию заменяются локальным состоянием —
+  // на случай, если где-то Header используют без них.
+  menuOpen: menuOpenProp,
+  setMenuOpen: setMenuOpenProp,
+}) {
   // Панель разделов (и на десктопе, и на телефоне) всегда стартует
   // свёрнутой при каждой загрузке страницы — состояние нигде не
   // запоминается. Открывается только явным кликом пользователя на «☰».
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpenState, setMenuOpenState] = useState(false);
+  const menuOpen = menuOpenProp !== undefined ? menuOpenProp : menuOpenState;
+  const setMenuOpen = setMenuOpenProp || setMenuOpenState;
   const isGuest = !user;
 
   // Шапка обычно 56px, но при увеличении масштаба страницы в браузере
