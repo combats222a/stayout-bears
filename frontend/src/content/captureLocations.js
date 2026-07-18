@@ -49,7 +49,6 @@ export const CAPTURE_LOCATIONS = [
   { name: 'Заброшенная автостоянка',         type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'J3-3', hour: 16, minute: 0 },
   { name: 'Лесопилка',                       type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'E2-2', hour: 19, minute: 0 },
   { name: 'Очистная станция',                type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'H9-4', hour: 19, minute: 0 },
-  { name: 'Радиостанция',                    type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'C6-3', hour: 20, minute: 30 },
   { name: 'Лодочное производство',           type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'J5-3', hour: 21, minute: 0 },
   { name: 'Дорога к д.Выселки',               type: 'Укрепточка',  location: 'Окрестности Любеча',     coords: 'B3-4', hour: 23, minute: 0 },
   { name: 'д. Конуковка',                    type: 'Укрепточка',  location: 'Аэропорт',               coords: 'A2-2', hour: 18, minute: 30 },
