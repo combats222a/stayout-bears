@@ -110,10 +110,43 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
     setMenuOpen(false);
   }
 
+  // Обычный <a href> при клике делает полную перезагрузку страницы —
+  // весь React-рендер (включая открытый сайдбар/панель разделов)
+  // пересоздаётся с нуля, и меню визуально "заезжает обратно", хотя
+  // формально оно просто открылось заново уже закрытым. При этом разделы,
+  // на которые ведут такие ссылки («Уровень», «Промокод», лого «На
+  // главную»), давно рендерятся внутри этого же приложения (см. App.jsx) —
+  // перезагрузка для перехода на них не нужна. Поэтому обычный левый клик
+  // перехватываем и уходим туда клиентским роутингом (onNavigate), без
+  // сброса страницы. Ctrl/Cmd/Shift/клик колёсиком мыши не трогаем — href
+  // остаётся, так что открыть раздел в новой вкладке всё ещё можно как
+  // обычной ссылкой.
+  function isPlainLeftClick(e) {
+    return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+  }
+
   function renderNavItem(item, className, extraClass = '', { keepOpen = false } = {}) {
     const cls = `${className} ${extraClass} ${page === item.key ? 'active' : ''}`;
     if (isGuest && item.guestHref) {
-      return <a key={item.key} className={cls} href={item.guestHref}>{item.label}</a>;
+      const targetKey = item.guestHref.replace(/^\//, '');
+      return (
+        <a
+          key={item.key}
+          className={cls}
+          href={item.guestHref}
+          onClick={(e) => {
+            if (!isPlainLeftClick(e)) return;
+            e.preventDefault();
+            if (keepOpen) {
+              onNavigate?.(targetKey);
+            } else {
+              handleNav(targetKey);
+            }
+          }}
+        >
+          {item.label}
+        </a>
+      );
     }
     if (isGuest && item.guestLoginOnly) {
       // Раздел не имеет смысла показывать гостю (например, личный профиль) —
@@ -150,11 +183,26 @@ export default function Header({ user, page, onNavigate, onLogout, onLoginClick 
         </button>
 
         {isGuest ? (
-          <a className="header-logo" href="/" style={{ textDecoration: 'none' }}>
+          <a
+            className="header-logo"
+            href="/"
+            style={{ textDecoration: 'none' }}
+            onClick={(e) => {
+              if (!isPlainLeftClick(e)) return;
+              e.preventDefault();
+              onNavigate?.('bears');
+            }}
+          >
             🐻‍❄️ <span className="header-title">Bear Tracker</span>
           </a>
         ) : (
-          <div className="header-logo" onClick={() => handleNav('bears')} style={{ cursor: 'pointer' }}>
+          // Раньше здесь был handleNav('bears'), который дополнительно
+          // закрывал сайдбар/панель разделов — то же самое лишнее
+          // поведение, что и у ссылок с guestHref выше. Переход на
+          // «Медведи» через лого ничем не должен отличаться от перехода
+          // туда же через пункт меню «Медведи» (тот открытое меню не
+          // закрывает), поэтому используем onNavigate напрямую.
+          <div className="header-logo" onClick={() => onNavigate?.('bears')} style={{ cursor: 'pointer' }}>
             🐻‍❄️ <span className="header-title">Bear Tracker</span>
           </div>
         )}
