@@ -214,10 +214,13 @@ export default function CapturesPage() {
                     : status.isSoon
                       ? 'star-on star-fav-soon'
                       : 'star-on';
-                const rowClass = [
-                  status.isActive ? 'capture-row-active' : status.isSoon ? 'capture-row-soon' : '',
-                  isFav ? 'capture-row-favorite' : '',
-                ].filter(Boolean).join(' ');
+                const rowClass = status.isActive
+                  ? 'capture-row-active'
+                  : status.isSoon
+                    ? 'capture-row-soon'
+                    : isFav
+                      ? 'capture-row-favorite'
+                      : '';
                 return (
                   <tr key={loc.name} className={rowClass}>
                     <td className="captures-col-icon">
