@@ -29,7 +29,7 @@ export default function PublicLandingPage({ onLoginClick, onNavigate, menuOpen, 
           <div className="public-landing-cta-text">
             Хочешь также отслеживать медведей, Гору Сияния и таймеры своего клана?
           </div>
-          <button className="btn btn-primary" onClick={onLoginClick}>
+          <button className="btn btn-primary btn-shiny" onClick={onLoginClick}>
             Войти / Зарегистрироваться
           </button>
         </div>

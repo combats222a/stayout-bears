@@ -192,7 +192,7 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange,
               <input className="input" placeholder="Название группировки" value={createName}
                 onChange={e => { setCreateName(e.target.value); setError(''); }}
                 required minLength={2} maxLength={64} />
-              <button className="btn btn-primary" disabled={loading}>Создать</button>
+              <button className="btn btn-primary btn-shiny" disabled={loading}>Создать</button>
             </form>
           </div>
           <div className="card">
@@ -201,7 +201,7 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange,
               <input className="input input-mono" placeholder="XXXXXX" value={joinCode}
                 onChange={e => { setJoinCode(e.target.value.toUpperCase()); setError(''); }}
                 maxLength={6} required />
-              <button className="btn btn-primary" disabled={loading}>Вступить</button>
+              <button className="btn btn-primary btn-shiny" disabled={loading}>Вступить</button>
             </form>
           </div>
         </div>
@@ -241,7 +241,7 @@ export default function ClanPage({ user, clan, members, bans = [], onClanChange,
                     autoFocus
                     required
                   />
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={renameLoading}>
+                  <button type="submit" className="btn btn-primary btn-shiny btn-sm" disabled={renameLoading}>
                     Сохранить
                   </button>
                   <button type="button" className="btn btn-ghost btn-sm" onClick={cancelRename}>

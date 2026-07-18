@@ -477,6 +477,25 @@ body {
 
 /* === MISC === */
 .error-msg { background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); color: var(--red); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; }
+.success-msg { background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.3); color: var(--green); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; }
+
+/* === PROFILE PAGE === */
+.profile-page { max-width: 480px; margin: 40px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 16px; }
+.settings-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px 28px; }
+.settings-card-danger { border-color: rgba(248,81,73,0.25); }
+.settings-title { font-family: var(--font-display); font-size: 18px; color: var(--text); letter-spacing: 0.3px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.settings-title-danger { font-family: var(--font-body); font-weight: 700; font-size: 15px; color: var(--red); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.settings-form { display: flex; flex-direction: column; gap: 14px; }
+.settings-field { display: flex; flex-direction: column; gap: 6px; }
+.settings-label { font-size: 12px; color: var(--text2); }
+.settings-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin: 0 0 16px; }
+.settings-email-row { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text2); }
+.settings-email-value { color: var(--text); }
+.settings-delete-confirm { display: flex; flex-direction: column; gap: 10px; }
+.settings-delete-label { font-size: 13px; color: var(--text2); }
+.settings-delete-label strong { color: var(--text); }
+.settings-delete-actions { display: flex; gap: 8px; }
+.settings-delete-actions .btn { flex: 1; justify-content: center; }
 .empty-state { text-align: center; color: var(--text2); padding: 60px 0; }
 .loading { text-align: center; color: var(--text2); padding: 40px; }
 .label { font-size: 12px; color: var(--text2); }
@@ -1765,7 +1784,12 @@ body {
   letter-spacing: 0.5px;
   color: var(--text);
 }
-.promo-accent { color: var(--accent); }
+.promo-accent {
+  background: linear-gradient(135deg, #6ea8ff 0%, #3f6fe6 60%, #2f5ed6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 .promo-hero-sub { color: var(--text2); font-size: 14px; max-width: 520px; line-height: 1.6; }
 
 .promo-codes-grid {
@@ -1779,15 +1803,19 @@ body {
   align-items: center;
   gap: 6px;
   text-align: center;
-  border-color: rgba(88,166,255,0.25);
+  border-color: rgba(63,111,230,0.3);
+  background: linear-gradient(180deg, rgba(63,111,230,0.06) 0%, rgba(63,111,230,0) 60%);
 }
 .promo-code-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
 .promo-code-value {
   font-family: var(--font-mono);
   font-size: 22px;
   font-weight: 700;
-  color: var(--accent);
   letter-spacing: 3px;
+  background: linear-gradient(135deg, #6ea8ff 0%, #3f6fe6 60%, #2f5ed6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .promo-code-hint { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
 .promo-copy-btn { width: 100%; justify-content: center; }

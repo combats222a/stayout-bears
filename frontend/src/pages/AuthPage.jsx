@@ -73,7 +73,7 @@ export default function AuthPage({ onAuth, onBack }) {
 
           {error && <div className="error-msg">{error}</div>}
 
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <button className="btn btn-primary btn-shiny" type="submit" disabled={loading}>
             {loading ? 'Загрузка...' : mode === 'login' ? 'Войти' : 'Создать аккаунт'}
           </button>
         </form>

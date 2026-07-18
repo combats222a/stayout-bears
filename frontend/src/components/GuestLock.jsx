@@ -9,7 +9,7 @@ export default function GuestLock({ icon = '🔒', title, text, onLoginClick }) 
       <div className="guest-lock-icon">{icon}</div>
       <div className="guest-lock-title">{title}</div>
       <p className="guest-lock-text">{text}</p>
-      <button className="btn btn-primary guest-lock-btn" onClick={onLoginClick}>
+      <button className="btn btn-primary btn-shiny guest-lock-btn" onClick={onLoginClick}>
         Войти / Зарегистрироваться
       </button>
     </div>

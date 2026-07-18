@@ -243,7 +243,7 @@ export default function Header({
             <SteamIcon />
           </a>
           {isGuest ? (
-            <button className="btn btn-primary btn-sm header-login-btn" onClick={onLoginClick}>
+            <button className="btn btn-primary btn-shiny btn-sm header-login-btn" onClick={onLoginClick}>
               Войти / Зарегистрироваться
             </button>
           ) : (
@@ -262,7 +262,7 @@ export default function Header({
             <div className="nav-panel-user">
               {isGuest ? (
                 <button
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-shiny btn-sm"
                   onClick={() => { onLoginClick(); setMenuOpen(false); }}
                 >
                   Войти / Зарегистрироваться
