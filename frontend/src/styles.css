@@ -2363,9 +2363,7 @@ body {
 .star-btn:active { transform: scale(0.9); }
 
 /* Обычная (не избранная) звезда — на hover подсвечивается синим, чтобы
-   показать, что по клику точка добавится в избранное. Ограничено
-   :not(.star-on), чтобы не спорить по специфичности с цветными
-   статусами избранного ниже — каждый из них сам красит и цвет, и фон. */
+   показать, что по клику точка добавится в избранное. */
 .star-btn:not(.star-on):hover {
   color: var(--accent);
   background: rgba(88,166,255,.12);
@@ -2375,13 +2373,17 @@ body {
 .star-btn.star-on { color: var(--accent); }
 .star-btn.star-on:hover { color: var(--accent); background: rgba(88,166,255,.2); }
 
-/* Избранная точка, до захвата которой осталось меньше часа — жёлтый */
-.star-btn.star-fav-soon { color: var(--orange); }
-.star-btn.star-fav-soon:hover { color: var(--orange); background: rgba(210,153,34,.24); }
+/* Избранная точка, до захвата которой осталось меньше часа — жёлтый.
+   Селектор специально повторяет .star-on, чтобы иметь БОЛЬШУЮ
+   специфичность, чем правило выше, и побеждать гарантированно —
+   независимо от порядка правил после минификации CSS при сборке. */
+.star-btn.star-on.star-fav-soon { color: var(--orange); }
+.star-btn.star-on.star-fav-soon:hover { color: var(--orange); background: rgba(210,153,34,.24); }
 
-/* Избранная точка, захват которой идёт прямо сейчас — красный */
-.star-btn.star-fav-active { color: var(--red); }
-.star-btn.star-fav-active:hover { color: var(--red); background: rgba(248,81,73,.24); }
+/* Избранная точка, захват которой идёт прямо сейчас — красный (тот же
+   приём с повышенной специфичностью). */
+.star-btn.star-on.star-fav-active { color: var(--red); }
+.star-btn.star-on.star-fav-active:hover { color: var(--red); background: rgba(248,81,73,.24); }
 
 .captures-legend {
   display: flex;
