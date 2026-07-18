@@ -2309,9 +2309,9 @@ body {
 .captures-table th:first-child { text-align: left; }
 
 .capture-row-active { background: rgba(248,81,73,.09); }
-.capture-row-active:hover { background: rgba(248,81,73,.15); }
+.bears-table tbody tr.capture-row-active:hover { background: rgba(248,81,73,.15); }
 .capture-row-soon { background: rgba(210,153,34,.08); }
-.capture-row-soon:hover { background: rgba(210,153,34,.14); }
+.bears-table tbody tr.capture-row-soon:hover { background: rgba(210,153,34,.14); }
 
 .capture-time { font-family: var(--font-mono); font-size: 13px; color: var(--text2); }
 .capture-time-soon {
@@ -2324,7 +2324,7 @@ body {
 }
 
 .capture-row-favorite { background: rgba(88,166,255,.06); }
-.capture-row-favorite:hover { background: rgba(88,166,255,.12); }
+.bears-table tbody tr.capture-row-favorite:hover { background: rgba(88,166,255,.12); }
 
 .captures-table th.captures-col-icon,
 .captures-table td.captures-col-icon {
