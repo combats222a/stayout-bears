@@ -81,15 +81,15 @@ export default function CapturesPage() {
           'Цвет звезды:',
           <span key="star-blue">
             <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /></span>
-            {' '}— точка добавлена в избранное, до начала захвата больше часа.
+            {' '}— до начала захвата больше часа.
           </span>,
           <span key="star-yellow">
             <span style={{ color: 'var(--orange)' }}><StarIcon size={13} on /></span>
-            {' '}— точка в избранном, до начала захвата осталось меньше часа.
+            {' '}— до начала захвата осталось меньше часа.
           </span>,
           <span key="star-red">
             <span style={{ color: 'var(--red)' }}><StarIcon size={13} on /></span>
-            {' '}— точка в избранном, захват уже идёт.
+            {' '}— захват уже идёт.
           </span>,
         ],
       };
