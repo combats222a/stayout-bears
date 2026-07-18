@@ -43,6 +43,17 @@ export default function App() {
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(() => localStorage.getItem('token'));
   const [showAuth, setShowAuth] = useState(false);
+  // Раньше это состояние жило внутри Header. У гостя разные разделы
+  // рендерятся из разных мест дерева (см. ниже: ветка /level, ветка
+  // GUEST_PREVIEW_PAGES, и PublicLandingPage — у промо-страницы «/» —
+  // рендерит свой собственный <Header>). При переходе между такими
+  // ветками React видит другую структуру дерева в этой позиции и
+  // пересоздаёт <Header> с нуля, теряя его внутренний useState — из-за
+  // этого открытая панель разделов "заезжала обратно", например при
+  // переходе гостя на «Промокод». Подняли состояние сюда, в App, — сам
+  // App не пересоздаётся при смене страницы, так что открытость панели
+  // переживает любые из этих переключений.
+  const [menuOpen, setMenuOpen] = useState(false);
   const [clan, setClan]       = useState(null);
   const [members, setMembers] = useState([]);
   const [bears, setBears]     = useState([]);
@@ -305,7 +316,7 @@ export default function App() {
     if (page === 'level' && !showAuth) {
       return (
         <>
-          <Header user={null} page="level" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} />
+          <Header user={null} page="level" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <div className="public-landing">
             <LevelPage standalone />
           </div>
@@ -318,7 +329,7 @@ export default function App() {
     if (page === 'faq' && !showAuth) {
       return (
         <>
-          <Header user={null} page="faq" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} />
+          <Header user={null} page="faq" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <div className="public-landing">
             <FaqPage />
           </div>
@@ -341,7 +352,7 @@ export default function App() {
     if (GUEST_PREVIEW_PAGES.includes(rawSegment) && !showAuth) {
       return (
         <>
-          <Header user={null} page={page} onNavigate={setPage} onLoginClick={() => setShowAuth(true)} />
+          <Header user={null} page={page} onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <main className="main">
             {page === 'bears' && (
               <BearsPage bears={[]} clan={null} onBearChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
@@ -373,12 +384,12 @@ export default function App() {
     }
     return showAuth
       ? <AuthPage onAuth={onAuth} onBack={() => setShowAuth(false)} />
-      : <PublicLandingPage onLoginClick={() => setShowAuth(true)} onNavigate={setPage} />;
+      : <PublicLandingPage onLoginClick={() => setShowAuth(true)} onNavigate={setPage} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />;
   }
 
   return (
     <div className="app">
-      <Header user={user} page={page} onNavigate={setPage} onLogout={onLogout} />
+      <Header user={user} page={page} onNavigate={setPage} onLogout={onLogout} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <main className="main">
         {page === 'bears' && (
           <BearsPage bears={bears} clan={clan} onBearChange={handleBearUpdate} />
