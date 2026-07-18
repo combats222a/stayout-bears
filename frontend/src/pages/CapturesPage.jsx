@@ -67,6 +67,36 @@ export default function CapturesPage() {
     });
   };
 
+  // «Захваты»-спойлер: подменяем текстовые кружки 🔵🟡🔴 у пункта про цвет
+  // звезды на реальные цветные иконки-звёздочки — такие же, как в подписи
+  // под таблицей — чтобы это выглядело наглядно, а не текстом.
+  const capturesSpoiler = useMemo(() => {
+    const blocks = CAPTURES_SPOILER.blocks.map(block => {
+      if (block.heading !== 'Избранное и звуковые уведомления') return block;
+      return {
+        ...block,
+        body: [
+          '⭐ Звезда — добавляет точку в избранное. Избранные точки автоматически отображаются вверху таблицы.',
+          '🔊 Значок звука — включает звуковое уведомление о начале захвата. По умолчанию уведомление отключено и настраивается отдельно для каждой точки.',
+          'Цвет звезды:',
+          <span key="star-blue">
+            <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /></span>
+            {' '}— точка добавлена в избранное, до начала захвата больше часа.
+          </span>,
+          <span key="star-yellow">
+            <span style={{ color: 'var(--orange)' }}><StarIcon size={13} on /></span>
+            {' '}— точка в избранном, до начала захвата осталось меньше часа.
+          </span>,
+          <span key="star-red">
+            <span style={{ color: 'var(--red)' }}><StarIcon size={13} on /></span>
+            {' '}— точка в избранном, захват уже идёт.
+          </span>,
+        ],
+      };
+    });
+    return { ...CAPTURES_SPOILER, blocks };
+  }, []);
+
   // Тикаем раз в секунду — таймеры "до начала"/"до конца" в таблице живые
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -137,7 +167,7 @@ export default function CapturesPage() {
         🕒 Время до захвата рассчитано в соответствии с часовым поясом, установленным на вашем устройстве: <b>{getViewerTimezoneLabel(now)}</b>
       </div>
 
-      <InfoSpoiler {...CAPTURES_SPOILER} storageKey="spoiler_captures" />
+      <InfoSpoiler {...capturesSpoiler} storageKey="spoiler_captures" />
 
       <input
         className="input captures-search"
