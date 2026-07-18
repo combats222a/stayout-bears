@@ -2323,8 +2323,8 @@ body {
   font-weight: 600;
 }
 
-.capture-row-favorite { background: rgba(227,179,65,.07); }
-.capture-row-favorite:hover { background: rgba(227,179,65,.13); }
+.capture-row-favorite { background: rgba(88,166,255,.06); }
+.capture-row-favorite:hover { background: rgba(88,166,255,.12); }
 
 .captures-table th.captures-col-icon,
 .captures-table td.captures-col-icon {
@@ -2360,13 +2360,23 @@ body {
 }
 .star-btn svg { display: block; }
 .star-btn:hover {
-  color: #e3b341;
-  background: rgba(227,179,65,.12);
+  color: var(--accent);
+  background: rgba(88,166,255,.12);
   transform: scale(1.08);
 }
 .star-btn:active { transform: scale(0.9); }
-.star-btn.star-on { color: #e3b341; }
-.star-btn.star-on:hover { background: rgba(227,179,65,.18); }
+
+/* Базовое избранное — синий (не пересекается с жёлтым/красным статусом) */
+.star-btn.star-on { color: var(--accent); }
+.star-btn.star-on:hover { background: rgba(88,166,255,.18); }
+
+/* Избранная точка, до захвата которой осталось меньше часа — жёлтый */
+.star-btn.star-fav-soon { color: var(--orange); }
+.star-btn.star-fav-soon:hover { background: rgba(210,153,34,.18); }
+
+/* Избранная точка, захват которой идёт прямо сейчас — красный */
+.star-btn.star-fav-active { color: var(--red); }
+.star-btn.star-fav-active:hover { background: rgba(248,81,73,.18); }
 
 .captures-legend {
   display: flex;

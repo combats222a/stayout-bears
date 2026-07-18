@@ -177,6 +177,13 @@ export default function CapturesPage() {
               {sorted.map(({ loc, status }) => {
                 const isFav = !!favorites[loc.name];
                 const isSoundOn = !!soundOn[loc.name];
+                const starStatusClass = !isFav
+                  ? ''
+                  : status.isActive
+                    ? 'star-on star-fav-active'
+                    : status.isSoon
+                      ? 'star-on star-fav-soon'
+                      : 'star-on';
                 const rowClass = [
                   status.isActive ? 'capture-row-active' : status.isSoon ? 'capture-row-soon' : '',
                   isFav ? 'capture-row-favorite' : '',
@@ -185,7 +192,7 @@ export default function CapturesPage() {
                   <tr key={loc.name} className={rowClass}>
                     <td className="captures-col-icon">
                       <button
-                        className={`star-btn ${isFav ? 'star-on' : ''}`}
+                        className={`star-btn ${starStatusClass}`}
                         onClick={() => toggleFavorite(loc.name)}
                         title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
                       >
@@ -238,8 +245,14 @@ export default function CapturesPage() {
       <div className="captures-legend">
         <span><span className="legend-swatch legend-swatch-active" /> — точка захватывается прямо сейчас</span>
         <span><span className="legend-swatch legend-swatch-soon" /> — захват начнётся в течение ближайшего часа</span>
-        <span style={{ color: '#e3b341' }}><StarIcon size={13} on /> — избранные точки поднимаются наверх таблицы</span>
-        <span style={{ color: 'var(--green)' }}><SoundIcon size={13} on /> — звук в момент начала захвата (по умолчанию выключен, включается за точку)</span>
+        <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /> — избранные точки отображаются вверху таблицы</span>
+        <span style={{ color: 'var(--green)' }}><SoundIcon size={13} on /> — звук в начале захвата (по умолчанию отключён, включается для каждой точки отдельно)</span>
+        <span>
+          Цвет звезды:{' '}
+          <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /></span> избранное,{' '}
+          <span style={{ color: 'var(--orange)' }}><StarIcon size={13} on /></span> захват скоро,{' '}
+          <span style={{ color: 'var(--red)' }}><StarIcon size={13} on /></span> захват идёт
+        </span>
       </div>
     </div>
   );
