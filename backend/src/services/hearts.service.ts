@@ -1,5 +1,6 @@
 import * as repo from '../repositories/hearts.repository';
 import type { HeartsUpdateFields } from '../repositories/hearts.repository';
+import { findMemberInClan } from '../repositories/clan.repository';
 import type { AuthedRequest, ServiceResult } from '../types/http';
 
 export async function listParticipants(req: AuthedRequest): Promise<ServiceResult> {
@@ -12,6 +13,15 @@ export async function createParticipant(req: AuthedRequest): Promise<ServiceResu
   if (!req.user.clan_id) return { status: 403, body: { error: 'Ты не в клане' } };
   const { nick, user_id } = req.body;
   if (!nick || !nick.trim()) return { status: 400, body: { error: 'Укажи ник' } };
+
+  // ИСПРАВЛЕНО: раньше user_id из тела запроса вставлялся без проверки,
+  // что этот аккаунт вообще состоит в клане запрашивающего — можно было
+  // привязать строку к ЧУЖОМУ user_id (в т.ч. из другого клана), и по
+  // правилу владения в updateParticipant редактировать её потом мог
+  // только этот случайный аккаунт, а не участники клана.
+  if (user_id != null && !(await findMemberInClan(user_id, req.user.clan_id))) {
+    return { status: 400, body: { error: 'Этот игрок не в твоём клане' } };
+  }
 
   const participant = await repo.createParticipant(req.user.clan_id, user_id, nick.trim(), req.user.id);
   req.getIo().to(`clan:${req.user.clan_id}`).emit('hearts:update');
