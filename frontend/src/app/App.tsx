@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import AuthPage from '../features/auth/AuthPage';
@@ -25,7 +25,7 @@ import AnomalyPage from '../features/anomaly/AnomalyPage';
 import type { AnomalyStateData } from '../features/anomaly/AnomalyPage';
 import { useAnomalyStore } from '../features/anomaly/store';
 import { api } from '../utils/api';
-import { useSocket } from '../hooks/useSocket';
+import { useSocket, getSocket } from '../hooks/useSocket';
 import { useGlobalSoundWatcher } from '../hooks/useGlobalSoundWatcher';
 import { APP_PAGES, GUEST_PREVIEW_PAGES } from './routes';
 import type { AuthUser, BearWithKiller, DraugWithKiller } from '../types/entities';
@@ -186,6 +186,28 @@ export default function App() {
   }, [heartsReloader]);
 
   useSocket(token, handleBearUpdate, handleClanUpdate, handleReconnect, handleShiningUpdate, handleHeartsUpdate, handleDraugUpdate);
+
+  // ИСПРАВЛЕНО: на бэкенде уже есть обработчики join:clan/leave:clan
+  // (backend/src/sockets/handlers/connection.ts), но фронтенд их никогда
+  // не вызывал. Из-за этого сокет, подключившийся ДО того как игрок
+  // создал/вступил в клан (или сменил клан — вышел/кикнули/перевели
+  // лидерство), оставался вне комнаты `clan:<id>` на всё время текущего
+  // соединения — события bear:update/draug:update/shining:update/
+  // hearts:update для нового клана тихо переставали доходить до вкладки,
+  // пока не произойдёт полная перезагрузка страницы (новое соединение
+  // сокета заново читает clan_id из БД). Теперь при каждом изменении
+  // clan.id явно уходим из старой комнаты и заходим в новую.
+  const prevClanIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const prevId = prevClanIdRef.current;
+    const newId = clan?.id ?? null;
+    if (prevId === newId) return;
+    if (prevId != null) socket.emit('leave:clan', prevId);
+    if (newId != null) socket.emit('join:clan', newId);
+    prevClanIdRef.current = newId;
+  }, [clan?.id]);
 
   // Живёт на уровне App (не размонтируется при переключении вкладок) —
   // поэтому звуки медведей/драугов/сияния/таймеров теперь играют независимо от того,
