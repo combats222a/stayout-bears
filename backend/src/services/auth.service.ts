@@ -67,9 +67,6 @@ export async function updateProfile(req: AuthedRequest): Promise<ServiceResult> 
 }
 
 export async function deleteAccount(req: AuthedRequest): Promise<ServiceResult> {
-  const result = await repo.deleteAccountTx(req.user.id, req.user.clan_id);
-  if (result.blocked) {
-    return { status: 400, body: { error: 'Ты владелец клана с участниками. Сначала кикни всех или передай владение.' } };
-  }
+  await repo.deleteAccountTx(req.user.id, req.user.clan_id);
   return { status: 200, body: { ok: true } };
 }
