@@ -233,10 +233,13 @@ npm run migrate:create -- <name>   # создать новый файл мигр
 
 Найдены при переносе, не исправлялись — не входило в задачу:
 
-- `features/admin/AdminPage.jsx` и `components/BearCard.jsx` импортируют
-  `formatTime`/`getTimeLeft` из `utils/bears.js`, которых там нет
-  (правильные имена — `formatClock`/`getTimeLeftMs`). `BearCard.jsx`
-  вдобавок нигде не используется — мёртвый компонент.
+- ~~`features/admin/AdminPage.jsx` и `components/BearCard.jsx` импортируют
+  `formatTime`/`getTimeLeft` из `utils/bears.js`, которых там нет~~ —
+  **устранено.** `AdminPage.tsx` перенесён на TS без этого импорта.
+  `BearCard.jsx` был мёртвым, нигде не используемым компонентом (отрисовку
+  строки медведя/драуга полностью взял на себя `TrackerRow.tsx`) — удалён
+  при завершении миграции, а не переведён в `.tsx`, чтобы не тащить в
+  типизированный код заведомо неиспользуемый и нерабочий файл.
 - `utils/sound.js` и `utils/soundPrefs.js` — пустые `catch`-блоки.
 - `repositories/timers.repository.js` → `reorderTimers` — `BEGIN`/
   `COMMIT`/`ROLLBACK` идут через `pool.query(...)` без выделенного
