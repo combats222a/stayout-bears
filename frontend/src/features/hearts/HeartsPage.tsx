@@ -447,18 +447,21 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
         </span>
       </td>
 
-      {/* УЧАСТНИКИ — редактирует только тот, чей ник указан в строке */}
+      {/* УЧАСТНИКИ — редактирует только тот, чей ник указан в строке.
+          Раньше это была бордер-рамка с фоном и minHeight:30 — заметно выше
+          плоских пилюль соседних колонок (см. «Выплачено участникам»), из-за
+          чего именно эта колонка задавала высоту всей строки и ряд выглядел
+          неровным. Теперь стиль пилюль такой же плоский, как у «Выплачено
+          участникам» — кликабельность (открытие FindersDropdown) не меняется,
+          меняется только визуальный вес ячейки. */}
       <td style={{ padding: '13px 8px', minWidth: 200 }}>
         <div
           ref={findersBtnRef}
           onClick={() => { if (isOwner) setShowFinders(o => !o); }}
           title={!isOwner ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap',
-            cursor: isOwner ? 'pointer' : 'default', padding: '5px 8px', borderRadius: 6,
-            border: `1px solid ${showFinders ? 'var(--accent)' : 'var(--border)'}`,
-            background: showFinders ? 'rgba(88,166,255,.06)' : 'var(--bg3)',
-            minWidth: 180, minHeight: 30, transition: 'all .15s',
+            display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap',
+            cursor: isOwner ? 'pointer' : 'default',
             opacity: isOwner ? 1 : 0.75,
           }}
         >
@@ -466,14 +469,14 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
             ? <span style={{ fontSize: 12, color: 'var(--text3)' }}>{isOwner ? 'Выбрать...' : '—'}</span>
             : finders.map(f => (
               <span key={f} style={{
-                fontSize: 11, padding: '1px 6px', borderRadius: 8,
+                fontSize: 11, padding: '2px 7px', borderRadius: 8,
                 background: 'rgba(88,166,255,.15)', color: 'var(--accent)',
                 border: '1px solid rgba(88,166,255,.25)',
               }}>{f}</span>
             ))
           }
-          <span style={{ marginLeft: 'auto', fontSize: 11, paddingLeft: 4, width: 13, textAlign: 'center', display: 'inline-block' }}>
-            {isOwner ? <span style={{ fontSize: 9, color: 'var(--text3)' }}>▼</span> : '🔒'}
+          <span style={{ fontSize: 9, color: showFinders ? 'var(--accent)' : 'var(--text3)', marginLeft: 2 }}>
+            {isOwner ? '▼' : '🔒'}
           </span>
         </div>
         {showFinders && isOwner && (
