@@ -55,24 +55,28 @@ export async function runUpdate(
   return rows[0] || null;
 }
 
-// ВНИМАНИЕ: как и в оригинале, здесь BEGIN/COMMIT/ROLLBACK идут через
-// pool.query(...), а не через выделенный client — то есть каждый вызов
-// может уйти на РАЗНОЕ соединение из пула, и фактической атомарности нет.
-// Это существующий баг оригинального кода, перенесён как есть (см.
-// README.md → «Известные существующие проблемы»), не исправлял.
+// ИСПРАВЛЕНО: раньше BEGIN/COMMIT/ROLLBACK шли через pool.query(...), а не
+// через выделенный client — каждый вызов мог уйти на РАЗНОЕ соединение из
+// пула, и фактической атомарности не было (баг из README → «Известные
+// существующие проблемы»). Теперь вся транзакция держится на одном client,
+// полученном через pool.connect(), и client гарантированно освобождается
+// в finally.
 export async function reorderTimers(order: Array<string | number>, userId: number): Promise<TimerRow[]> {
-  await pool.query('BEGIN');
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     for (let idx = 0; idx < order.length; idx++) {
-      await pool.query(
+      await client.query(
         'UPDATE user_timers SET sort_order = $1 WHERE id = $2 AND user_id = $3',
         [idx + 1, order[idx], userId]
       );
     }
-    await pool.query('COMMIT');
+    await client.query('COMMIT');
   } catch (e) {
-    await pool.query('ROLLBACK').catch(() => {});
+    await client.query('ROLLBACK').catch(() => {});
     throw e;
+  } finally {
+    client.release();
   }
   return listTimers(userId);
 }
