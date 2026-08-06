@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://stayout-bears.vercel.app/sitemap.xml
