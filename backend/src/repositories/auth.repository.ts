@@ -23,10 +23,16 @@ export async function updateGameNick(userId: number, gameNick: string): Promise<
   return rows[0];
 }
 
-// Транзакция удаления аккаунта — если владелец клана с другими
-// участниками, откатываем и сообщаем об этом сервису (blocked: true),
-// не бросая ошибку — это ожидаемый бизнес-исход, а не сбой.
-export async function deleteAccountTx(userId: number, clanId: number | null): Promise<{ blocked: boolean }> {
+// ИЗМЕНЕНО: раньше владелец клана с другими участниками не мог удалить
+// аккаунт вообще (транзакция откатывалась, сервис возвращал 400 с
+// просьбой сначала кикнуть всех/передать лидерство) — по просьбе убрали
+// это ограничение. Теперь при удалении аккаунта владельца с другими
+// участниками клан не блокируется и не удаляется — лидерство молча
+// передаётся дальше (сначала заму, если он назначен и ещё в клане,
+// иначе — участнику, раньше всех вступившему), и аккаунт удаляется как
+// обычно. Клан удаляется целиком только если участников кроме самого
+// владельца не осталось (как и раньше).
+export async function deleteAccountTx(userId: number, clanId: number | null): Promise<void> {
   const client: PoolClient = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -36,14 +42,19 @@ export async function deleteAccountTx(userId: number, clanId: number | null): Pr
       const clan = clanRows[0];
       if (clan && clan.owner_id === userId) {
         const { rows: members } = await client.query(
-          'SELECT id FROM users WHERE clan_id = $1 AND id != $2',
+          'SELECT id FROM users WHERE clan_id = $1 AND id != $2 ORDER BY id ASC',
           [clanId, userId]
         );
         if (members.length > 0) {
-          await client.query('ROLLBACK');
-          return { blocked: true };
+          const deputyStillMember = clan.deputy_id != null && members.some((m) => m.id === clan.deputy_id);
+          const newOwnerId = deputyStillMember ? clan.deputy_id : members[0].id;
+          await client.query(
+            'UPDATE clans SET owner_id = $1, deputy_id = CASE WHEN deputy_id = $1 THEN NULL ELSE deputy_id END WHERE id = $2',
+            [newOwnerId, clan.id]
+          );
+        } else {
+          await client.query('DELETE FROM clans WHERE id = $1', [clan.id]);
         }
-        await client.query('DELETE FROM clans WHERE id = $1', [clan.id]);
       } else {
         await client.query('UPDATE users SET clan_id = NULL WHERE id = $1', [userId]);
       }
@@ -51,7 +62,6 @@ export async function deleteAccountTx(userId: number, clanId: number | null): Pr
 
     await client.query('DELETE FROM users WHERE id = $1', [userId]);
     await client.query('COMMIT');
-    return { blocked: false };
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;
