@@ -413,13 +413,13 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
   return (
     <tr style={{ borderBottom: '1px solid rgba(48,54,61,.5)' }}>
       {/* ДАТА */}
-      <td style={{ padding: '13px 12px', width: 86, whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '13px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{dateStr}</div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{timeStr}</div>
       </td>
 
       {/* НИК */}
-      <td style={{ padding: '13px 8px' }}>
+      <td style={{ padding: '13px 10px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15 }}>{p.nick}</span>
         {!p.user_id && (
           <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)', background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>гость</span>
@@ -427,41 +427,38 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
       </td>
 
       {/* СЕРДЦА — редактирует только тот, чей ник указан в строке */}
-      <td style={{ padding: '13px 8px', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex' }}>
+      <td style={{ padding: '13px 10px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" disabled={!isOwner} />
         </div>
       </td>
 
       {/* ШКУРЫ — редактирует только тот, чей ник указан в строке */}
-      <td style={{ padding: '13px 8px', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex' }}>
+      <td style={{ padding: '13px 10px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" disabled={!isOwner} />
         </div>
       </td>
 
       {/* ДОЛЯ */}
-      <td style={{ padding: '13px 12px', textAlign: 'center', minWidth: 110 }}>
+      <td style={{ padding: '13px 10px', textAlign: 'center' }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 14, color: '#3fb950', whiteSpace: 'nowrap' }}>
           {shareLabel}
         </span>
       </td>
 
-      {/* УЧАСТНИКИ — редактирует только тот, чей ник указан в строке.
-          Раньше это была бордер-рамка с фоном и minHeight:30 — заметно выше
-          плоских пилюль соседних колонок (см. «Выплачено участникам»), из-за
-          чего именно эта колонка задавала высоту всей строки и ряд выглядел
-          неровным. Теперь стиль пилюль такой же плоский, как у «Выплачено
-          участникам» — кликабельность (открытие FindersDropdown) не меняется,
-          меняется только визуальный вес ячейки. */}
-      <td style={{ padding: '13px 8px', minWidth: 200 }}>
+      {/* УЧАСТНИКИ — редактирует только тот, чей ник указан в строке */}
+      <td style={{ padding: '13px 10px' }}>
         <div
           ref={findersBtnRef}
           onClick={() => { if (isOwner) setShowFinders(o => !o); }}
           title={!isOwner ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
           style={{
-            display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap',
-            cursor: isOwner ? 'pointer' : 'default',
+            display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap',
+            cursor: isOwner ? 'pointer' : 'default', padding: '5px 8px', borderRadius: 6,
+            border: `1px solid ${showFinders ? 'var(--accent)' : 'var(--border)'}`,
+            background: showFinders ? 'rgba(88,166,255,.06)' : 'var(--bg3)',
+            width: '100%', boxSizing: 'border-box', minHeight: 30, transition: 'all .15s',
             opacity: isOwner ? 1 : 0.75,
           }}
         >
@@ -469,14 +466,14 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
             ? <span style={{ fontSize: 12, color: 'var(--text3)' }}>{isOwner ? 'Выбрать...' : '—'}</span>
             : finders.map(f => (
               <span key={f} style={{
-                fontSize: 11, padding: '2px 7px', borderRadius: 8,
+                fontSize: 11, padding: '1px 6px', borderRadius: 8,
                 background: 'rgba(88,166,255,.15)', color: 'var(--accent)',
                 border: '1px solid rgba(88,166,255,.25)',
               }}>{f}</span>
             ))
           }
-          <span style={{ fontSize: 9, color: showFinders ? 'var(--accent)' : 'var(--text3)', marginLeft: 2 }}>
-            {isOwner ? '▼' : '🔒'}
+          <span style={{ marginLeft: 'auto', fontSize: 11, paddingLeft: 4, width: 13, textAlign: 'center', display: 'inline-block' }}>
+            {isOwner ? <span style={{ fontSize: 9, color: 'var(--text3)' }}>▼</span> : '🔒'}
           </span>
         </div>
         {showFinders && isOwner && (
@@ -491,12 +488,12 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
       </td>
 
       {/* ВЫПЛАЧЕНО УЧАСТНИКАМ — редактирует только тот, чей ник указан в строке */}
-      <td style={{ padding: '13px 8px', minWidth: 180 }}>
+      <td style={{ padding: '13px 10px' }}>
         <PaidOutCell p={p} finders={finders} paidOut={paidOut} isOwner={isOwner} onUpdate={onUpdate} />
       </td>
 
       {/* ПРОДАЛИ ЗА — редактирует только тот, чей ник указан в строке */}
-      <td style={{ padding: '13px 8px', minWidth: 160 }}>
+      <td style={{ padding: '13px 10px' }}>
         <div
           style={{ display: 'flex', alignItems: 'center', gap: 4 }}
           title={!isOwner ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
@@ -525,7 +522,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
       </td>
 
       {/* Удалить — только лидер и зам */}
-      <td style={{ padding: '13px 6px', textAlign: 'center', width: 32 }}>
+      <td style={{ padding: '13px 6px', textAlign: 'center' }}>
         {canDelete && (
           <button onClick={() => onDelete(p.id)} title="Удалить" style={{
             background: 'none', border: 'none', color: 'var(--text3)',
@@ -548,6 +545,29 @@ interface HeartsPageProps {
   isGuest?: boolean;
   onLoginClick?: () => void;
 }
+
+// ─── Колонки таблицы — единый источник правды для ширин и выравнивания.
+// table-layout: fixed + <colgroup> гарантируют, что заголовок и данные
+// всегда стоят строго друг под другом, независимо от содержимого ячеек.
+interface ColumnDef {
+  key: string;
+  label: string;
+  width: number;
+  align: 'left' | 'center';
+}
+
+const COLUMNS: ColumnDef[] = [
+  { key: 'date',    label: 'ДАТА',                     width: 92,  align: 'center' },
+  { key: 'nick',    label: 'НИК',                      width: 130, align: 'left' },
+  { key: 'hearts',  label: '❤️ СЕРДЦА',                width: 120, align: 'center' },
+  { key: 'pelts',   label: '🧥 ШКУРЫ',                 width: 120, align: 'center' },
+  { key: 'share',   label: '💰 ДОЛЯ',                  width: 100, align: 'center' },
+  { key: 'finders', label: '👥 УЧАСТНИКИ',             width: 210, align: 'left' },
+  { key: 'paidout', label: '💸 ВЫПЛАЧЕНО УЧАСТНИКАМ',  width: 200, align: 'left' },
+  { key: 'sold',    label: '💵 ПРОДАЛИ ЗА',            width: 160, align: 'left' },
+  { key: 'del',     label: '',                         width: 40,  align: 'center' },
+];
+const TABLE_WIDTH = COLUMNS.reduce((s, c) => s + c.width, 0);
 
 // ─── Основная страница ────────────────────────────────────────────────
 export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGuest, onLoginClick = () => {} }: HeartsPageProps) {
@@ -638,18 +658,20 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
       {/* Таблица — без overflow:hidden чтобы дропдауны (порталы) не обрезались */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10 }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1080 }}>
+          <table style={{ width: '100%', minWidth: TABLE_WIDTH, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            {/* colgroup — единственный источник ширины колонок: шапка и
+                строки физически не могут разъехаться, т.к. обе читают
+                ширину из одних и тех же <col> */}
+            <colgroup>
+              {COLUMNS.map(c => <col key={c.key} style={{ width: c.width }} />)}
+            </colgroup>
             <thead>
               <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-                <th style={{ ...th, width: 80 }}>ДАТА</th>
-                <th style={{ ...th, textAlign: 'left', minWidth: 120 }}>НИК</th>
-                <th style={{ ...th, minWidth: 120 }}>❤️ СЕРДЦА</th>
-                <th style={{ ...th, minWidth: 120 }}>🧥 ШКУРЫ</th>
-                <th style={{ ...th, minWidth: 100 }}>💰 ДОЛЯ</th>
-                <th style={{ ...th, minWidth: 200 }}>👥 УЧАСТНИКИ</th>
-                <th style={{ ...th, minWidth: 180 }}>💸 ВЫПЛАЧЕНО УЧАСТНИКАМ</th>
-                <th style={{ ...th, minWidth: 160 }}>💵 ПРОДАЛИ ЗА</th>
-                <th style={{ ...th, width: 32 }}></th>
+                {COLUMNS.map(c => (
+                  <th key={c.key} style={{ ...th, textAlign: c.align, whiteSpace: c.label.length > 12 ? 'normal' : 'nowrap' }}>
+                    {c.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -715,6 +737,5 @@ const th: CSSProperties = {
   color: 'var(--text2)',
   textTransform: 'uppercase',
   letterSpacing: '.06em',
-  textAlign: 'center',
-  whiteSpace: 'nowrap',
+  lineHeight: 1.35,
 };
