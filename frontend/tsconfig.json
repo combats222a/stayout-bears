@@ -14,8 +14,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Coexist with the existing .jsx codebase during migration */
-    "allowJs": true,
+    /* Миграция на TypeScript завершена — .js/.jsx в src больше не
+       ожидаются. allowJs выключен намеренно: новый .js/.jsx-файл теперь
+       будет ошибкой сборки, а не молча проскочит мимо тайпчекера, как
+       было на время миграции. */
+    "allowJs": false,
     "checkJs": false,
 
     /* Linting */
