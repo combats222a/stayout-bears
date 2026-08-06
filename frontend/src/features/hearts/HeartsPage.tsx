@@ -278,7 +278,7 @@ interface CounterProps {
 function Counter({ value, onChange, color, disabled }: CounterProps) {
   return (
     <div
-      style={{ display: 'flex', alignItems: 'center', gap: 7, opacity: disabled ? 0.75 : 1 }}
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 7, opacity: disabled ? 0.75 : 1 }}
       title={disabled ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
     >
       <button
@@ -302,7 +302,13 @@ function Counter({ value, onChange, color, disabled }: CounterProps) {
           fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontWeight: 600,
         }}>+</button>
-      <span style={{ fontSize: 11, marginLeft: 1, width: 13, display: 'inline-block', textAlign: 'center', visibility: disabled ? 'visible' : 'hidden' }}>🔒</span>
+      {/* Замочек — вне потока (position:absolute), поэтому НЕ участвует в
+          расчёте ширины ряда и не сдвигает видимый блок «− 0 +» от центра
+          колонки. Раньше он резервировал место invisibility:hidden прямо
+          в строке — из-за этого счётчик визуально «уезжал» влево. */}
+      {disabled && (
+        <span style={{ position: 'absolute', left: '100%', marginLeft: 6, fontSize: 11, whiteSpace: 'nowrap' }}>🔒</span>
+      )}
     </div>
   );
 }
