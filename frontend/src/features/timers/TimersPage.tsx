@@ -1,5 +1,5 @@
 import {
-  useState, useEffect, useCallback, useRef, useLayoutEffect,
+  useState, useEffect, useCallback, useRef,
   ChangeEvent, DragEvent, FocusEvent, KeyboardEvent,
 } from 'react';
 import { api } from '../../utils/api';
@@ -11,14 +11,30 @@ import type { AuthUser, UserTimer } from '../../types/entities';
 
 function pad(n: number): string { return String(Math.floor(n)).padStart(2, '0'); }
 
-function formatDuration(seconds: number): string {
+// "Осталось" — чистый счётчик H:MM:SS (часы не обрезаются по 24, как у
+// медведей: там период всегда меньше суток, а у пользовательских таймеров
+// может быть многодневный период — поэтому просто общее число часов).
+function formatCountdown(seconds: number): string {
   if (seconds < 0) seconds = 0;
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
+  const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (d > 0) return `${d}д ${pad(h)}:${pad(m)}:${pad(s)}`;
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+// "Интервал" — человекочитаемый период без секунд: "23 ч", "12 ч", "3 д",
+// "5 д 12 ч". Единицы меньше часа показываем в минутах, только если период
+// короче часа целиком (иначе колонка не даёт лишней точности).
+function formatInterval(seconds: number): string {
+  const d = Math.floor(seconds / 86400);
+  const rest = seconds % 86400;
+  const h = Math.floor(rest / 3600);
+  const m = Math.floor((rest % 3600) / 60);
+  const parts: string[] = [];
+  if (d > 0) parts.push(`${d} д`);
+  if (h > 0) parts.push(`${h} ч`);
+  if (d === 0 && h === 0) parts.push(`${m} мин`);
+  return parts.join(' ');
 }
 
 function getRemaining(timer: UserTimer): number | null {
@@ -124,11 +140,8 @@ interface MenuPos {
 
 // "···" меню действий строки (Изменить / Удалить) — закрывается по клику снаружи или Esc
 //
-// Раньше меню позиционировалось position:absolute внутри строки, а строка лежит
-// внутри .timers-table с overflow:hidden (это нужно для скруглённых углов таблицы).
-// Из-за этого у нижних строк выпадающий список обрезался этим overflow и был не
-// виден. Теперь меню рисуется через position:fixed по координатам самой кнопки —
-// оно всегда поверх всего и не зависит от overflow родителей.
+// Меню позиционируется через position:fixed по координатам самой кнопки —
+// оно всегда поверх всего и не зависит от overflow родительской таблицы.
 function RowActionsMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<MenuPos | null>(null);
@@ -193,7 +206,7 @@ function RowActionsMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: ()
   );
 }
 
-// Инпут периода: клик/фокус выделяет значение целиком,
+// Инпут периода в форме создания: клик/фокус выделяет значение целиком,
 // чтобы ввод любой цифры сразу заменял стоящий там 0
 function PeriodNumberInput({ value, onChange, max, className = 'input timer-period-num' }: {
   value: number; onChange: (v: number) => void; max?: number; className?: string;
@@ -218,81 +231,23 @@ interface TimerEditChanges {
   sound_enabled?: boolean;
 }
 
-// Компактный редактируемый "Период" прямо в столбце таблицы — три коротких
-// поля дн./ч./мин. без стрелок (не помещаются в узкую колонку). Правки не
-// летят на сервер при каждом нажатии клавиши — небольшой debounce, а дальше
-// как и раньше в модалке: если период уменьшили меньше текущего остатка,
-// остаток подрезаем, чтобы прогресс-бар не зашкаливал.
-function PeriodInlineEdit({ timer, onEdit }: { timer: UserTimer; onEdit: (id: number, changes: TimerEditChanges) => void }) {
-  const [days, setDays] = useState(Math.floor(timer.period_seconds / 86400));
-  const [hours, setHours] = useState(Math.floor((timer.period_seconds % 86400) / 3600));
-  const [minutes, setMinutes] = useState(Math.floor((timer.period_seconds % 3600) / 60));
-  const pendingRef = useRef(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Подхватываем период, если он поменялся снаружи (автообновление раз в 30с,
-  // правка на другой вкладке) — но не пока пользователь сам сейчас печатает.
-  useEffect(() => {
-    if (pendingRef.current) return;
-    setDays(Math.floor(timer.period_seconds / 86400));
-    setHours(Math.floor((timer.period_seconds % 86400) / 3600));
-    setMinutes(Math.floor((timer.period_seconds % 3600) / 60));
-  }, [timer.period_seconds]);
-
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
-
-  function commit(nextDays: number, nextHours: number, nextMinutes: number) {
-    setDays(nextDays);
-    setHours(nextHours);
-    setMinutes(nextMinutes);
-    pendingRef.current = true;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      pendingRef.current = false;
-      const newPeriodSeconds = nextDays * 86400 + nextHours * 3600 + nextMinutes * 60;
-      if (newPeriodSeconds < 60) return; // период меньше минуты не отправляем
-      const currentRemaining = getRemaining(timer);
-      const clampedRemaining = currentRemaining === null
-        ? newPeriodSeconds
-        : Math.min(Math.max(0, Math.round(currentRemaining)), newPeriodSeconds);
-      onEdit(timer.id, { period_seconds: newPeriodSeconds, remaining_seconds: clampedRemaining });
-    }, 500);
-  }
-
-  return (
-    <div className="timer-row-period-edit" title="Период таймера">
-      <input
-        className="timer-row-period-num" type="number" min="0" max="999"
-        value={days} onFocus={e => e.target.select()}
-        onChange={e => commit(Math.max(0, parseInt(e.target.value) || 0), hours, minutes)}
-      />
-      <span className="timer-row-period-unit">д</span>
-      <input
-        className="timer-row-period-num" type="number" min="0" max="23"
-        value={hours} onFocus={e => e.target.select()}
-        onChange={e => commit(days, Math.min(23, Math.max(0, parseInt(e.target.value) || 0)), minutes)}
-      />
-      <span className="timer-row-period-unit">ч</span>
-      <input
-        className="timer-row-period-num" type="number" min="0" max="59"
-        value={minutes} onFocus={e => e.target.select()}
-        onChange={e => commit(days, hours, Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
-      />
-      <span className="timer-row-period-unit">м</span>
-    </div>
-  );
-}
-
-// ── Модалка редактирования таймера (название + оставшееся время) ──
+// ── Модалка редактирования таймера (название + интервал + оставшееся время) ──
+// Интервал теперь редактируется только здесь (в таблице колонка "Интервал"
+// стала чистым read-only отображением, как "Квадрат" у медведей — без
+// инлайн-полей внутри строки, чтобы не плодить визуальный шум).
 function EditTimerModal({ timer, onCommit, onClose }: {
   timer: UserTimer; onCommit: (changes: TimerEditChanges) => void; onClose: () => void;
 }) {
   const [name, setName] = useState(timer.name);
 
-  // Оставшееся время — отдельное поле, не связанное с периодом. Предзаполняем
-  // тем, сколько реально осталось прямо сейчас (а не полным периодом), чтобы
-  // можно было точечно поправить его, например если забыли вовремя нажать
-  // "Обновить" и таймер утёк на лишний час.
+  const [days, setDays] = useState(Math.floor(timer.period_seconds / 86400));
+  const [hours, setHours] = useState(Math.floor((timer.period_seconds % 86400) / 3600));
+  const [minutes, setMinutes] = useState(Math.floor((timer.period_seconds % 3600) / 60));
+
+  // Оставшееся время — отдельное поле, не связанное с полем интервала.
+  // Предзаполняем тем, сколько реально осталось прямо сейчас (а не полным
+  // периодом), чтобы можно было точечно поправить его, например если
+  // забыли вовремя нажать "Обновить" и таймер утёк на лишний час.
   const initialRemaining = (() => {
     const r = getRemaining(timer);
     if (r === null) return timer.period_seconds;
@@ -304,17 +259,12 @@ function EditTimerModal({ timer, onCommit, onClose }: {
 
   const [error, setError] = useState('');
 
-  // Пока пользователь трогает только «Название», «Осталось до события» не
-  // отправляем вовсе — иначе в бэк уходил бы remainingSeconds, снятый ещё в
-  // момент ОТКРЫТИЯ модалки. Пока модалка открыта (человек печатает название),
-  // реальное время утекает, и при сохранении таймер откатывался назад на
-  // эти секунды/минуты. Теперь остаток идёт в изменения, только если его
-  // реально трогали через стрелки/поле.
+  // Пока пользователь трогает только «Название»/«Интервал», «Осталось до
+  // события» не отправляем вовсе — иначе в бэк уходил бы remainingSeconds,
+  // снятый ещё в момент ОТКРЫТИЯ модалки, и при сохранении таймер откатился
+  // бы назад на секунды/минуты, утёкшие пока модалка была открыта.
   const [remainingTouched, setRemainingTouched] = useState(false);
 
-  // Правим "Осталось до конца" → пересчитываем поле точного времени.
-  // Период здесь больше не редактируется (это теперь делается прямо в
-  // таблице), поэтому используем неизменный timer.period_seconds.
   function updateRemaining(nextRemDays: number, nextRemHours: number, nextRemMinutes: number) {
     setRemDays(nextRemDays);
     setRemHours(nextRemHours);
@@ -324,10 +274,26 @@ function EditTimerModal({ timer, onCommit, onClose }: {
 
   function handleSubmit() {
     if (!name.trim()) { setError('Введите название таймера'); return; }
+
+    const newPeriodSeconds = days * 86400 + hours * 3600 + minutes * 60;
+    const periodChanged = newPeriodSeconds !== timer.period_seconds;
+    if (periodChanged && newPeriodSeconds < 60) { setError('Интервал должен быть не менее 1 минуты'); return; }
+
     const changes: TimerEditChanges = { name: name.trim() };
+    if (periodChanged) changes.period_seconds = newPeriodSeconds;
+
     if (remainingTouched) {
       changes.remaining_seconds = remDays * 86400 + remHours * 3600 + remMinutes * 60;
+    } else if (periodChanged) {
+      // Интервал уменьшили, а остаток руками не трогали — подрезаем остаток
+      // под новый интервал, чтобы прогресс-бар не зашкаливал.
+      const currentRemaining = getRemaining(timer);
+      const clampedRemaining = currentRemaining === null
+        ? newPeriodSeconds
+        : Math.min(Math.max(0, Math.round(currentRemaining)), newPeriodSeconds);
+      changes.remaining_seconds = clampedRemaining;
     }
+
     onCommit(changes);
     onClose();
   }
@@ -359,9 +325,21 @@ function EditTimerModal({ timer, onCommit, onClose }: {
 
           <div className="modal-divider" />
 
+          <label className="modal-label">Интервал</label>
+          <div className="timer-period-inputs">
+            <SteppedNumberInput value={days} onChange={setDays} />
+            <span className="timer-period-unit">дн.</span>
+            <SteppedNumberInput value={hours} onChange={setHours} max={23} />
+            <span className="timer-period-unit">ч.</span>
+            <SteppedNumberInput value={minutes} onChange={setMinutes} max={59} />
+            <span className="timer-period-unit">мин.</span>
+          </div>
+
+          <div className="modal-divider" />
+
           <label className="modal-label">
             Осталось до события
-            <InfoTip text="Поправьте, если забыли вовремя нажать «Обновить» — период при этом не изменится" />
+            <InfoTip text="Поправьте, если забыли вовремя нажать «Обновить» — интервал при этом не изменится" />
           </label>
           <div className="timer-period-inputs">
             <SteppedNumberInput value={remDays} onChange={d => updateRemaining(d, remHours, remMinutes)} />
@@ -397,18 +375,24 @@ interface TimerRowProps {
   onDelete: (id: number) => void;
   onToggleSound: (timer: UserTimer) => void;
   dragState: DragState;
-  onDragStart: (e: DragEvent<HTMLDivElement>, index: number) => void;
-  onDragOver: (e: DragEvent<HTMLDivElement>, index: number) => void;
-  onDrop: (e: DragEvent<HTMLDivElement>, index: number) => void;
+  onDragStart: (e: DragEvent<HTMLSpanElement>, index: number) => void;
+  onDragOver: (e: DragEvent<HTMLTableRowElement>, index: number) => void;
+  onDrop: (e: DragEvent<HTMLTableRowElement>, index: number) => void;
   onDragEnd: () => void;
-  registerRowRef: (id: number, el: HTMLDivElement | null) => void;
   justDroppedId: number | null;
 }
 
+// Порог "скоро закончится" — последние 10% периода. Пороговая доля, а не
+// фиксированное время, чтобы одинаково хорошо работать и на 20-минутном,
+// и на 5-дневном таймере.
+const WARNING_FRACTION = 0.1;
+
+// Единая строка таблицы для десктопа и мобилки — как и в таблице медведей,
+// адаптацию под маленький экран делает чистый CSS (см. .timers-tbl в
+// styles.css), а не отдельное JS-поддерево.
 function TimerRow({
   timer, index, onReset, onEdit, onDelete, onToggleSound,
-  dragState, onDragStart, onDragOver, onDrop, onDragEnd,
-  registerRowRef, justDroppedId,
+  dragState, onDragStart, onDragOver, onDrop, onDragEnd, justDroppedId,
 }: TimerRowProps) {
   const [, setTick] = useState(0);
   const [showEdit, setShowEdit] = useState(false);
@@ -420,135 +404,92 @@ function TimerRow({
 
   const remaining = getRemaining(timer);
   const forecast = getForecast(timer);
-  const isExpired = remaining !== null && remaining <= 0;
   const isEmpty = remaining === null;
+  const isExpired = !isEmpty && remaining! <= 0;
+  const isWarning = !isEmpty && !isExpired && remaining! <= timer.period_seconds * WARNING_FRACTION;
 
-  // Звук по истечении теперь проигрывает только глобальный вотчер
-  // (useGlobalSoundWatcher, живёт на уровне App) — он срабатывает независимо
-  // от открытой вкладки. Раньше эта страница ещё и сама проигрывала сигнал,
-  // из-за чего на вкладке "Таймеры" звук звучал дважды.
+  // Звук по истечении проигрывает только глобальный вотчер
+  // (useGlobalSoundWatcher, живёт на уровне App) — независимо от открытой
+  // вкладки, поэтому здесь звук не запускаем.
 
-  const progressPct = remaining !== null
-    ? Math.min(100, Math.max(0, (remaining / timer.period_seconds) * 100))
-    : 0;
-  // Кольцо теперь заполняется зелёным по мере прохождения времени (а не
-  // "убывает" от полного круга к пустому) — так нагляднее читается
-  // приближение к завершению отсчёта.
-  const elapsedPct = 100 - progressPct;
+  const elapsedPct = isEmpty ? 0 : Math.min(100, Math.max(0, 100 - (remaining! / timer.period_seconds) * 100));
+
+  let rowCls = 'bear-row';
+  if (isExpired)      rowCls += ' row-ready';
+  else if (isWarning) rowCls += ' row-warn';
+  else if (!isEmpty)  rowCls += ' row-active';
+
+  let barColor = '#4a9edd';
+  if (isWarning) barColor = '#e0a030';
+
+  let valColor = '#c8d6e5';
+  if (isWarning) valColor = '#e0a030';
+  else if (isEmpty) valColor = '#3a5a7a';
 
   const isDragging = dragState?.draggedIndex === index;
   const isDragOver = dragState?.overIndex === index && dragState?.draggedIndex !== index;
 
+  let rowClasses = rowCls;
+  if (isDragging) rowClasses += ' timer-row-dragging';
+  if (isDragOver) rowClasses += ' timer-row-dragover';
+  if (justDroppedId === timer.id) rowClasses += ' timer-row-dropped';
+
   return (
     <>
-      {/* Desktop row */}
-      <div
-        ref={el => registerRowRef(timer.id, el)}
-        className={`timer-row timer-row-desktop ${isDragging ? 'timer-row-dragging' : ''} ${isDragOver ? 'timer-row-dragover' : ''} ${justDroppedId === timer.id ? 'timer-row-dropped' : ''}`}
+      <tr
+        className={rowClasses}
         onDragOver={e => onDragOver(e, index)}
         onDrop={e => onDrop(e, index)}
       >
-        <div
-          className="timer-row-drag"
-          draggable
-          onDragStart={e => onDragStart(e, index)}
-          onDragEnd={onDragEnd}
-          title="Перетащи чтобы изменить порядок"
-        >≡</div>
-        <div className="timer-row-name">
-          <span className="timer-row-name-text">{timer.name}</span>
-        </div>
-        <div className="timer-row-period">
-          <PeriodInlineEdit timer={timer} onEdit={onEdit} />
-        </div>
-        <div className={`timer-row-remaining ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
-          <div
-            className="timer-row-ring"
-            style={{
-              background: isEmpty
-                ? 'conic-gradient(var(--border) 0 100%)'
-                : isExpired
-                  ? 'conic-gradient(var(--red) 0 100%)'
-                  : `conic-gradient(var(--green) ${elapsedPct}%, var(--bg3) ${elapsedPct}% 100%)`
-            }}
-          >
-            <div className="timer-row-ring-hole" />
-          </div>
-          <span className="timer-row-remaining-text">
-            {isEmpty ? '-- : -- : --' : isExpired ? 'Готово!' : formatDuration(remaining!)}
+        <td className="td-name" data-label="Название">
+          <span className="td-name-inner">
+            <span
+              className="row-drag-handle"
+              draggable
+              onDragStart={e => onDragStart(e, index)}
+              onDragEnd={onDragEnd}
+              title="Перетащи чтобы изменить порядок"
+            >⋮⋮</span>
+            <span className="timer-row-name-text">{timer.name}</span>
           </span>
-        </div>
-        <div className="timer-row-forecast">
-          {isEmpty || !forecast ? '-- : -- : --' : isExpired ? 'Уже!' :
-            forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-        </div>
-        <div className="timer-row-actions">
-          <button className="icon-btn icon-btn-primary" onClick={() => onReset(timer.id)} title="Обновить">
-            <RefreshIcon />
-          </button>
-          <button
-            className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
-            onClick={() => onToggleSound(timer)}
-            title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
-          >
-            <SoundIcon on={timer.sound_enabled} />
-          </button>
-          <RowActionsMenu onEdit={() => setShowEdit(true)} onDelete={() => onDelete(timer.id)} />
-        </div>
-      </div>
-
-      {/* Mobile card — редизайн: отдельная "плитка" на таймер с кольцом-циферблатом
-          вместо плоского списка со строкой-прогрессбаром снизу. Кольцо строится
-          на conic-gradient и даёт мгновенное визуальное чтение остатка (как
-          индикатор заряда), а не просто полоску. */}
-      <div className={`timer-mcard ${isExpired ? 'timer-mcard-expired' : ''} ${isEmpty ? 'timer-mcard-empty' : ''}`}>
-        <div className="timer-mcard-head">
-          <span className="timer-mcard-name">{timer.name}</span>
-          <RowActionsMenu onEdit={() => setShowEdit(true)} onDelete={() => onDelete(timer.id)} />
-        </div>
-
-        <div className="timer-mcard-body">
-          <div
-            className="timer-mcard-ring"
-            style={{
-              background: isEmpty
-                ? 'conic-gradient(var(--border) 0 100%)'
-                : isExpired
-                  ? 'conic-gradient(var(--red) 0 100%)'
-                  : `conic-gradient(var(--green) ${elapsedPct}%, var(--bg3) ${elapsedPct}% 100%)`
-            }}
-          >
-            <div className="timer-mcard-ring-hole">
-              {isExpired ? '⚡' : isEmpty ? '–' : '⏳'}
-            </div>
+        </td>
+        <td className="td-interval" data-label="Интервал">{formatInterval(timer.period_seconds)}</td>
+        <td className="td-remaining" data-label="Осталось">
+          {isExpired
+            ? <span className="spawn-tag">Готово</span>
+            : <div className="prog-wrap">
+                <div className="prog-bar">
+                  <div className="prog-fill" style={{ width: `${elapsedPct}%`, background: barColor }} />
+                </div>
+                <span className="timer-val" style={{ color: valColor }}>
+                  {isEmpty ? '--:--:--' : formatCountdown(remaining!)}
+                </span>
+              </div>
+          }
+        </td>
+        <td className={`td-clock${isEmpty ? ' td-clock-empty' : ''}`} data-label="Доступен в">
+          {isEmpty
+            ? '--:--'
+            : isExpired
+              ? <span style={{ color: '#50c878' }}>Сейчас</span>
+              : forecast!.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+        </td>
+        <td className="td-actions-cell" data-label="Действия">
+          <div className="td-actions-timer">
+            <button className="icon-btn icon-btn-primary" onClick={() => onReset(timer.id)} title="Обновить">
+              <RefreshIcon />
+            </button>
+            <button
+              className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
+              onClick={() => onToggleSound(timer)}
+              title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
+            >
+              <SoundIcon on={timer.sound_enabled} />
+            </button>
+            <RowActionsMenu onEdit={() => setShowEdit(true)} onDelete={() => onDelete(timer.id)} />
           </div>
-
-          <div className="timer-mcard-info">
-            <div className={`timer-mcard-time ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
-              {isEmpty ? '--:--:--' : isExpired ? 'Готово!' : formatDuration(remaining!)}
-            </div>
-            <div className="timer-mcard-sub">
-              <span className="timer-mcard-period-tag">каждые {formatDuration(timer.period_seconds)}</span>
-              <span className="timer-mcard-forecast">
-                🎯 {isEmpty || !forecast ? '--:--' : isExpired ? 'уже!' : forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="timer-mcard-actions">
-          <button className="btn btn-reset timer-mcard-reset-btn btn-anim" onClick={() => onReset(timer.id)}>
-            <RefreshIcon size={15} /> Обновить
-          </button>
-          <button
-            className={`rupor-btn timer-mcard-sound-btn ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
-            onClick={() => onToggleSound(timer)}
-            title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
-          >
-            <SoundIcon on={timer.sound_enabled} />
-          </button>
-        </div>
-      </div>
+        </td>
+      </tr>
 
       {showEdit && (
         <EditTimerModal
@@ -581,60 +522,6 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
   // Drag & drop state
   const [dragState, setDragState] = useState<DragState>({ draggedIndex: null, overIndex: null });
   const [justDroppedId, setJustDroppedId] = useState<number | null>(null);
-  const rowRefs = useRef<Record<number, HTMLDivElement>>({});
-  const prevRectsRef = useRef<Record<number, DOMRect>>({});
-  const prevOrderRef = useRef<string | null>(null);
-
-  function registerRowRef(id: number, el: HTMLDivElement | null) {
-    if (el) rowRefs.current[id] = el;
-    else delete rowRefs.current[id];
-  }
-
-  // FLIP-анимация: при изменении ПОРЯДКА таймеров (drag&drop) плавно "довозим"
-  // каждую строку из её предыдущей позиции в новую (с лёгким пружинным доездом).
-  //
-  // Важно: раньше эффект запускался при ЛЮБОМ изменении массива timers (обновление
-  // таймера, редактирование, автообновление раз в 30 сек и т.п.), а getBoundingClientRect()
-  // возвращает координаты относительно окна просмотра — они меняются при скролле
-  // колесом мыши или при сворачивании/разворачивании блоков на странице. Из-за этого
-  // строки "прыгали" даже без реального изменения порядка. Теперь анимация и замер
-  // позиций выполняются только тогда, когда порядок id действительно изменился.
-  useLayoutEffect(() => {
-    const order = timers.map(t => t.id).join(',');
-    const orderChanged = prevOrderRef.current !== null && prevOrderRef.current !== order;
-    prevOrderRef.current = order;
-
-    if (!orderChanged) return;
-
-    const newRects: Record<number, DOMRect> = {};
-    for (const t of timers) {
-      const el = rowRefs.current[t.id];
-      if (!el) continue;
-      newRects[t.id] = el.getBoundingClientRect();
-    }
-
-    for (const t of timers) {
-      const el = rowRefs.current[t.id];
-      if (!el) continue;
-      const rect = newRects[t.id];
-      const prev = prevRectsRef.current[t.id];
-      if (prev) {
-        const deltaY = prev.top - rect.top;
-        if (Math.abs(deltaY) > 0.5) {
-          el.style.transition = 'none';
-          el.style.transform = `translateY(${deltaY}px)`;
-          // форсируем reflow, чтобы браузер применил стартовое положение
-          el.getBoundingClientRect();
-          requestAnimationFrame(() => {
-            el.style.transition = 'transform 320ms cubic-bezier(0.34, 1.2, 0.4, 1)';
-            el.style.transform = '';
-            el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true });
-          });
-        }
-      }
-    }
-    prevRectsRef.current = newRects;
-  }, [timers]);
 
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -704,16 +591,18 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
     } catch (e) { setError((e as Error).message); }
   }
 
-  // ── Drag & drop reorder ──
-  function handleDragStart(e: DragEvent<HTMLDivElement>, index: number) {
+  // ── Drag & drop reorder — старт только с маленькой ручки (.row-drag-handle)
+  // внутри ячейки "Название", а не с любой точки строки, чтобы клики по
+  // кнопкам действий/меню не превращались в случайный drag.
+  function handleDragStart(e: DragEvent<HTMLSpanElement>, index: number) {
     setDragState({ draggedIndex: index, overIndex: index });
     e.dataTransfer.effectAllowed = 'move';
   }
-  function handleDragOver(e: DragEvent<HTMLDivElement>, index: number) {
+  function handleDragOver(e: DragEvent<HTMLTableRowElement>, index: number) {
     e.preventDefault();
     setDragState(prev => prev.draggedIndex === null ? prev : { ...prev, overIndex: index });
   }
-  async function handleDrop(e: DragEvent<HTMLDivElement>, index: number) {
+  async function handleDrop(e: DragEvent<HTMLTableRowElement>, index: number) {
     e.preventDefault();
     const from = dragState.draggedIndex;
     if (from === null || from === index) { setDragState({ draggedIndex: null, overIndex: null }); return; }
@@ -751,10 +640,12 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
   }
 
   return (
-    <div className="page">
-      <div>
-        <div className="page-title">⏱️ Таймеры</div>
-        <div className="page-subtitle">Создавайте таймеры, отслеживайте время и получайте уведомления</div>
+    <div className="page bears-page">
+      <div className="bears-hdr">
+        <div>
+          <div className="page-title">⏱️ Таймеры</div>
+          <div className="page-subtitle">Создавайте таймеры, отслеживайте время и получайте уведомления</div>
+        </div>
       </div>
       <div className="timer-owner-note">
         🔒 Таймеры видит только их создатель — <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
@@ -771,37 +662,37 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
           <div className="text-muted">Создайте первый таймер с помощью формы ниже</div>
         </div>
       ) : (
-        <div className="timers-table">
-          <div className="timers-thead timers-thead-desktop">
-            <div className="timer-row timer-row-header">
-              <div className="timer-row-drag"></div>
-              <div className="timer-row-name">Название таймера</div>
-              <div className="timer-row-period">Период</div>
-              <div className="timer-row-remaining">Оставшееся время</div>
-              <div className="timer-row-forecast">Прогноз</div>
-              <div className="timer-row-actions">Действия</div>
-            </div>
-          </div>
-          <div className="timers-tbody">
-            {timers.map((t, i) => (
-              <TimerRow
-                key={t.id}
-                index={i}
-                timer={t}
-                onReset={handleReset}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onToggleSound={handleToggleSound}
-                dragState={dragState}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onDragEnd={handleDragEnd}
-                registerRowRef={registerRowRef}
-                justDroppedId={justDroppedId}
-              />
-            ))}
-          </div>
+        <div className="timers-tbl-wrap">
+          <table className="timers-tbl">
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Интервал</th>
+                <th>Осталось</th>
+                <th>Доступен в</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {timers.map((t, i) => (
+                <TimerRow
+                  key={t.id}
+                  index={i}
+                  timer={t}
+                  onReset={handleReset}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleSound={handleToggleSound}
+                  dragState={dragState}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDragEnd={handleDragEnd}
+                  justDroppedId={justDroppedId}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
