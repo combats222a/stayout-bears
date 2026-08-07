@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../utils/api';
+import { BEARS_LIST } from '../../utils/bears';
 import type { Clan, AdminUserSummary, BearWithKiller } from '../../types/entities';
 
 interface AdminData {
@@ -95,7 +96,7 @@ export default function AdminPage() {
 
               <div className="admin-clan-stats">
                 <span>👥 {members.length} участников</span>
-                <span>💀 {deadCount}/9 медведей мертвы</span>
+                <span>💀 {deadCount}/{BEARS_LIST.length} медведей мертвы</span>
               </div>
 
               <div className="admin-members">
