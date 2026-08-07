@@ -676,41 +676,6 @@ body {
 .clock-empty { color: #2a4a6a; border-bottom-color: rgba(74,158,221,0.2); }
 .clock-empty:hover { color: #4a9edd; border-bottom-color: #4a9edd; }
 
-/* === TABLE — timers page ===
-   Отдельный класс (не .bears-table), потому что таблица медведей имеет
-   собственную мобильную CSS-grid раскладку, завязанную на её 8 колонок
-   (td-dot/td-square/data-label="Спавн" и т.д.) — переиспользовать сам класс
-   означало бы либо ломать вёрстку медведей, либо городить исключения.
-   Здесь то же самое визуальное решение (те же отступы/бордеры/hover),
-   продублированное под колонки таймеров: Название/Интервал/Осталось/
-   Доступен в/Действия. Прогресс-бар, цвета состояний строки (.bear-row.
-   row-active/row-warn/row-ready), .td-name, .td-clock и кнопки действий —
-   те же самые классы, что и у медведей, без дублирования. */
-.timers-tbl-wrap { overflow-x: visible; border-radius: 10px; border: 1px solid #1e3a5f; }
-.timers-tbl { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; }
-.timers-tbl thead tr { background: rgba(10,13,18,.97); }
-.timers-tbl th {
-  padding: 11px 12px;
-  text-align: left;
-  font-size: 10px;
-  color: #4a6a8a;
-  text-transform: uppercase;
-  letter-spacing: .8px;
-  white-space: nowrap;
-  border-bottom: 1px solid #1e3a5f;
-}
-.timers-tbl tbody tr { border-bottom: 1px solid rgba(30,58,95,.35); transition: background .15s; }
-.timers-tbl tbody tr:last-child { border-bottom: none; }
-.timers-tbl tbody tr:hover { background: rgba(74,158,221,.06); }
-.timers-tbl td { padding: 11px 12px; vertical-align: middle; white-space: nowrap; }
-
-.td-interval { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #8fb8e0; }
-.td-remaining { min-width: 190px; }
-.td-actions-timer { display: flex; gap: 6px; align-items: center; }
-
-.timers-tbl tbody tr.timer-row-dragging { opacity: .55; background: rgba(74,158,221,.08); box-shadow: inset 0 0 0 1.5px #4a9edd; }
-.timers-tbl tbody tr.timer-row-dragover { background: rgba(88,166,255,.08); }
-
 /* === MODAL === */
 .modal-overlay {
   position: fixed;
@@ -1049,10 +1014,56 @@ body {
   opacity: 0.4;
 }
 
-/* Таблица таймеров теперь использует общую с медведями визуальную систему —
-   см. .timers-tbl-wrap/.timers-tbl ниже (рядом с BEARS TABLE), а не
-   отдельную div-раскладку. Здесь остаётся только то, что переиспользуется
-   независимо от разметки строки: .timer-row-dropped и rupor-кнопки. */
+.timers-table {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.timer-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 156px 180px 150px 130px;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  position: relative;
+  transition: background 0.15s;
+}
+.timer-row:last-child { border-bottom: none; }
+
+.timer-row-dragging {
+  opacity: 0.55;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  transform: scale(0.99);
+  transition: opacity 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.timer-row-dragover { background: rgba(88,166,255,0.06); }
+/* Линия-индикатор места, куда встанет перетаскиваемый таймер */
+.timer-row-dragover::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: -1px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(88,166,255,0.7);
+  transform-origin: center;
+  animation: timer-dragline-in 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes timer-dragline-in {
+  from { transform: scaleX(0.2); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+/* Мягкая подсветка строки сразу после того, как её "отпустили" на новом месте */
 .timer-row-dropped {
   animation: timer-row-flash 700ms ease;
 }
@@ -1060,6 +1071,36 @@ body {
   0% { background: rgba(88,166,255,0.22); }
   100% { background: transparent; }
 }
+
+.timer-row-header {
+  background: transparent;
+  color: var(--text2);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.timer-row-header > * {
+  color: var(--text2) !important;
+}
+
+/* Лёгкая подсветка обычной строки при наведении — как в Linear/GitHub */
+.timer-row-desktop:not(.timer-row-header):hover {
+  background: rgba(255,255,255,0.025);
+}
+
+.timer-row-drag {
+  color: var(--text3);
+  font-size: 18px;
+  cursor: grab;
+  user-select: none;
+  transition: color 0.15s, transform 0.15s;
+}
+.timer-row-drag:hover { color: var(--accent); transform: scale(1.15); }
+.timer-row-drag:active { cursor: grabbing; transform: scale(1.05); }
 
 /* === RUPOR (звук) кнопки === */
 .rupor-btn {
@@ -1093,6 +1134,107 @@ body {
   color: var(--text3);
 }
 .rupor-btn-sm { width: 28px; height: 28px; flex-shrink: 0; }
+
+.timer-row-name {
+  font-family: var(--font-body);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timer-row-period {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text2);
+  text-align: center;
+}
+
+/* Редактируемый период прямо в колонке таблицы — компактная группа из трёх
+   полей (дн./ч./мин.) в общей рамке, похожей на обычный .input */
+.timer-row-period-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.timer-row-period-edit:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(88,166,255,0.1);
+}
+.timer-row-period-num {
+  width: 22px;
+  min-height: unset;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.timer-row-period-num::-webkit-inner-spin-button,
+.timer-row-period-num::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.timer-row-period-unit {
+  font-size: 11px;
+  color: var(--text3);
+  padding-right: 3px;
+}
+.timer-row-period-unit:last-child { padding-right: 0; }
+
+.timer-row-remaining {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.timer-row-remaining.expired { color: var(--red); font-weight: 700; }
+.timer-row-remaining.empty { color: var(--text3); }
+.timer-row-remaining-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Кольцо-циферблат вместо линейной полоски прогресса — то же решение,
+   что и в мобильных карточках (см. .timer-mcard-ring), только компактнее,
+   чтобы уместиться в строке таблицы. */
+.timer-row-ring {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+.timer-row-ring-hole {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--bg2);
+  /* "прогрызаем" внутренний круг через padding-эквивалент за счёт transform,
+     чтобы толщина кольца была одинаковой независимо от размера контейнера */
+  transform: scale(0.62);
+}
+
+.timer-row-forecast {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.timer-row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
 /* === Анимация кнопок действий (Обновить/Изменить/Удалить/Создать) === */
 .btn-anim {
@@ -1415,57 +1557,123 @@ body {
     text-align: center;
   }
 
-  /* === ТАЙМЕРЫ — та же резиновая карточка на чистом CSS, что и у медведей ===
-     Раньше здесь была отдельная "плитка" (.timer-mcard) с круглым
-     циферблатом остатка — своя реализация, ощутимо отличавшаяся от таблицы
-     медведей. Теперь строка .timers-tbl под 640px раскладывается в карточку
-     через CSS Grid по тому же принципу, что и .bears-table (см. рядом,
-     BEARS TABLE): один и тот же DOM на всех размерах экрана, меняется
-     только CSS, включая ту же горизонтальную .prog-bar вместо кольца. */
-  .timers-tbl-wrap { border-radius: 8px; overflow: hidden; }
-  .timers-tbl thead { display: none; }
-  .timers-tbl tbody { display: block; }
-  .timers-tbl tbody tr {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    column-gap: 10px;
-    row-gap: 8px;
-    padding: 12px 14px;
-    white-space: normal;
-  }
-  .timers-tbl td { padding: 0; white-space: normal; vertical-align: baseline; }
+  /* === ТАЙМЕРЫ — скрываем десктопную таблицу, показываем карточки === */
+  .timers-thead-desktop { display: none !important; }
+  .timer-row-desktop { display: none !important; }
+  /* Раньше таймеры на телефоне лежали единым списком внутри общей рамки
+     .timers-table (плоские строки + тонкая полоска-прогрессбар снизу) — на
+     мобильном экране это читалось плохо: узкие строки, мелкий прогресс.
+     Теперь .timers-table на телефоне становится просто "холстом" без своей
+     рамки, а каждый таймер — отдельная приподнятая плитка (см. .timer-mcard
+     ниже) с круговым циферблатом остатка вместо линейной полоски. */
+  .timers-table { background: transparent; border: none; border-radius: 0; }
+  .timers-tbody { display: flex; flex-direction: column; gap: 10px; }
 
-  /* Строка 1: название (тянется) · интервал справа */
-  .timers-tbl .td-name     { grid-row: 1; grid-column: 1; min-width: 0; }
-  .timers-tbl .td-name-inner { overflow: hidden; }
-  .timers-tbl .timer-row-name-text { overflow: hidden; text-overflow: ellipsis; }
-  .timers-tbl .td-interval  { grid-row: 1; grid-column: 2; align-self: center; }
-
-  /* Строка 2: осталось (прогресс-бар) на всю ширину — тот же .prog-bar,
-     что и у медведей, без фикс. min-width */
-  .timers-tbl .td-remaining { grid-row: 2; grid-column: 1 / -1; min-width: 0; }
-  .timers-tbl .prog-bar { min-width: 0; }
-
-  /* Строка 3: "Доступен в" с подписью поля, как у медведей на мобилке */
-  .timers-tbl td[data-label="Доступен в"] {
-    grid-row: 3;
-    grid-column: 1 / -1;
+  .timer-mcard {
     display: flex;
-    align-items: baseline;
-    gap: 6px;
-    font-size: 13px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
   }
-  .timers-tbl td[data-label="Доступен в"]::before {
-    content: attr(data-label);
-    flex: 0 0 90px;
-    font-size: 11px;
-    color: #4a6a8a;
-    font-family: inherit;
+  .timer-mcard-expired {
+    border-color: rgba(248,81,73,0.4);
+    box-shadow: 0 0 0 1px rgba(248,81,73,0.15);
   }
 
-  /* Строка 4: действия на всю ширину */
-  .timers-tbl .td-actions-cell { grid-row: 4; grid-column: 1 / -1; }
-  .timers-tbl .td-actions-timer { flex-wrap: wrap; }
+  .timer-mcard-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .timer-mcard-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .timer-mcard-body {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* Циферблат: наружный круг — conic-gradient, "прогрызенный" внутренним
+     кругом цвета плитки, чтобы получилось кольцо (donut), а не заливка. */
+  .timer-mcard-ring {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .timer-mcard-ring-hole {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+  }
+  .timer-mcard-expired .timer-mcard-ring {
+    animation: timer-mcard-pulse 1.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .timer-mcard-expired .timer-mcard-ring { animation: none; }
+  }
+  @keyframes timer-mcard-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(248,81,73,0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(248,81,73,0); }
+  }
+
+  .timer-mcard-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .timer-mcard-time {
+    font-family: var(--font-mono);
+    font-size: 23px;
+    font-weight: 700;
+    color: var(--green);
+    line-height: 1.1;
+  }
+  .timer-mcard-time.expired { color: var(--red); }
+  .timer-mcard-time.empty { color: var(--text3); font-size: 17px; }
+  .timer-mcard-sub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .timer-mcard-period-tag {
+    color: var(--text3);
+    white-space: nowrap;
+  }
+  .timer-mcard-forecast { white-space: nowrap; }
+
+  .timer-mcard-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .timer-mcard-reset-btn {
+    flex: 1;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .timer-mcard-sound-btn { flex-shrink: 0; }
 
   /* Форма создания таймера */
   .timer-create-row { flex-direction: column; gap: 12px; }
@@ -1519,6 +1727,7 @@ body {
 
 /* На desktop скрываем мобильные карточки */
 @media (min-width: 641px) {
+  .timer-mcard { display: none !important; }
   .header-logout-desktop { display: inline-flex !important; }
   /* Основные разделы и так видны строкой в шапке — не дублируем их внутри
      панели «Разделы» на десктопе, там остаются только Достижения, Уровень и Драуги. */
@@ -2394,23 +2603,11 @@ body {
   color: var(--text2);
 }
 
-/* Имя таймера + маленькая ручка для drag&drop (см. .row-drag-handle) —
-   ручка вынесена внутрь ячейки "Название" вместо отдельной колонки, чтобы
-   таблица таймеров держала ровно те же 5 колонок, что и требует редизайн. */
-.td-name-inner {
+.timer-row-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.row-drag-handle {
-  color: #3a5a7a;
-  font-size: 12px;
-  line-height: 1;
-  cursor: grab;
-  user-select: none;
-  flex-shrink: 0;
-}
-.row-drag-handle:active { cursor: grabbing; }
 .timer-row-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
