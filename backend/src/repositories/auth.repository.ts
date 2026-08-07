@@ -15,10 +15,17 @@ export async function findByLoginOrEmail(login: string): Promise<User | null> {
   return rows[0] || null;
 }
 
-export async function updateGameNick(userId: number, gameNick: string): Promise<AuthUser> {
+// ИСПРАВЛЕНО: раньше эта функция обновляла только game_nick — а фронтенд
+// (ProfilePage.tsx) даёт менять оба поля: "Логин (для входа на сайт)"
+// (nick) и "Игровой ник" (game_nick), отправляя оба в PUT /auth/profile.
+// Пользователь молча не видел изменения логина — оно нигде не терялось
+// в БД, а просто никогда не отправлялось в UPDATE (сервис читал только
+// game_nick из тела запроса). Теперь обновляем оба поля, если они
+// переданы.
+export async function updateProfile(userId: number, nick: string, gameNick: string): Promise<AuthUser> {
   const { rows } = await pool.query<AuthUser>(
-    'UPDATE users SET game_nick = $1 WHERE id = $2 RETURNING id, nick, game_nick, email, clan_id, is_superadmin',
-    [gameNick, userId]
+    'UPDATE users SET nick = $1, game_nick = $2 WHERE id = $3 RETURNING id, nick, game_nick, email, clan_id, is_superadmin',
+    [nick, gameNick, userId]
   );
   return rows[0];
 }
