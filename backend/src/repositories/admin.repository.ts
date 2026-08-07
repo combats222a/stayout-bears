@@ -18,11 +18,28 @@ export async function getAllClansOverview(): Promise<{
   return { clans, users, bears };
 }
 
-// Как и в оригинале — без транзакции: сначала отвязываем участников,
-// потом удаляем клан, двумя отдельными запросами.
+// ИСПРАВЛЕНО: раньше отвязка участников и удаление клана шли двумя
+// отдельными pool.query(...) без общей транзакции (задокументировано в
+// ARCHITECTURE.md как известная проблема, унаследованная от оригинала).
+// Если второй запрос падал (сетевой сбой, ограничение БД и т.п.) после
+// того как первый уже прошёл, участники оставались отвязанными от уже
+// несуществующего по сути, но формально ещё живого клана — рассинхрон,
+// требующий ручного вмешательства. Теперь оба запроса — на одном client
+// в транзакции (тот же паттерн, что и в timers.repository.ts →
+// reorderTimers): либо применяются оба, либо ни одного.
 export async function deleteClanCascade(clanId: string | number): Promise<void> {
-  await pool.query('UPDATE users SET clan_id = NULL WHERE clan_id = $1', [clanId]);
-  await pool.query('DELETE FROM clans WHERE id = $1', [clanId]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('UPDATE users SET clan_id = NULL WHERE clan_id = $1', [clanId]);
+    await client.query('DELETE FROM clans WHERE id = $1', [clanId]);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 export async function resetClanBears(clanId: string | number): Promise<void> {
