@@ -56,14 +56,34 @@ export function getMe(req: AuthedRequest): ServiceResult {
 }
 
 export async function updateProfile(req: AuthedRequest): Promise<ServiceResult> {
-  const { game_nick } = req.body;
-  if (!game_nick) return { status: 400, body: { error: 'Нечего обновлять' } };
-  if (game_nick.length < 2 || game_nick.length > 32) {
+  const { nick, game_nick } = req.body;
+  if (!nick && !game_nick) return { status: 400, body: { error: 'Нечего обновлять' } };
+
+  // ИСПРАВЛЕНО: раньше здесь читался и валидировался только game_nick,
+  // хотя форма профиля (ProfilePage.tsx) отправляет оба поля и позволяет
+  // менять именно "Логин (для входа на сайт)" — nick. Из-за этого правка
+  // логина в интерфейсе выглядела успешной (приходил 200, "Профиль
+  // сохранён!"), но реально не применялась. Валидируем и сохраняем оба
+  // поля, если они переданы.
+  const nextNick = nick !== undefined ? nick : req.user.nick;
+  const nextGameNick = game_nick !== undefined ? game_nick : req.user.game_nick;
+
+  if (nick !== undefined && (nick.length < 2 || nick.length > 32)) {
+    return { status: 400, body: { error: 'Логин: от 2 до 32 символов' } };
+  }
+  if (game_nick !== undefined && (game_nick.length < 2 || game_nick.length > 32)) {
     return { status: 400, body: { error: 'Игровой ник: от 2 до 32 символов' } };
   }
 
-  const user = await repo.updateGameNick(req.user.id, game_nick);
-  return { status: 200, body: { user } };
+  try {
+    const user = await repo.updateProfile(req.user.id, nextNick, nextGameNick);
+    return { status: 200, body: { user } };
+  } catch (e) {
+    if ((e as { code?: string }).code === '23505') {
+      return { status: 409, body: { error: 'Такой логин уже занят' } };
+    }
+    throw e;
+  }
 }
 
 export async function deleteAccount(req: AuthedRequest): Promise<ServiceResult> {
