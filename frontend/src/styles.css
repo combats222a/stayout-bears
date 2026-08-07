@@ -598,16 +598,21 @@ body {
 }
 
 
-.act-btns { display: flex; gap: 6px; }
-.btn-now  { background: rgba(74,158,221,.1); border: 1px solid #1e3a5f; color: #4a9edd;
+/* .act-btns всегда занимает всю ширину ячейки (display:flex — блочный
+   контейнер), поэтому кнопки-действия растягиваем flex:1, чтобы группа
+   «Сейчас + Исчез» и одиночный «Сброс» всегда занимали ОДНУ И ТУ ЖЕ общую
+   ширину — а иконка звука (flex-shrink:0, см. .rupor-btn-sm) не съезжает
+   от строки к строке, независимо от того, сколько кнопок сейчас показано. */
+.act-btns { display: flex; gap: 6px; width: 100%; }
+.btn-now  { flex: 1; background: rgba(74,158,221,.1); border: 1px solid #1e3a5f; color: #4a9edd;
   border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-weight: 600;
-  transition: all .2s; font-family: inherit; }
+  transition: all .2s; font-family: inherit; text-align: center; }
 .btn-now:hover { background: rgba(74,158,221,.22); border-color: #4a9edd; }
-.btn-gone { background: rgba(224,160,48,.08); border: 1px solid rgba(224,160,48,.25); color: #e0a030;
-  border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all .2s; font-family: inherit; }
+.btn-gone { flex: 1; background: rgba(224,160,48,.08); border: 1px solid rgba(224,160,48,.25); color: #e0a030;
+  border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all .2s; font-family: inherit; text-align: center; }
 .btn-gone:hover { background: rgba(224,160,48,.18); }
-.btn-reset-row { background: transparent; border: 1px solid rgba(220,50,50,.25); color: #e05555;
-  border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all .2s; font-family: inherit; }
+.btn-reset-row { flex: 1; background: transparent; border: 1px solid rgba(220,50,50,.25); color: #e05555;
+  border-radius: 4px; padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all .2s; font-family: inherit; text-align: center; }
 .btn-reset-row:hover { background: rgba(220,50,50,.08); }
 
 .tbl-hint { margin-top: 10px; font-size: 11px; color: var(--text2); text-align: center; }
