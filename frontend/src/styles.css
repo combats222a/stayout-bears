@@ -1672,7 +1672,16 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    /* .btn-reset красит эту кнопку зелёным по умолчанию (общий класс,
+       используется только здесь), но на моб. карточке таймера кнопка
+       должна быть синей — как кольцо/время активного отсчёта и как
+       десктопная иконка-кнопка "Обновить" (.icon-btn-primary). Зелёный
+       на этой странице теперь означает только "Готово!". */
+    background: rgba(88,166,255,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
   }
+  .timer-mcard-reset-btn:hover { background: rgba(88,166,255,0.2); }
   .timer-mcard-sound-btn { flex-shrink: 0; }
 
   /* Форма создания таймера */
