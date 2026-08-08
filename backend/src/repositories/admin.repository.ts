@@ -6,16 +6,21 @@ export async function getAllClansOverview(): Promise<{
   users: AdminUserSummary[];
   bears: BearWithKiller[];
 }> {
-  const { rows: clans } = await pool.query<Clan>('SELECT * FROM clans ORDER BY created_at DESC');
-  const { rows: users } = await pool.query<AdminUserSummary>(
-    'SELECT id, nick, email, clan_id, is_superadmin, created_at FROM users ORDER BY id'
-  );
-  const { rows: bears } = await pool.query<BearWithKiller>(`
-    SELECT b.*, u.nick as killer_nick FROM bears b
-    LEFT JOIN users u ON b.killed_by = u.id
-    ORDER BY b.clan_id, b.bear_index
-  `);
-  return { clans, users, bears };
+  // Три независимых select'а по разным таблицам без общих условий — раньше
+  // шли последовательно, хотя ничто не мешает выполнить их одновременно
+  // (тот же приём, что и в clan.repository.ts → getClanFull).
+  const [clansRes, usersRes, bearsRes] = await Promise.all([
+    pool.query<Clan>('SELECT * FROM clans ORDER BY created_at DESC'),
+    pool.query<AdminUserSummary>(
+      'SELECT id, nick, email, clan_id, is_superadmin, created_at FROM users ORDER BY id'
+    ),
+    pool.query<BearWithKiller>(`
+      SELECT b.*, u.nick as killer_nick FROM bears b
+      LEFT JOIN users u ON b.killed_by = u.id
+      ORDER BY b.clan_id, b.bear_index
+    `),
+  ]);
+  return { clans: clansRes.rows, users: usersRes.rows, bears: bearsRes.rows };
 }
 
 // ИСПРАВЛЕНО: раньше отвязка участников и удаление клана шли двумя

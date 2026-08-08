@@ -69,36 +69,46 @@ export async function clearUserClan(userId: number): Promise<void> {
   await pool.query('UPDATE users SET clan_id = NULL WHERE id = $1', [userId]);
 }
 
-// GET /me — клан + участники + bears + draugs + баны за один заход
+// GET /me — клан + участники + bears + draugs + баны за один заход.
+// Все 5 select'ов читают по одному и тому же clanId и ни один не зависит
+// от результата другого (клан существует/нет не меняет корректность
+// остальных четырёх — при несуществующем clanId они просто вернут пустые
+// массивы). Раньше это было 5 последовательных await pool.query подряд —
+// самый частый запрос в приложении (вызывается при входе, при каждом
+// socket clan:update и раз в 30с с каждого открытого клиента) ждал 5
+// круговых обращений к БД одно за другим. Promise.all запускает их
+// одновременно на пуле соединений — форма и содержимое ответа не
+// меняются, меняется только суммарное время ожидания.
 export async function getClanFull(clanId: number): Promise<ClanFull | null> {
-  const clan = await findClanById(clanId);
+  const [clan, membersRes, bearsRes, draugsRes, bansRes] = await Promise.all([
+    findClanById(clanId),
+    pool.query<ClanMemberSummary>(
+      'SELECT id, nick, game_nick, email FROM users WHERE clan_id = $1 ORDER BY id',
+      [clanId]
+    ),
+    pool.query<BearWithKiller>(
+      `SELECT b.*, COALESCE(u.game_nick, u.nick) as killer_nick FROM bears b
+       LEFT JOIN users u ON b.killed_by = u.id
+       WHERE b.clan_id = $1 ORDER BY b.bear_index`,
+      [clanId]
+    ),
+    pool.query<DraugWithKiller>(
+      `SELECT d.*, COALESCE(u.game_nick, u.nick) as killer_nick FROM draugs d
+       LEFT JOIN users u ON d.killed_by = u.id
+       WHERE d.clan_id = $1 ORDER BY d.draug_index`,
+      [clanId]
+    ),
+    pool.query<ClanBanSummary>(
+      `SELECT cb.user_id, cb.banned_at, cb.banned_by,
+              COALESCE(u.game_nick, u.nick) as nick
+       FROM clan_bans cb
+       LEFT JOIN users u ON cb.user_id = u.id
+       WHERE cb.clan_id = $1 ORDER BY cb.banned_at DESC`,
+      [clanId]
+    ),
+  ]);
   if (!clan) return null;
-
-  const { rows: members } = await pool.query<ClanMemberSummary>(
-    'SELECT id, nick, game_nick, email FROM users WHERE clan_id = $1 ORDER BY id',
-    [clanId]
-  );
-  const { rows: bears } = await pool.query<BearWithKiller>(
-    `SELECT b.*, COALESCE(u.game_nick, u.nick) as killer_nick FROM bears b
-     LEFT JOIN users u ON b.killed_by = u.id
-     WHERE b.clan_id = $1 ORDER BY b.bear_index`,
-    [clanId]
-  );
-  const { rows: draugs } = await pool.query<DraugWithKiller>(
-    `SELECT d.*, COALESCE(u.game_nick, u.nick) as killer_nick FROM draugs d
-     LEFT JOIN users u ON d.killed_by = u.id
-     WHERE d.clan_id = $1 ORDER BY d.draug_index`,
-    [clanId]
-  );
-  const { rows: bans } = await pool.query<ClanBanSummary>(
-    `SELECT cb.user_id, cb.banned_at, cb.banned_by,
-            COALESCE(u.game_nick, u.nick) as nick
-     FROM clan_bans cb
-     LEFT JOIN users u ON cb.user_id = u.id
-     WHERE cb.clan_id = $1 ORDER BY cb.banned_at DESC`,
-    [clanId]
-  );
-  return { clan, members, bears, draugs, bans };
+  return { clan, members: membersRes.rows, bears: bearsRes.rows, draugs: draugsRes.rows, bans: bansRes.rows };
 }
 
 export async function getOwnerDeputy(clanId: number): Promise<Pick<Clan, 'owner_id' | 'deputy_id'> | null> {
