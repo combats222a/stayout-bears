@@ -1194,13 +1194,13 @@ body {
 .timer-row-remaining {
   font-family: var(--font-mono);
   font-size: 15px;
-  color: var(--green);
+  color: var(--accent);
   display: flex;
   align-items: center;
   gap: 14px;
   min-width: 0;
 }
-.timer-row-remaining.expired { color: var(--red); font-weight: 700; }
+.timer-row-remaining.expired { color: var(--green); font-weight: 700; }
 .timer-row-remaining.empty { color: var(--text3); }
 .timer-row-remaining-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -1579,8 +1579,8 @@ body {
     border-radius: var(--radius-lg);
   }
   .timer-mcard-expired {
-    border-color: rgba(248,81,73,0.4);
-    box-shadow: 0 0 0 1px rgba(248,81,73,0.15);
+    border-color: rgba(63,185,80,0.4);
+    box-shadow: 0 0 0 1px rgba(63,185,80,0.15);
   }
 
   .timer-mcard-head {
@@ -1634,8 +1634,8 @@ body {
     .timer-mcard-expired .timer-mcard-ring { animation: none; }
   }
   @keyframes timer-mcard-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(248,81,73,0.35); }
-    50% { box-shadow: 0 0 0 6px rgba(248,81,73,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(63,185,80,0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(63,185,80,0); }
   }
 
   .timer-mcard-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -1643,10 +1643,10 @@ body {
     font-family: var(--font-mono);
     font-size: 23px;
     font-weight: 700;
-    color: var(--green);
+    color: var(--accent);
     line-height: 1.1;
   }
-  .timer-mcard-time.expired { color: var(--red); }
+  .timer-mcard-time.expired { color: var(--green); }
   .timer-mcard-time.empty { color: var(--text3); font-size: 17px; }
   .timer-mcard-sub {
     display: flex;
