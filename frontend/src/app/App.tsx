@@ -1,29 +1,42 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import AuthPage from '../features/auth/AuthPage';
 import PublicLandingPage from '../features/public/PublicLandingPage';
-import BearsPage from '../features/tracker/BearsPage';
-import DraugsPage from '../features/tracker/DraugsPage';
+import PromoPage from '../features/promo/PromoPage';
 import { useBearsStore, useDraugsStore } from '../features/tracker/stores';
-import ShiningPage from '../features/shining/ShiningPage';
 import type { ShiningStateData } from '../features/shining/ShiningPage';
 import { useShiningStore } from '../features/shining/store';
-import ClanPage from '../features/clan/ClanPage';
 import { useClanStore, useMembersStore, useBansStore } from '../features/clan/store';
-import AdminPage from '../features/admin/AdminPage';
-import ProfilePage from '../features/profile/ProfilePage';
-import HeartsPage from '../features/hearts/HeartsPage';
-import TimersPage from '../features/timers/TimersPage';
-import TimeCalcPage from '../features/public/TimeCalcPage';
-import PromoPage from '../features/promo/PromoPage';
-import LevelPage from '../features/public/LevelPage';
-import FaqPage from '../features/public/FaqPage';
-import CapturesPage from '../features/captures/CapturesPage';
-import AchievementsPage from '../features/achievements/AchievementsPage';
-import AnomalyPage from '../features/anomaly/AnomalyPage';
-import type { AnomalyStateData } from '../features/anomaly/AnomalyPage';
 import { useAnomalyStore } from '../features/anomaly/store';
+import type { AnomalyStateData } from '../features/anomaly/AnomalyPage';
+
+// Раздел рендерится только когда игрок реально на нём находится (см. `page === '...'`
+// ниже), но раньше все 15 страниц импортировались наверху статически — это грузило
+// ВСЁ (включая Admin, Achievements, Timers на 850 строк) в один бандл ещё до первого
+// рендера. React.lazy разбивает каждую страницу на отдельный чанк, который Vite
+// скачивает только при первом заходе в конкретный раздел (и кэширует браузером на
+// будущее). Header/AuthPage/PublicLandingPage остались обычным импортом — это самое
+// первое, что видит гость, лишний сетевой запрос здесь ни к чему.
+const BearsPage        = lazy(() => import('../features/tracker/BearsPage'));
+const DraugsPage       = lazy(() => import('../features/tracker/DraugsPage'));
+const ShiningPage      = lazy(() => import('../features/shining/ShiningPage'));
+const ClanPage         = lazy(() => import('../features/clan/ClanPage'));
+const AdminPage        = lazy(() => import('../features/admin/AdminPage'));
+const ProfilePage      = lazy(() => import('../features/profile/ProfilePage'));
+const HeartsPage       = lazy(() => import('../features/hearts/HeartsPage'));
+const TimersPage       = lazy(() => import('../features/timers/TimersPage'));
+const TimeCalcPage     = lazy(() => import('../features/public/TimeCalcPage'));
+const LevelPage        = lazy(() => import('../features/public/LevelPage'));
+const FaqPage          = lazy(() => import('../features/public/FaqPage'));
+const CapturesPage     = lazy(() => import('../features/captures/CapturesPage'));
+const AchievementsPage = lazy(() => import('../features/achievements/AchievementsPage'));
+const AnomalyPage      = lazy(() => import('../features/anomaly/AnomalyPage'));
+
+// Тот же визуальный паттерн, что уже используется внутри страниц во время
+// собственной загрузки данных (см. AdminPage/TimersPage) — так переключение
+// раздела не привносит новый, ранее не виданный вид "загрузки".
+const pageFallback = <div className="page"><div className="loading">Загрузка...</div></div>;
 import { api } from '../utils/api';
 import { useSocket, getSocket } from '../hooks/useSocket';
 import { useGlobalSoundWatcher } from '../hooks/useGlobalSoundWatcher';
@@ -340,7 +353,9 @@ export default function App() {
         <>
           <Header user={null} page="level" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <div className="public-landing">
-            <LevelPage standalone />
+            <Suspense fallback={pageFallback}>
+              <LevelPage standalone />
+            </Suspense>
           </div>
         </>
       );
@@ -353,7 +368,9 @@ export default function App() {
         <>
           <Header user={null} page="faq" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <div className="public-landing">
-            <FaqPage />
+            <Suspense fallback={pageFallback}>
+              <FaqPage />
+            </Suspense>
           </div>
         </>
       );
@@ -376,30 +393,32 @@ export default function App() {
         <>
           <Header user={null} page={page} onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <main className="main">
-            {page === 'bears' && (
-              <BearsPage clan={null} isGuest onLoginClick={() => setShowAuth(true)} />
-            )}
-            {page === 'draugs' && (
-              <DraugsPage clan={null} isGuest onLoginClick={() => setShowAuth(true)} />
-            )}
-            {page === 'shining' && (
-              <ShiningPage clan={null} shiningData={null} onShiningChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
-            )}
-            {page === 'hearts' && (
-              <HeartsPage clan={null} members={[]} user={null} onHeartsUpdate={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
-            )}
-            {page === 'timers' && (
-              <TimersPage user={null} onLoginClick={() => setShowAuth(true)} />
-            )}
-            {page === 'clan' && (
-              <ClanPage user={null as unknown as AuthUser} clan={null} members={[]} bans={[]} onClanChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
-            )}
-            {page === 'captures' && <CapturesPage />}
-            {page === 'achievements' && <AchievementsPage />}
-            {page === 'timecalc' && <TimeCalcPage />}
-            {page === 'anomaly' && (
-              <AnomalyPage user={null} anomalyData={null} onAnomalyChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
-            )}
+            <Suspense fallback={pageFallback}>
+              {page === 'bears' && (
+                <BearsPage clan={null} isGuest onLoginClick={() => setShowAuth(true)} />
+              )}
+              {page === 'draugs' && (
+                <DraugsPage clan={null} isGuest onLoginClick={() => setShowAuth(true)} />
+              )}
+              {page === 'shining' && (
+                <ShiningPage clan={null} shiningData={null} onShiningChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+              )}
+              {page === 'hearts' && (
+                <HeartsPage clan={null} members={[]} user={null} onHeartsUpdate={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+              )}
+              {page === 'timers' && (
+                <TimersPage user={null} onLoginClick={() => setShowAuth(true)} />
+              )}
+              {page === 'clan' && (
+                <ClanPage user={null as unknown as AuthUser} clan={null} members={[]} bans={[]} onClanChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+              )}
+              {page === 'captures' && <CapturesPage />}
+              {page === 'achievements' && <AchievementsPage />}
+              {page === 'timecalc' && <TimeCalcPage />}
+              {page === 'anomaly' && (
+                <AnomalyPage user={null} anomalyData={null} onAnomalyChange={() => {}} isGuest onLoginClick={() => setShowAuth(true)} />
+              )}
+            </Suspense>
           </main>
         </>
       );
@@ -413,56 +432,58 @@ export default function App() {
     <div className="app">
       <Header user={user} page={page} onNavigate={setPage} onLogout={onLogout} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <main className="main">
-        {page === 'bears' && (
-          <BearsPage clan={clan} />
-        )}
-        {page === 'draugs' && (
-          <DraugsPage clan={clan} />
-        )}
-        {page === 'shining' && (
-          <ShiningPage
-            clan={clan}
-            shiningData={shiningData}
-            onShiningChange={handleShiningChange}
-          />
-        )}
-        {page === 'clan' && (
-          <ClanPage user={user} clan={clan} members={members} bans={bans} onClanChange={loadClan} />
-        )}
-        {page === 'hearts' && (
-          <HeartsPage
-            clan={clan}
-            members={members}
-            user={user}
-            onHeartsUpdate={setHeartsReloader}
-          />
-        )}
-        {page === 'profile' && (
-          <ProfilePage user={user} onUserUpdate={onUserUpdate} onLogout={onLogout} />
-        )}
-        {page === 'timers' && (
-          <TimersPage user={user} />
-        )}
-        {page === 'timecalc' && (
-          <TimeCalcPage />
-        )}
-        {page === 'promo' && (
-          <PromoPage />
-        )}
-        {page === 'level' && (
-          <LevelPage />
-        )}
-        {page === 'faq' && (
-          <FaqPage />
-        )}
-        {page === 'admin' && user.is_superadmin && (
-          <AdminPage />
-        )}
-        {page === 'captures' && <CapturesPage />}
-        {page === 'achievements' && <AchievementsPage />}
-        {page === 'anomaly' && (
-          <AnomalyPage user={user} anomalyData={anomalyData} onAnomalyChange={handleAnomalyChange} />
-        )}
+        <Suspense fallback={pageFallback}>
+          {page === 'bears' && (
+            <BearsPage clan={clan} />
+          )}
+          {page === 'draugs' && (
+            <DraugsPage clan={clan} />
+          )}
+          {page === 'shining' && (
+            <ShiningPage
+              clan={clan}
+              shiningData={shiningData}
+              onShiningChange={handleShiningChange}
+            />
+          )}
+          {page === 'clan' && (
+            <ClanPage user={user} clan={clan} members={members} bans={bans} onClanChange={loadClan} />
+          )}
+          {page === 'hearts' && (
+            <HeartsPage
+              clan={clan}
+              members={members}
+              user={user}
+              onHeartsUpdate={setHeartsReloader}
+            />
+          )}
+          {page === 'profile' && (
+            <ProfilePage user={user} onUserUpdate={onUserUpdate} onLogout={onLogout} />
+          )}
+          {page === 'timers' && (
+            <TimersPage user={user} />
+          )}
+          {page === 'timecalc' && (
+            <TimeCalcPage />
+          )}
+          {page === 'promo' && (
+            <PromoPage />
+          )}
+          {page === 'level' && (
+            <LevelPage />
+          )}
+          {page === 'faq' && (
+            <FaqPage />
+          )}
+          {page === 'admin' && user.is_superadmin && (
+            <AdminPage />
+          )}
+          {page === 'captures' && <CapturesPage />}
+          {page === 'achievements' && <AchievementsPage />}
+          {page === 'anomaly' && (
+            <AnomalyPage user={user} anomalyData={anomalyData} onAnomalyChange={handleAnomalyChange} />
+          )}
+        </Suspense>
       </main>
     </div>
   );
