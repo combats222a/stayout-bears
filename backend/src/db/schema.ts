@@ -224,6 +224,19 @@ export async function initSchema(): Promise<void> {
           FOREIGN KEY (killed_by) REFERENCES users(id) ON DELETE SET NULL NOT VALID;
       END IF;
     END $$;
+
+    -- Postgres НЕ создаёт индекс на колонку внешнего ключа автоматически —
+    -- только на PRIMARY KEY/UNIQUE. Эти три колонки участвуют в WHERE каждого
+    -- самого частого запроса на бэкенде и раньше сканировались последовательно:
+    --   * users.clan_id       — getMembers (loadClan: при входе, при каждом
+    --     socket clan:update, и раз в 30с polling с КАЖДОГО открытого клиента)
+    --   * loot_participants.clan_id — список сердец/шкур на странице "Учёт лута"
+    --   * user_timers.user_id — список таймеров игрока
+    -- CREATE INDEX IF NOT EXISTS идемпотентен, ничего не меняет в результатах
+    -- запросов — только ускоряет их по мере роста таблиц.
+    CREATE INDEX IF NOT EXISTS idx_users_clan_id ON users(clan_id);
+    CREATE INDEX IF NOT EXISTS idx_loot_participants_clan_id ON loot_participants(clan_id);
+    CREATE INDEX IF NOT EXISTS idx_user_timers_user_id ON user_timers(user_id);
   `);
   console.log('Database schema ready');
 }
