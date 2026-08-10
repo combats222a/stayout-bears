@@ -147,6 +147,41 @@ body {
   .header-user > .header-faq-link, .header-user > .header-steam-link { display: none; }
 }
 
+/* === LANGUAGE SWITCHER === */
+.lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg3);
+  flex-shrink: 0;
+}
+.lang-switcher-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.lang-switcher-btn:hover { color: var(--text); }
+.lang-switcher-btn.active { background: var(--accent); color: var(--bg); }
+
+/* В шапке переключатель — компактный, в самом правом углу */
+.header-lang-switcher { margin-left: 2px; }
+
+/* В мобильной панели разделов — занимает своё место в ряду с ником/FAQ/Steam,
+   но не растягивается на всю ширину */
+.nav-panel-lang-switcher { margin-left: auto; }
+
+
 /* === CARDS === */
 .card {
   background: var(--bg2);
@@ -1458,6 +1493,10 @@ body {
   .header-title { display: none; }
   .header-logout-desktop { display: none !important; }
   .user-nick { display: none; }
+  /* Переключатель языка на телефоне живёт только внутри панели разделов
+     (см. .nav-panel-lang-switcher ниже) — в самой шапке для него уже нет
+     места рядом с логотипом и кнопкой «Войти». */
+  .header-lang-switcher { display: none; }
   /* На телефоне ник/вход и FAQ/Steam скрыты справа в шапке — показываем их внутри панели */
   .nav-panel-user { display: flex; }
   .nav-panel-divider { display: block; height: 1px; background: var(--border); margin: 8px 0; }

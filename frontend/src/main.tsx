@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import App from './app/App';
+import { I18nProvider } from './i18n';
 import './styles.css';
 
 // FAQ раньше рендерилась здесь в обход App — жёсткой проверкой pathname
@@ -18,8 +19,10 @@ import './styles.css';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
-      <Analytics />
+      <I18nProvider>
+        <App />
+        <Analytics />
+      </I18nProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, Dispatch, SetStateAction, MouseEvent } from 'react';
 import { STEAM_URL, SteamIcon } from './SteamIcon';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useI18n } from '../i18n';
 import type { AuthUser } from '../types/entities';
 
 interface NavItem {
@@ -75,6 +77,7 @@ export default function Header({
   const menuOpen = menuOpenProp !== undefined ? menuOpenProp : menuOpenState;
   const setMenuOpen = setMenuOpenProp || setMenuOpenState;
   const isGuest = !user;
+  const { t } = useI18n();
 
   // Шапка обычно 56px, но при увеличении масштаба страницы в браузере
   // (Ctrl + колесо в Chrome) или на узких окнах верхняя навигация может не
@@ -211,7 +214,7 @@ export default function Header({
         <button
           className={`menu-trigger-btn ${menuOpen || isMenuOnlyPage ? 'active' : ''}`}
           onClick={() => setMenuOpen(o => !o)}
-          aria-label="Открыть меню разделов"
+          aria-label={t('navigation.menuOpen')}
           aria-expanded={menuOpen}
         >
           <span className="menu-trigger-icon">{menuOpen ? '✕' : '☰'}</span>
@@ -262,14 +265,15 @@ export default function Header({
           </a>
           {isGuest ? (
             <button className="btn btn-primary btn-shiny btn-sm header-login-btn" onClick={onLoginClick}>
-              Войти / Зарегистрироваться
+              {t('actions.login')}
             </button>
           ) : (
             <>
               <span className="user-nick">{user?.game_nick || user?.nick}</span>
-              <button className="btn btn-sm btn-ghost header-logout-desktop" onClick={onLogout}>Выйти</button>
+              <button className="btn btn-sm btn-ghost header-logout-desktop" onClick={onLogout}>{t('actions.logout')}</button>
             </>
           )}
+          <LanguageSwitcher className="header-lang-switcher" />
         </div>
       </header>
 
@@ -283,7 +287,7 @@ export default function Header({
                   className="btn btn-primary btn-shiny btn-sm"
                   onClick={() => { onLoginClick?.(); setMenuOpen(false); }}
                 >
-                  Войти / Зарегистрироваться
+                  {t('actions.login')}
                 </button>
               ) : (
                 <span className="nav-panel-nick">{user?.game_nick || user?.nick}</span>
@@ -299,6 +303,7 @@ export default function Header({
               >
                 <SteamIcon />
               </a>
+              <LanguageSwitcher className="nav-panel-lang-switcher" />
             </div>
             <div className="nav-panel-list">
               {navItems.map(item => renderNavItem(item, 'nav-panel-btn', 'nav-panel-btn-primary'))}
@@ -308,7 +313,7 @@ export default function Header({
               <>
                 <div className="nav-panel-divider" />
                 <button className="nav-panel-btn nav-panel-logout" onClick={() => { onLogout?.(); setMenuOpen(false); }}>
-                  🚪 Выйти
+                  🚪 {t('actions.logout')}
                 </button>
               </>
             )}
