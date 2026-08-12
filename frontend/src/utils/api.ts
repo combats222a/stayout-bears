@@ -1,9 +1,21 @@
 import type { ApiError } from '../types/api';
+import { resolveInitialLocale } from '../i18n';
+import type { DeepValuesToString } from '../i18n/types';
+import ruApiErrors from '../i18n/locales/ru/apiErrors';
+import enApiErrors from '../i18n/locales/en/apiErrors';
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function getToken(): string | null {
   return localStorage.getItem('token');
+}
+
+// api.ts работает вне React-дерева (нет доступа к useI18n()), поэтому язык
+// для сообщений об ошибках сети читаем той же логикой, что и провайдер
+// (сохранённый выбор → язык браузера → ru), но заново на каждый вызов —
+// человек мог переключить язык уже после того, как этот модуль загрузился.
+function apiErrorText(): DeepValuesToString<typeof ruApiErrors> {
+  return resolveInitialLocale() === 'en' ? enApiErrors : ruApiErrors;
 }
 
 async function request(method: string, path: string, body?: unknown): Promise<any> {
@@ -20,7 +32,7 @@ async function request(method: string, path: string, body?: unknown): Promise<an
     });
   } catch (e) {
     // Сеть недоступна / сервер не отвечает (например, хостинг ещё "просыпается")
-    const err: ApiError = new Error('Нет соединения с сервером');
+    const err: ApiError = new Error(apiErrorText().noConnection);
     err.isNetworkError = true;
     throw err;
   }
@@ -30,14 +42,14 @@ async function request(method: string, path: string, body?: unknown): Promise<an
     data = await res.json();
   } catch (e) {
     // Сервер вернул не-JSON (страница ошибки хостинга при холодном старте и т.п.)
-    const err: ApiError = new Error('Сервер временно недоступен, попробуй ещё раз');
+    const err: ApiError = new Error(apiErrorText().temporarilyUnavailable);
     err.status = res.status;
     err.isNetworkError = true;
     throw err;
   }
 
   if (!res.ok) {
-    const err: ApiError = new Error(data.error || 'Ошибка сервера');
+    const err: ApiError = new Error(data.error || apiErrorText().serverError);
     err.status = res.status;
     throw err;
   }

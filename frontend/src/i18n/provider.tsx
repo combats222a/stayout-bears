@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { Locale } from './config';
 import { detectBrowserLocale } from './detector';
 import { getSavedLocale, saveLocale } from './storage';
@@ -19,12 +19,22 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 // Это единственное место, где применяется вся эта логика — читается
 // синхронно ДО первого рендера (в инициализаторе useState), поэтому в CSR
 // первый же кадр уже отрисовывается на правильном языке, без "мигания".
-function resolveInitialLocale(): Locale {
+// Экспортируется — переиспользуется вне React-дерева (например, в
+// utils/api.ts) там, где нужен текущий язык, а хука useI18n() ещё нет.
+export function resolveInitialLocale(): Locale {
   return getSavedLocale() ?? detectBrowserLocale();
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(resolveInitialLocale);
+
+  // Держим <html lang> синхронизированным с текущим locale на протяжении
+  // всей жизни приложения (не только при первой загрузке, которую уже
+  // закрывает inline-скрипт в index.html) — важно для доступности и SEO
+  // при переключении языка без перезагрузки страницы.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   // После ручного переключения — сохраняем выбор. С этого момента
   // resolveInitialLocale() при следующей загрузке всегда найдёт сохранённый
@@ -55,4 +65,16 @@ export function useI18n(): I18nContextValue {
 export function useTranslation() {
   const { t, locale } = useI18n();
   return { t, locale };
+}
+
+// Для «богатого» контента (массивы параграфов, объекты с несколькими
+// полями — промо, спойлеры, FAQ и т.п.) обычный t()/TranslationKey не
+// подходит: TranslationKeyPaths рассчитан только на строковые листья.
+// Вместо этого компонент импортирует готовые ru/en объекты (их форма
+// гарантированно совпадает общим TS-интерфейсом на уровне файла с
+// контентом — см. i18n/locales/ru/promo.ts как пример) и просто выбирает
+// нужный по текущему locale.
+export function useLocaleDict<T>(ru: T, en: T): T {
+  const { locale } = useI18n();
+  return locale === 'en' ? en : ru;
 }

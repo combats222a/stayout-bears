@@ -99,8 +99,8 @@ export function formatDuration(ms: number): string {
 }
 
 // Часовой пояс, установленный на устройстве игрока, для баннера над таблицей.
-export function getViewerTimezoneLabel(now: Date = new Date()): string {
-  let tz = 'локальный часовой пояс';
+export function getViewerTimezoneLabel(now: Date = new Date(), locale: 'ru' | 'en' = 'ru'): string {
+  let tz = locale === 'en' ? 'local time zone' : 'локальный часовой пояс';
   try {
     tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz;
   } catch {

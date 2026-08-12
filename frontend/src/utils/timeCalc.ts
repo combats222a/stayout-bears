@@ -50,26 +50,36 @@ export function computeTimeResult({ baseH, baseM, sign, deltaMin, usedNow }: Tim
   };
 }
 
-function pluralDays(n: number): string {
+function pluralDaysRu(n: number): string {
   const mod10 = n % 10, mod100 = n % 100;
   if (mod10 === 1 && mod100 !== 11) return 'день';
   if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return 'дня';
   return 'дней';
 }
 
-// "+1 день" / "−2 дня" / null (если сутки не перевалили)
-export function formatDayShift(shift: number): string | null {
-  if (!shift) return null;
-  const abs = Math.abs(shift);
-  return `${shift > 0 ? '+' : '−'}${abs} ${pluralDays(abs)}`;
+function pluralDaysEn(n: number): string {
+  return n === 1 ? 'day' : 'days';
 }
 
-// "1 ч 20 мин" / "35 мин"
-export function formatDeltaPhrase(deltaMin: number): string {
+// "+1 день" / "−2 дня" (RU) / "+1 day" / "−2 days" (EN) / null (если сутки не перевалили)
+export function formatDayShift(shift: number, locale: 'ru' | 'en' = 'ru'): string | null {
+  if (!shift) return null;
+  const abs = Math.abs(shift);
+  const word = locale === 'en' ? pluralDaysEn(abs) : pluralDaysRu(abs);
+  return `${shift > 0 ? '+' : '−'}${abs} ${word}`;
+}
+
+// "1 ч 20 мин" / "35 мин" (RU) — "1h 20m" / "35m" (EN)
+export function formatDeltaPhrase(deltaMin: number, locale: 'ru' | 'en' = 'ru'): string {
   const h = Math.floor(deltaMin / 60);
   const m = deltaMin % 60;
   const parts: string[] = [];
-  if (h) parts.push(`${h} ч`);
-  if (m || !h) parts.push(`${m} мин`);
+  if (locale === 'en') {
+    if (h) parts.push(`${h}h`);
+    if (m || !h) parts.push(`${m}m`);
+  } else {
+    if (h) parts.push(`${h} ч`);
+    if (m || !h) parts.push(`${m} мин`);
+  }
   return parts.join(' ');
 }

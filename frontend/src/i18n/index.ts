@@ -2,5 +2,5 @@ export { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_LABELS, isSupportedLocale } f
 export type { Locale } from './config';
 export { detectBrowserLocale } from './detector';
 export { getSavedLocale, saveLocale } from './storage';
-export { I18nProvider, useI18n, useTranslation } from './provider';
+export { I18nProvider, useI18n, useTranslation, useLocaleDict, resolveInitialLocale } from './provider';
 export type { TranslationKey } from './translations';

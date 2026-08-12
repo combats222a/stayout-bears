@@ -4,6 +4,11 @@ import common from './common';
 import navigation from './navigation';
 import actions from './actions';
 import language from './language';
+import landing from './landing';
+import auth from './auth';
+import timecalc from './timecalc';
+import app from './app';
+import tracker from './tracker';
 
 // Форма (ключи) обязана 1:1 совпадать с ru/index.ts — если добавить
 // новый namespace в ru и забыть добавить его сюда, TypeScript упадёт с
@@ -14,6 +19,11 @@ const en: DeepValuesToString<typeof ru> = {
   navigation,
   actions,
   language,
+  landing,
+  auth,
+  timecalc,
+  app,
+  tracker,
 };
 
 export default en;
