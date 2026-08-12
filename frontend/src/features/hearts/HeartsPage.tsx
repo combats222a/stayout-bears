@@ -5,6 +5,10 @@ import InfoSpoiler from '../../components/InfoSpoiler';
 import GuestLock from '../../components/GuestLock';
 import { HEARTS_SPOILER } from '../../content/spoilerContent';
 import type { Clan, ClanMemberSummary, AuthUser, LootParticipant } from '../../types/entities';
+import { useI18n, useLocaleDict } from '../../i18n';
+import ruHearts from '../../i18n/locales/ru/hearts';
+import enHearts from '../../i18n/locales/en/hearts';
+import type { HeartsContent } from '../../i18n/locales/ru/hearts';
 
 // Локальная форма участника учёта лута — совпадает с LootParticipant,
 // кроме sold_for: во время редактирования поля "Продали за" сервис (и, в
@@ -60,6 +64,7 @@ interface AddParticipantDropdownProps {
 }
 
 function AddParticipantDropdown({ anchorRef, members, onAdd, onClose }: AddParticipantDropdownProps) {
+  const c = useLocaleDict(ruHearts, enHearts);
   const [search, setSearch] = useState('');
   const [customNick, setCustomNick] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -90,11 +95,11 @@ function AddParticipantDropdown({ anchorRef, members, onAdd, onClose }: AddParti
       }}>
         <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
-            👥 Участники клана
+            {c.clanMembersLabel}
           </div>
           <input autoFocus
             style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
-            placeholder="Поиск..."
+            placeholder={c.searchPlaceholder}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -102,7 +107,7 @@ function AddParticipantDropdown({ anchorRef, members, onAdd, onClose }: AddParti
         <div style={{ maxHeight: 180, overflowY: 'auto' }}>
           {filtered.length === 0 && (
             <div style={{ padding: '10px 12px', color: 'var(--text3)', fontSize: 12 }}>
-              {members.length === 0 ? 'Нет участников' : 'Все уже добавлены'}
+              {members.length === 0 ? c.noMembers : c.allAdded}
             </div>
           )}
           {filtered.map(m => {
@@ -120,12 +125,12 @@ function AddParticipantDropdown({ anchorRef, members, onAdd, onClose }: AddParti
         </div>
         <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,.15)' }}>
           <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
-            ✍️ Вписать ник вручную
+            {c.writeManually}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <input
               style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
-              placeholder="Ник игрока..."
+              placeholder={c.nickPlaceholder}
               value={customNick}
               onChange={e => setCustomNick(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && customNick.trim()) { onAdd({ nick: customNick.trim(), user_id: null }); onClose(); } }}
@@ -155,6 +160,7 @@ interface FindersDropdownProps {
 }
 
 function FindersDropdown({ anchorRef, members, finders, onChange, onClose }: FindersDropdownProps) {
+  const c = useLocaleDict(ruHearts, enHearts);
   const [customNick, setCustomNick] = useState('');
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -196,11 +202,11 @@ function FindersDropdown({ anchorRef, members, finders, onChange, onClose }: Fin
       }}>
         <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
-            👥 Кто нашёл — клан
+            {c.whoFoundClan}
           </div>
           <input autoFocus
             style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
-            placeholder="Поиск..."
+            placeholder={c.searchPlaceholder}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -223,16 +229,16 @@ function FindersDropdown({ anchorRef, members, finders, onChange, onClose }: Fin
               </div>
             );
           })}
-          {filtered.length === 0 && <div style={{ padding: '10px 12px', color: 'var(--text3)', fontSize: 12 }}>Никого нет</div>}
+          {filtered.length === 0 && <div style={{ padding: '10px 12px', color: 'var(--text3)', fontSize: 12 }}>{c.nobody}</div>}
         </div>
         <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,.15)' }}>
           <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
-            ✍️ Вписать вручную
+            {c.writeManuallyShort}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <input
               style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '5px 8px', fontSize: 13 }}
-              placeholder="Ник..."
+              placeholder={c.nickShort}
               value={customNick}
               onChange={e => setCustomNick(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addCustom()}
@@ -273,13 +279,14 @@ interface CounterProps {
   onChange: (v: number) => void;
   color: string;
   disabled?: boolean;
+  editOnlyOwnerTitle: string;
 }
 
-function Counter({ value, onChange, color, disabled }: CounterProps) {
+function Counter({ value, onChange, color, disabled, editOnlyOwnerTitle }: CounterProps) {
   return (
     <div
       style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 7, opacity: disabled ? 0.75 : 1 }}
-      title={disabled ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
+      title={disabled ? editOnlyOwnerTitle : undefined}
     >
       <button
         disabled={disabled}
@@ -320,9 +327,10 @@ interface PaidOutCellProps {
   isOwner: boolean;
   onUpdate: (id: number, fields: HeartsUpdateFields) => void;
   p: HeartsParticipant;
+  c: HeartsContent;
 }
 
-function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }: PaidOutCellProps) {
+function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p, c }: PaidOutCellProps) {
   const paidSet = new Set(paidOut);
 
   function toggle(nick: string) {
@@ -343,7 +351,7 @@ function PaidOutCell({ finders, paidOut, isOwner, onUpdate, p }: PaidOutCellProp
           <span
             key={f}
             onClick={() => toggle(f)}
-            title={isOwner ? (paid ? 'Отметить как невыплачено' : 'Отметить как выплачено') : 'Редактировать может только тот, чей ник указан в строке'}
+            title={isOwner ? (paid ? c.markUnpaid : c.markPaid) : c.editOnlyOwnerTitle}
             style={{
               fontSize: 11, padding: '2px 7px', borderRadius: 8,
               background: paid ? 'rgba(63,185,80,.15)' : 'rgba(255,255,255,.05)',
@@ -372,6 +380,8 @@ interface ParticipantRowProps {
 }
 
 function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUserId }: ParticipantRowProps) {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruHearts, enHearts);
   const [soldInput, setSoldInput]     = useState(p.sold_for != null ? String(p.sold_for) : '');
   const [soldFocused, setSoldFocused] = useState(false);
   const [showFinders, setShowFinders] = useState(false);
@@ -389,8 +399,9 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
     : true;
 
   const dt = new Date(p.added_at);
-  const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const dtLocale = locale === 'en' ? 'en-US' : 'ru-RU';
+  const dateStr = dt.toLocaleDateString(dtLocale, { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const timeStr = dt.toLocaleTimeString(dtLocale, { hour: '2-digit', minute: '2-digit' });
 
   // Доля = "Продали за" ÷ количество участников (finders) этой строки
   // Каждая строка считается независимо, сердца/шкуры на долю не влияют
@@ -400,7 +411,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
     if (count === 0) return null;
     return Math.round(Number(p.sold_for) / count);
   })();
-  const shareLabel = shareRub != null ? fmt(shareRub) + ' руб.' : '—';
+  const shareLabel = shareRub != null ? fmt(shareRub) + ' ' + c.shareCurrencySuffix : '—';
 
   function handleSoldBlur() {
     setSoldFocused(false);
@@ -428,21 +439,21 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
       <td style={{ padding: '13px 10px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15 }}>{p.nick}</span>
         {!p.user_id && (
-          <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)', background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>гость</span>
+          <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)', background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>{c.guestTag}</span>
         )}
       </td>
 
       {/* СЕРДЦА — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 10px', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" disabled={!isOwner} />
+          <Counter value={p.hearts || 0} onChange={v => onUpdate(p.id, { hearts: v })} color="#e05252" disabled={!isOwner} editOnlyOwnerTitle={c.editOnlyOwnerTitle} />
         </div>
       </td>
 
       {/* ШКУРЫ — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 10px', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" disabled={!isOwner} />
+          <Counter value={p.pelts || 0} onChange={v => onUpdate(p.id, { pelts: v })} color="#7eb8e0" disabled={!isOwner} editOnlyOwnerTitle={c.editOnlyOwnerTitle} />
         </div>
       </td>
 
@@ -458,7 +469,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
         <div
           ref={findersBtnRef}
           onClick={() => { if (isOwner) setShowFinders(o => !o); }}
-          title={!isOwner ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
+          title={!isOwner ? c.editOnlyOwnerTitle : undefined}
           style={{
             display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap',
             cursor: isOwner ? 'pointer' : 'default', padding: '5px 8px', borderRadius: 6,
@@ -469,7 +480,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
           }}
         >
           {finders.length === 0
-            ? <span style={{ fontSize: 12, color: 'var(--text3)' }}>{isOwner ? 'Выбрать...' : '—'}</span>
+            ? <span style={{ fontSize: 12, color: 'var(--text3)' }}>{isOwner ? c.chooseEllipsis : '—'}</span>
             : finders.map(f => (
               <span key={f} style={{
                 fontSize: 11, padding: '1px 6px', borderRadius: 8,
@@ -495,14 +506,14 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
 
       {/* ВЫПЛАЧЕНО УЧАСТНИКАМ — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 10px' }}>
-        <PaidOutCell p={p} finders={finders} paidOut={paidOut} isOwner={isOwner} onUpdate={onUpdate} />
+        <PaidOutCell p={p} finders={finders} paidOut={paidOut} isOwner={isOwner} onUpdate={onUpdate} c={c} />
       </td>
 
       {/* ПРОДАЛИ ЗА — редактирует только тот, чей ник указан в строке */}
       <td style={{ padding: '13px 10px' }}>
         <div
           style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-          title={!isOwner ? 'Редактировать может только тот, чей ник указан в строке' : undefined}
+          title={!isOwner ? c.editOnlyOwnerTitle : undefined}
         >
           <input
             type="text"
@@ -522,7 +533,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
               cursor: isOwner ? 'text' : 'default',
             }}
           />
-          <span style={{ fontSize: 13, color: 'var(--text2)' }}>руб.</span>
+          <span style={{ fontSize: 13, color: 'var(--text2)' }}>{c.currencySuffix}</span>
           <span style={{ fontSize: 11, width: 13, display: 'inline-block', textAlign: 'center', visibility: !isOwner ? 'visible' : 'hidden' }}>🔒</span>
         </div>
       </td>
@@ -530,7 +541,7 @@ function ParticipantRow({ p, onUpdate, onDelete, members, canDelete, currentUser
       {/* Удалить — только лидер и зам */}
       <td style={{ padding: '13px 6px', textAlign: 'center' }}>
         {canDelete && (
-          <button onClick={() => onDelete(p.id)} title="Удалить" style={{
+          <button onClick={() => onDelete(p.id)} title={c.deleteTitle} style={{
             background: 'none', border: 'none', color: 'var(--text3)',
             cursor: 'pointer', fontSize: 20, lineHeight: 1, opacity: 0.45, padding: '0 2px',
           }}
@@ -562,21 +573,25 @@ interface ColumnDef {
   align: 'left' | 'center';
 }
 
-const COLUMNS: ColumnDef[] = [
-  { key: 'date',    label: 'ДАТА',                     width: 92,  align: 'center' },
-  { key: 'nick',    label: 'НИК',                      width: 130, align: 'left' },
-  { key: 'hearts',  label: '❤️ СЕРДЦА',                width: 120, align: 'center' },
-  { key: 'pelts',   label: '🧥 ШКУРЫ',                 width: 120, align: 'center' },
-  { key: 'share',   label: '💰 ДОЛЯ',                  width: 100, align: 'center' },
-  { key: 'finders', label: '👥 УЧАСТНИКИ',             width: 210, align: 'left' },
-  { key: 'paidout', label: '💸 ВЫПЛАЧЕНО УЧАСТНИКАМ',  width: 200, align: 'left' },
-  { key: 'sold',    label: '💵 ПРОДАЛИ ЗА',            width: 160, align: 'left' },
-  { key: 'del',     label: '',                         width: 40,  align: 'center' },
-];
-const TABLE_WIDTH = COLUMNS.reduce((s, c) => s + c.width, 0);
-
+function buildColumns(c: HeartsContent): ColumnDef[] {
+  return [
+    { key: 'date',    label: c.colDate,     width: 92,  align: 'center' },
+    { key: 'nick',    label: c.colNick,     width: 130, align: 'left' },
+    { key: 'hearts',  label: c.colHearts,   width: 120, align: 'center' },
+    { key: 'pelts',   label: c.colPelts,    width: 120, align: 'center' },
+    { key: 'share',   label: c.colShare,    width: 100, align: 'center' },
+    { key: 'finders', label: c.colFinders,  width: 210, align: 'left' },
+    { key: 'paidout', label: c.colPaidOut,  width: 200, align: 'left' },
+    { key: 'sold',    label: c.colSold,     width: 160, align: 'left' },
+    { key: 'del',     label: '',            width: 40,  align: 'center' },
+  ];
+}
 // ─── Основная страница ────────────────────────────────────────────────
 export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGuest, onLoginClick = () => {} }: HeartsPageProps) {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruHearts, enHearts);
+  const COLUMNS = buildColumns(c);
+  const TABLE_WIDTH = COLUMNS.reduce((s, col) => s + col.width, 0);
   const [participants, setParticipants] = useState<HeartsParticipant[]>([]);
   const [loading, setLoading]           = useState(true);
   const [showAdd, setShowAdd]           = useState(false);
@@ -588,7 +603,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
     try {
       const data = await api.get('/hearts');
       setParticipants(data.participants || []);
-    } catch { setError('Ошибка загрузки'); }
+    } catch { setError(c.loadError); }
     finally { setLoading(false); }
   }, [clan]);
 
@@ -625,17 +640,17 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
   if (!clan) {
     return (
       <div className="page">
-        <h2 className="page-title">🫀 Учёт лута</h2>
-        <InfoSpoiler {...HEARTS_SPOILER} storageKey="spoiler_hearts" />
+        <h2 className="page-title">{c.pageTitleGuest}</h2>
+        <InfoSpoiler {...HEARTS_SPOILER[locale]} storageKey="spoiler_hearts" />
         {isGuest ? (
           <GuestLock
             icon="❤️"
-            title="Веди учёт добычи вместе с кланом"
-            text="Автоматический расчёт долей и история добычи доступны после регистрации и вступления в клан."
+            title={c.guestLockTitle}
+            text={c.guestLockText}
             onLoginClick={onLoginClick}
           />
         ) : (
-          <div className="empty-state"><p>Вступи в клан чтобы вести учёт</p></div>
+          <div className="empty-state"><p>{c.joinClanPrompt}</p></div>
         )}
       </div>
     );
@@ -644,11 +659,11 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
   return (
     <div className="page">
       <div className="bears-hdr">
-        <h2 className="page-title">🫀 Учёт лута — {clan.name}</h2>
+        <h2 className="page-title">{c.pageTitle(clan.name)}</h2>
         <div className="stat-pills">
-          <span className="pill" style={{ color: '#e05252', borderColor: '#e05252', background: 'rgba(224,82,82,.1)' }}>❤️ Сердец: {totalHearts}</span>
-          <span className="pill" style={{ color: '#7eb8e0', borderColor: '#7eb8e0', background: 'rgba(126,184,224,.1)' }}>🧥 Шкур: {totalPelts}</span>
-          <span className="pill">👥 Участников: {participants.length}</span>
+          <span className="pill" style={{ color: '#e05252', borderColor: '#e05252', background: 'rgba(224,82,82,.1)' }}>{c.heartsCount(totalHearts)}</span>
+          <span className="pill" style={{ color: '#7eb8e0', borderColor: '#7eb8e0', background: 'rgba(126,184,224,.1)' }}>{c.peltsCount(totalPelts)}</span>
+          <span className="pill">{c.participantsCount(participants.length)}</span>
         </div>
       </div>
 
@@ -659,7 +674,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
       )}
 
       {/* Пояснение как пользоваться таблицей и как работает защита строк — сворачиваемый спойлер */}
-      <InfoSpoiler {...HEARTS_SPOILER} storageKey="spoiler_hearts" />
+      <InfoSpoiler {...HEARTS_SPOILER[locale]} storageKey="spoiler_hearts" />
 
       {/* Таблица — без overflow:hidden чтобы дропдауны (порталы) не обрезались */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10 }}>
@@ -682,10 +697,10 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Загрузка...</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>{c.loadingRow}</td></tr>
               ) : participants.length === 0 ? (
                 <tr><td colSpan={9} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 13 }}>
-                  Нажми «+ Добавить участника» чтобы начать учёт
+                  {c.emptyRow}
                 </td></tr>
               ) : (
                 sorted.map(p => (
@@ -715,7 +730,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
               ...(showAdd ? { background: 'var(--bg3)', color: 'var(--text)', border: 'none' } : {}),
               cursor: 'pointer', transition: 'all .15s',
             }}>
-              + Добавить участника
+              {c.addParticipantBtn}
             </button>
             {showAdd && (
               <AddParticipantDropdown
@@ -731,7 +746,7 @@ export default function HeartsPage({ clan, members, user, onHeartsUpdate, isGues
       </div>
 
       <div className="tbl-hint">
-        ❤️ + шкуры 🧥 = доля считается автоматически · «Участники» и «Выплачено участникам» редактирует только тот, чей ник указан в строке · «Очистить рейд» сбрасывает таблицу
+        {c.hintText}
       </div>
     </div>
   );

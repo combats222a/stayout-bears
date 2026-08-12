@@ -6,7 +6,7 @@ import type { AuthUser } from '../types/entities';
 
 interface NavItem {
   key: string;
-  label: string;
+  labelKey: 'navBears' | 'navShining' | 'navHearts' | 'navTimers' | 'navPromo' | 'navCaptures' | 'navClan' | 'navProfile' | 'navAdmin' | 'navAchievements' | 'navLevel' | 'navTimecalc' | 'navDraugs' | 'navAnomaly';
   guestHref?: string;
   guestLoginOnly?: boolean;
 }
@@ -19,25 +19,28 @@ interface NavItem {
 // форма входа. «Уровень» и «Промокод» и так публичные, рендерятся вне
 // авторизованного приложения (см. main.jsx).
 // Основные разделы — видны прямо в шапке на десктопе всегда.
+// Подписи (labelKey) переводятся через t('navigation.<labelKey>') в месте
+// рендера — так переключение языка сразу перекрашивает всё меню, без
+// хранения текста самой подписи в статическом списке.
 const NAV_ITEMS: NavItem[] = [
-  { key: 'bears',   label: '🐻 Медведи' },
-  { key: 'shining', label: '✨ Сияние' },
-  { key: 'hearts',  label: '🫀 Учёт лута' },
-  { key: 'timers',  label: '⏱️ Таймеры' },
-  { key: 'promo',   label: '🎁 Промокод', guestHref: '/' },
-  { key: 'captures', label: '🚩 Захваты' },
-  { key: 'clan',     label: '🏕️ Клан' },
-  { key: 'profile',  label: '👤 Профиль', guestLoginOnly: true },
+  { key: 'bears',   labelKey: 'navBears' },
+  { key: 'shining', labelKey: 'navShining' },
+  { key: 'hearts',  labelKey: 'navHearts' },
+  { key: 'timers',  labelKey: 'navTimers' },
+  { key: 'promo',   labelKey: 'navPromo', guestHref: '/' },
+  { key: 'captures', labelKey: 'navCaptures' },
+  { key: 'clan',     labelKey: 'navClan' },
+  { key: 'profile',  labelKey: 'navProfile', guestLoginOnly: true },
 ];
 
 // Второстепенные разделы — убраны из верхней строки, доступны только через
 // кнопку «☰ Разделы» (и на десктопе, и на телефоне).
 const MENU_ONLY_ITEMS: NavItem[] = [
-  { key: 'achievements', label: '🏆 Достижения' },
-  { key: 'level',        label: '📈 Уровень',     guestHref: '/level' },
-  { key: 'timecalc',     label: '🧮 Калькулятор времени' },
-  { key: 'draugs',       label: '💀 Драуги' },
-  { key: 'anomaly',      label: '🥶 Аномальные прорывы' },
+  { key: 'achievements', labelKey: 'navAchievements' },
+  { key: 'level',        labelKey: 'navLevel',     guestHref: '/level' },
+  { key: 'timecalc',     labelKey: 'navTimecalc' },
+  { key: 'draugs',       labelKey: 'navDraugs' },
+  { key: 'anomaly',      labelKey: 'navAnomaly' },
 ];
 
 // Ширина сайдбара — должна совпадать с .desktop-sidebar { width: ... }
@@ -138,7 +141,7 @@ export default function Header({
     };
   }, [menuOpen]);
 
-  const adminItems: NavItem[] = user?.is_superadmin ? [{ key: 'admin', label: '🛡️ Админ' }] : [];
+  const adminItems: NavItem[] = user?.is_superadmin ? [{ key: 'admin', labelKey: 'navAdmin' }] : [];
   // Показывается всегда в верхней строке на десктопе; на телефоне (где верхняя
   // строка скрыта) те же пункты дублируются внутри панели «Разделы».
   const navItems = [...NAV_ITEMS, ...adminItems];
@@ -182,7 +185,7 @@ export default function Header({
             }
           }}
         >
-          {item.label}
+          {t(`navigation.${item.labelKey}`)}
         </a>
       );
     }
@@ -191,7 +194,7 @@ export default function Header({
       // по клику сразу предлагаем войти/зарегистрироваться.
       return (
         <button key={item.key} className={cls} onClick={onLoginClick}>
-          {item.label}
+          {t(`navigation.${item.labelKey}`)}
         </button>
       );
     }
@@ -201,7 +204,7 @@ export default function Header({
         className={cls}
         onClick={() => (keepOpen ? onNavigate?.(item.key) : handleNav(item.key))}
       >
-        {item.label}
+        {t(`navigation.${item.labelKey}`)}
       </button>
     );
   }
@@ -252,14 +255,14 @@ export default function Header({
         </nav>
 
         <div className="header-user">
-          <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
+          <a className="header-faq-link" href="/faq" title={t('navigation.faqLinkTitle')}>FAQ</a>
           <a
             className="header-steam-link"
             href={STEAM_URL}
             target="_blank"
             rel="noopener noreferrer"
-            title="Stay Out в Steam"
-            aria-label="Stay Out в Steam"
+            title={t('navigation.steamLinkTitle')}
+            aria-label={t('navigation.steamLinkTitle')}
           >
             <SteamIcon />
           </a>
@@ -292,14 +295,14 @@ export default function Header({
               ) : (
                 <span className="nav-panel-nick">{user?.game_nick || user?.nick}</span>
               )}
-              <a className="header-faq-link" href="/faq" title="Часто задаваемые вопросы">FAQ</a>
+              <a className="header-faq-link" href="/faq" title={t('navigation.faqLinkTitle')}>FAQ</a>
               <a
                 className="header-steam-link"
                 href={STEAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Stay Out в Steam"
-                aria-label="Stay Out в Steam"
+                title={t('navigation.steamLinkTitle')}
+                aria-label={t('navigation.steamLinkTitle')}
               >
                 <SteamIcon />
               </a>

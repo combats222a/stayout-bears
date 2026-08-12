@@ -9,6 +9,9 @@ import MaskedTimeInput, { digitsToTimeStr } from '../../components/MaskedTimeInp
 import { ANOMALY_SPOILER } from '../../content/spoilerContent';
 import { api } from '../../utils/api';
 import type { AuthUser } from '../../types/entities';
+import { useI18n, useLocaleDict } from '../../i18n';
+import ruAnomaly from '../../i18n/locales/ru/anomaly';
+import enAnomaly from '../../i18n/locales/en/anomaly';
 
 interface CommitPayload {
   gameTimeStr: string;
@@ -17,14 +20,15 @@ interface CommitPayload {
 
 // ─── Модалка ввода якоря Z — работает точно как на Сиянии ──────────
 function SetAnomalyTimeModal({ onCommit, onClose }: { onCommit: (p: CommitPayload) => void; onClose: () => void }) {
+  const c = useLocaleDict(ruAnomaly, enAnomaly);
   const [digits, setDigits] = useState('');
   const [error,  setError]  = useState('');
 
   function handleSubmit() {
-    if (!digits) { setError('Введи игровое время — просто цифры, например 0113'); return; }
+    if (!digits) { setError(c.modalErrorEmpty); return; }
     const timeStr = digitsToTimeStr(digits, 2);
     const [gh, gm] = timeStr.split(':').map(Number);
-    if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError('Неверное время'); return; }
+    if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError(c.modalErrorInvalid); return; }
     onCommit({ gameTimeStr: timeStr, anchorRealMs: Date.now() });
     onClose();
   }
@@ -32,11 +36,11 @@ function SetAnomalyTimeModal({ onCommit, onClose }: { onCommit: (p: CommitPayloa
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
-        <div className="modal-title">🥶 Установить время Уледной жары</div>
+        <div className="modal-title">{c.modalTitle}</div>
         <div className="modal-body" style={{ gap: 18 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label className="modal-label">
-              Якорь Z — игровое время которое ты видишь прямо сейчас в игре (только цифры)
+              {c.modalLabel}
             </label>
             <MaskedTimeInput
               segments={2}
@@ -47,16 +51,15 @@ function SetAnomalyTimeModal({ onCommit, onClose }: { onCommit: (p: CommitPayloa
               autoFocus
             />
             <div className="modal-hint">
-              Backspace удаляет время справа налево: минуты → часы. Затем просто вводи цифры — двоеточие появится само ·
-              Локация зафиксирована — GMT +00:00
+              {c.modalHint}
             </div>
           </div>
 
           {error && <div className="modal-error">{error}</div>}
         </div>
         <div className="modal-footer">
-          <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>Сохранить</button>
+          <button className="modal-btn-cancel" onClick={onClose}>{c.modalCancel}</button>
+          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>{c.modalSave}</button>
         </div>
       </div>
     </div>
@@ -74,6 +77,7 @@ interface AnomalyCardProps {
 
 // ─── Карточка одного прорыва ────────────────────────────────────────
 function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGameTimeStr, anchorRealMs }: AnomalyCardProps) {
+  const c = useLocaleDict(ruAnomaly, enAnomaly);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -109,16 +113,16 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGam
     bgColor = 'transparent'; dotColor = '#4a6a8a';
   }
 
-  const CARD_LABELS = ['ПРОРЫВ 1', 'ПРОРЫВ 2', 'ПРОРЫВ 3', 'ПРОРЫВ 4'];
+  const CARD_LABELS = c.cardLabels;
 
   // ── Таймер ──
   let timerLabel: string, timerValue: string, timerColor: string;
   if (burning) {
-    timerLabel = 'До конца';
+    timerLabel = c.untilEnd;
     timerValue = msUntilEnd > 0 ? formatCountdown(msUntilEnd) : '00:00';
     timerColor = '#50c878';
   } else {
-    timerLabel = 'Через';
+    timerLabel = c.inLabel;
     timerValue = msUntilStart > 0 ? formatCountdown(msUntilStart) : '00:00';
     timerColor = isWarn ? '#e0a030' : (cardIndex === 0 ? '#4a9edd' : '#6e8090');
   }
@@ -148,7 +152,7 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGam
       {/* Игровое время — тикает, одинаково для всех карточек */}
       <div>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-          Игровое время
+          {c.gameTimeLabel}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 700,
@@ -161,7 +165,7 @@ function AnomalyCard({ cardIndex, warnStartMs, realStartMs, realEndMs, anchorGam
       {/* Реальное время начала ЭТОГО прорыва */}
       <div>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-          {burning ? 'Началось в' : 'Начало в'}
+          {burning ? c.startedAt : c.startsAt}
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, color: '#8b949e' }}>
           {formatRealTime(realStartMs)}
@@ -205,6 +209,8 @@ interface AnomalyPageProps {
 // клану и не в браузере) — видит и настраивает только сам игрок, с
 // любого устройства после входа.
 export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGuest, onLoginClick = () => {} }: AnomalyPageProps) {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruAnomaly, enAnomaly);
   const [showModal, setShowModal] = useState(false);
   const [now, setNow]             = useState(() => Date.now());
   const [soundOn, setSoundOn]     = useState(() => isAnomalySoundEnabled());
@@ -235,17 +241,17 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
   if (!user) {
     return (
       <div className="page">
-        <h2 className="page-title">🥶 Аномальные прорывы / Уледная жара</h2>
-        <InfoSpoiler {...ANOMALY_SPOILER} storageKey="spoiler_anomaly" />
+        <h2 className="page-title">{c.pageTitle}</h2>
+        <InfoSpoiler {...ANOMALY_SPOILER[locale]} storageKey="spoiler_anomaly" />
         {isGuest ? (
           <GuestLock
             icon="🥶"
-            title="Личный отсчёт — только твой"
-            text="Якорь Аномальных прорывов видит и настраивает только сам игрок. Зарегистрируйся, чтобы завести свой — он будет доступен с любого устройства."
+            title={c.guestLockTitle}
+            text={c.guestLockText}
             onLoginClick={onLoginClick}
           />
         ) : (
-          <div className="empty-state"><p>Войди, чтобы отслеживать Аномальные прорывы</p></div>
+          <div className="empty-state"><p>{c.loginToTrack}</p></div>
         )}
       </div>
     );
@@ -265,13 +271,13 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
     const burning = now >= slot0.realStartMs && now < slot0.realEndMs;
     const isWarn = now >= slot0.warnStartMs && now < slot0.realStartMs;
     if (burning) {
-      statusPill = { color: '#50c878', text: '⚡ Прорыв идёт прямо сейчас!' };
+      statusPill = { color: '#50c878', text: c.burningNow };
     } else {
       const msUntilNext = slot0.realStartMs - now;
       if (isWarn) {
-        statusPill = { color: '#e0a030', text: `⚠️ Прорыв через ${formatCountdown(msUntilNext)}!` };
+        statusPill = { color: '#e0a030', text: c.breachIn(formatCountdown(msUntilNext)) };
       } else {
-        statusPill = { color: '#4a9edd', text: `До ближайшего прорыва: ${formatCountdown(msUntilNext)}` };
+        statusPill = { color: '#4a9edd', text: c.untilNext(formatCountdown(msUntilNext)) };
       }
     }
   }
@@ -280,7 +286,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
     <div className="page">
       {/* Заголовок */}
       <div className="bears-hdr">
-        <h2 className="page-title">🥶 Аномальные прорывы / Уледная жара</h2>
+        <h2 className="page-title">{c.pageTitle}</h2>
         <div className="stat-pills">
           {statusPill && (
             <span className="pill" style={{
@@ -294,7 +300,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
           <button
             className={`rupor-btn ${soundOn ? 'rupor-on' : 'rupor-off'}`}
             onClick={toggleSound}
-            title={soundOn ? 'Звук включён — нажми чтобы выключить' : 'Звук выключен — нажми чтобы включить'}
+            title={soundOn ? c.soundOnTitle : c.soundOffTitle}
           >
             <SoundIcon on={soundOn} />
           </button>
@@ -302,10 +308,10 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
       </div>
 
       <div className="timer-owner-note">
-        🔒 Аномальные прорывы видит и настраивает только их владелец — <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
+        {c.ownerNotePrefix} <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
       </div>
 
-      <InfoSpoiler {...ANOMALY_SPOILER} storageKey="spoiler_anomaly" />
+      <InfoSpoiler {...ANOMALY_SPOILER[locale]} storageKey="spoiler_anomaly" />
 
       {error && <div className="error-banner">{error}</div>}
 
@@ -319,7 +325,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
           {hasData ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 13, color: '#c8d6e5' }}>
-                Якорь Z (игровое):{' '}
+                {c.anchorGameLabel}{' '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#58a6ff', fontWeight: 700 }}>
                   {anomalyData!.gameTimeStr}
                 </span>
@@ -328,7 +334,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
               </div>
               <div style={{ fontSize: 11, color: '#6e7681' }}>
                 {loc.name}
-                {' · Якорь X (реальное): '}
+                {' · '}{c.anchorRealLabel}{' '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#4a6a8a' }}>
                   {formatRealTime(anomalyData!.anchorRealMs!)}
                 </span>
@@ -336,7 +342,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
             </div>
           ) : (
             <div style={{ fontSize: 13, color: '#8b949e' }}>
-              Введи текущее игровое время чтобы начать отсчёт
+              {c.enterTimePrompt}
             </div>
           )}
         </div>
@@ -344,7 +350,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
           style={{ padding: '8px 20px', whiteSpace: 'nowrap' }}
           onClick={() => setShowModal(true)}
         >
-          🥶 Установить время
+          {c.setTimeBtn}
         </button>
       </div>
 
@@ -370,7 +376,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
               }}>
                 <div style={{ fontSize: 10, color: '#4a6a8a', textTransform: 'uppercase',
                   letterSpacing: '.07em', marginBottom: 10 }}>
-                  {['ПРОРЫВ 1','ПРОРЫВ 2','ПРОРЫВ 3','ПРОРЫВ 4'][i]}
+                  {c.cardLabels[i]}
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: '#1e2a3a' }}>--:--</div>
               </div>

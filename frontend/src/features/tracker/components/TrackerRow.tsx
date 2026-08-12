@@ -3,6 +3,7 @@ import SoundIcon from '../../../components/SoundIcon';
 import KillTimeModal from './KillTimeModal';
 import type { TrackerConfig } from '../trackerConfig';
 import type { TrackerItem } from '../createTrackerStore';
+import { useI18n } from '../../../i18n';
 
 interface TrackerRowProps {
   item: TrackerItem;
@@ -25,6 +26,7 @@ interface TrackerRowProps {
 // атомарным рендером раз в секунду, как при прокликивании всех кнопок
 // разом, только автоматически.
 export default function TrackerRow({ item, config, onKill, onVanish, onReset, onManualTime }: TrackerRowProps) {
+  const { t, locale } = useI18n();
   const [showModal, setShowModal] = useState(false);
   const index: number = item[config.indexKey];
   const [soundOn, setSoundOn] = useState(() => config.soundPrefs.isEnabled(index));
@@ -81,11 +83,11 @@ export default function TrackerRow({ item, config, onKill, onVanish, onReset, on
     <>
       <tr className={rowCls}>
         <td className="td-dot"><span className={dotCls} /></td>
-        <td className="td-name" data-label={config.rowNounLabel}>{meta.name}</td>
-        <td className="td-square" data-label="Квадрат"><span className="square-badge">{meta.square}</span></td>
-        <td className="td-timer" data-label="До спавна">
+        <td className="td-name" data-label={config.rowNounLabel[locale]}>{meta.name}</td>
+        <td className="td-square" data-label={t('tracker.colSquare')}><span className="square-badge">{meta.square}</span></td>
+        <td className="td-timer" data-label={t('tracker.colToSpawn')}>
           {isReady
-            ? <span className="spawn-tag">⚡ Спавн!</span>
+            ? <span className="spawn-tag">{t('tracker.spawnedTag')}</span>
             : <div className="prog-wrap">
                 <div className="prog-bar">
                   <div className="prog-fill" style={{ width: `${pct * 100}%`, background: barColor }} />
@@ -96,43 +98,43 @@ export default function TrackerRow({ item, config, onKill, onVanish, onReset, on
               </div>
           }
         </td>
-        <td className="td-actions" data-label="Действия">
+        <td className="td-actions" data-label={t('tracker.colActions')}>
           <div className="act-btns">
             {!isDead && !isReady
               ? <>
-                  <button className="btn-now"  onClick={() => onKill(index)}>Сейчас</button>
-                  <button className="btn-gone" onClick={() => onVanish(index)}>Исчез</button>
+                  <button className="btn-now"  onClick={() => onKill(index)}>{t('tracker.btnNow')}</button>
+                  <button className="btn-gone" onClick={() => onVanish(index)}>{t('tracker.btnVanished')}</button>
                 </>
-              : <button className="btn-reset-row" onClick={() => onReset(index)}>✕ Сброс</button>
+              : <button className="btn-reset-row" onClick={() => onReset(index)}>{t('tracker.btnReset')}</button>
             }
             <button
               className={`rupor-btn rupor-btn-sm ${soundOn ? 'rupor-on' : 'rupor-off'}`}
               onClick={toggleSound}
-              title={soundOn ? 'Звук по спавну включён' : 'Звук по спавну выключен'}
+              title={soundOn ? t('tracker.soundOnTitle') : t('tracker.soundOffTitle')}
             >
               <SoundIcon on={soundOn} />
             </button>
           </div>
         </td>
-        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label="Спавн">{isActive ? spawnDisplay : '--:--:--'}</td>
-        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label="Прошло">{isActive ? elap : '--:--:--'}</td>
-        <td data-label="Смерть">
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label={t('tracker.colSpawnTime')}>{isActive ? spawnDisplay : '--:--:--'}</td>
+        <td className={`td-clock${isActive ? '' : ' td-clock-empty'}`} data-label={t('tracker.colElapsed')}>{isActive ? elap : '--:--:--'}</td>
+        <td data-label={t('tracker.colDeathTime')}>
           {isActive
-            ? <span className="td-clock clock-editable" title="Нажми чтобы исправить время смерти" onClick={() => setShowModal(true)}>
+            ? <span className="td-clock clock-editable" title={t('tracker.editDeathTimeTitle')} onClick={() => setShowModal(true)}>
                 {killedDisplay}<span className="edit-icon"> ✎</span>
               </span>
-            : <span className="td-clock clock-editable clock-empty" title="Нажми чтобы ввести время смерти" onClick={() => setShowModal(true)}>
+            : <span className="td-clock clock-editable clock-empty" title={t('tracker.enterDeathTimeTitle')} onClick={() => setShowModal(true)}>
                 --:--:--<span className="edit-icon"> ✎</span>
               </span>
           }
         </td>
-        <td className="td-user" data-label="Игрок">{item.killer_nick || '—'}</td>
+        <td className="td-user" data-label={t('tracker.colPlayer')}>{item.killer_nick || t('tracker.noPlayer')}</td>
       </tr>
 
       {showModal && (
         <KillTimeModal
           itemName={meta.name}
-          killedNounGenitive={config.killedNounGenitive}
+          killedNounGenitive={config.killedNounGenitive[locale]}
           parseLocalTimeInput={config.parseLocalTimeInput}
           onCommit={iso => onManualTime(index, iso)}
           onClose={() => setShowModal(false)}

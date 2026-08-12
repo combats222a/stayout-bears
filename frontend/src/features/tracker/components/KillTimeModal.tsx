@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import MaskedTimeInput, { digitsToTimeStr } from '../../../components/MaskedTimeInput';
+import { useI18n } from '../../../i18n';
 
 interface KillTimeModalProps {
   itemName: string;
@@ -13,6 +14,7 @@ interface KillTimeModalProps {
 // (родительный падеж для фразы "убили ___"), parseLocalTimeInput — функция парсинга
 // конкретного конфига (bears или draugs — код одинаковый, но берём из своего модуля).
 export default function KillTimeModal({ itemName, killedNounGenitive, parseLocalTimeInput, onCommit, onClose }: KillTimeModalProps) {
+  const { t } = useI18n();
   const [digits, setDigits] = useState(() => {
     // Pre-fill with current local time (только цифры)
     const now = new Date();
@@ -24,10 +26,10 @@ export default function KillTimeModal({ itemName, killedNounGenitive, parseLocal
   const [error, setError] = useState('');
 
   function handleSubmit() {
-    if (!digits) { setError('Введи время — просто цифры, например 093500'); return; }
+    if (!digits) { setError(t('tracker.modalErrorEmpty')); return; }
     const timeStr = digitsToTimeStr(digits, 3);
     const iso = parseLocalTimeInput(timeStr);
-    if (!iso) { setError('Неверное время'); return; }
+    if (!iso) { setError(t('tracker.modalErrorInvalid')); return; }
     onCommit(iso);
     onClose();
   }
@@ -35,9 +37,9 @@ export default function KillTimeModal({ itemName, killedNounGenitive, parseLocal
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div className="modal-title">⏱ Время смерти — <span className="modal-bear-name">{itemName}</span></div>
+        <div className="modal-title">{t('tracker.modalTitlePrefix')} <span className="modal-bear-name">{itemName}</span></div>
         <div className="modal-body">
-          <label className="modal-label">Введи время когда убили {killedNounGenitive} (только цифры)</label>
+          <label className="modal-label">{t('tracker.modalLabelPrefix')} {killedNounGenitive} {t('tracker.modalLabelSuffix')}</label>
           <MaskedTimeInput
             segments={3}
             value={digits}
@@ -47,11 +49,11 @@ export default function KillTimeModal({ itemName, killedNounGenitive, parseLocal
             autoFocus
           />
           {error && <div className="modal-error">{error}</div>}
-          <div className="modal-hint">Backspace удаляет время справа налево: секунды → минуты → часы. Затем просто вводи цифры — двоеточия расставятся сами · Время твоего часового пояса</div>
+          <div className="modal-hint">{t('tracker.modalHint')}</div>
         </div>
         <div className="modal-footer">
-          <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>Сохранить</button>
+          <button className="modal-btn-cancel" onClick={onClose}>{t('tracker.modalCancel')}</button>
+          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>{t('tracker.modalSave')}</button>
         </div>
       </div>
     </div>

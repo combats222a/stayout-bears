@@ -10,6 +10,7 @@ import { useShiningStore } from '../features/shining/store';
 import { useClanStore, useMembersStore, useBansStore } from '../features/clan/store';
 import { useAnomalyStore } from '../features/anomaly/store';
 import type { AnomalyStateData } from '../features/anomaly/AnomalyPage';
+import { useI18n } from '../i18n';
 
 // Раздел рендерится только когда игрок реально на нём находится (см. `page === '...'`
 // ниже), но раньше все 15 страниц импортировались наверху статически — это грузило
@@ -36,7 +37,12 @@ const AnomalyPage      = lazy(() => import('../features/anomaly/AnomalyPage'));
 // Тот же визуальный паттерн, что уже используется внутри страниц во время
 // собственной загрузки данных (см. AdminPage/TimersPage) — так переключение
 // раздела не привносит новый, ранее не виданный вид "загрузки".
-const pageFallback = <div className="page"><div className="loading">Загрузка...</div></div>;
+// Небольшой компонент (а не константа) — чтобы подхватывать t() и
+// не молчать по-русски, если гость уже переключился на английский.
+function PageFallback() {
+  const { t } = useI18n();
+  return <div className="page"><div className="loading">{t('common.loading')}</div></div>;
+}
 import { api } from '../utils/api';
 import { useSocket, getSocket } from '../hooks/useSocket';
 import { useGlobalSoundWatcher } from '../hooks/useGlobalSoundWatcher';
@@ -47,6 +53,7 @@ import type { ApiError } from '../types/api';
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
 
   const [user, setUser]       = useState<AuthUser | null>(null);
   const [token, setToken]     = useState<string | null>(() => localStorage.getItem('token'));
@@ -321,7 +328,7 @@ export default function App() {
     return (
       <div className="splash">
         <div className="splash-icon">🐻‍❄️</div>
-        <div className="splash-text">Загрузка...</div>
+        <div className="splash-text">{t('common.loading')}</div>
       </div>
     );
   }
@@ -330,12 +337,12 @@ export default function App() {
     return (
       <div className="splash">
         <div className="splash-icon">🐻‍❄️</div>
-        <div className="splash-text">Не удалось связаться с сервером</div>
+        <div className="splash-text">{t('app.connectionError')}</div>
         <div className="splash-text" style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>
-          Сервер, вероятно, ещё запускается. Вход не потребуется — просто попробуй ещё раз.
+          {t('app.connectionErrorHint')}
         </div>
         <button className="modal-btn-ok" style={{ marginTop: 16 }} onClick={retryConnection}>
-          Повторить
+          {t('app.retry')}
         </button>
       </div>
     );
@@ -353,7 +360,7 @@ export default function App() {
         <>
           <Header user={null} page="level" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <div className="public-landing">
-            <Suspense fallback={pageFallback}>
+            <Suspense fallback={<PageFallback />}>
               <LevelPage standalone />
             </Suspense>
           </div>
@@ -368,7 +375,7 @@ export default function App() {
         <>
           <Header user={null} page="faq" onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <div className="public-landing">
-            <Suspense fallback={pageFallback}>
+            <Suspense fallback={<PageFallback />}>
               <FaqPage />
             </Suspense>
           </div>
@@ -393,7 +400,7 @@ export default function App() {
         <>
           <Header user={null} page={page} onNavigate={setPage} onLoginClick={() => setShowAuth(true)} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           <main className="main">
-            <Suspense fallback={pageFallback}>
+            <Suspense fallback={<PageFallback />}>
               {page === 'bears' && (
                 <BearsPage clan={null} isGuest onLoginClick={() => setShowAuth(true)} />
               )}
@@ -432,7 +439,7 @@ export default function App() {
     <div className="app">
       <Header user={user} page={page} onNavigate={setPage} onLogout={onLogout} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <main className="main">
-        <Suspense fallback={pageFallback}>
+        <Suspense fallback={<PageFallback />}>
           {page === 'bears' && (
             <BearsPage clan={clan} />
           )}

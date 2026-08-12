@@ -1,6 +1,9 @@
 import { useState, FormEvent } from 'react';
 import { api } from '../../utils/api';
 import type { AuthUser } from '../../types/entities';
+import { useLocaleDict } from '../../i18n';
+import ruProfile from '../../i18n/locales/ru/profile';
+import enProfile from '../../i18n/locales/en/profile';
 
 interface ProfilePageProps {
   user: AuthUser;
@@ -9,6 +12,7 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePageProps) {
+  const c = useLocaleDict(ruProfile, enProfile);
   const [nick, setNick] = useState(user.nick);
   const [gameNick, setGameNick] = useState(user.game_nick || '');
   const [error, setError] = useState('');
@@ -25,7 +29,7 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePag
     setError('');
     setSuccess('');
     if (!nick.trim() || !gameNick.trim()) {
-      setError('Оба поля обязательны');
+      setError(c.bothFieldsRequired);
       return;
     }
     setLoading(true);
@@ -35,7 +39,7 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePag
         game_nick: gameNick.trim()
       });
       onUserUpdate(data.user);
-      setSuccess('Профиль сохранён!');
+      setSuccess(c.saved);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -45,7 +49,7 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePag
 
   async function deleteAccount() {
     if (deleteInput !== user.nick) {
-      setDeleteError('Логин введён неверно');
+      setDeleteError(c.wrongLogin);
       return;
     }
     setDeleteLoading(true);
@@ -64,11 +68,11 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePag
     <div className="profile-page">
       {/* Profile card */}
       <div className="settings-card">
-        <h2 className="settings-title">👤 Профиль</h2>
+        <h2 className="settings-title">{c.title}</h2>
 
         <form onSubmit={save} className="settings-form">
           <div className="settings-field">
-            <label className="settings-label">Логин (для входа на сайт)</label>
+            <label className="settings-label">{c.loginLabel}</label>
             <input
               className="input"
               value={nick}
@@ -80,7 +84,7 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePag
           </div>
 
           <div className="settings-field">
-            <label className="settings-label">Игровой ник (виден другим игрокам)</label>
+            <label className="settings-label">{c.gameNickLabel}</label>
             <input
               className="input"
               value={gameNick}
@@ -95,30 +99,28 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePag
           {success && <div className="success-msg">✓ {success}</div>}
 
           <button className="btn btn-primary btn-shiny" type="submit" disabled={loading}>
-            {loading ? 'Сохранение...' : 'Сохранить'}
+            {loading ? c.saving : c.save}
           </button>
         </form>
 
         <div className="settings-email-row">
-          Email: <span className="settings-email-value">{user.email}</span>
+          {c.emailPrefix} <span className="settings-email-value">{user.email}</span>
         </div>
       </div>
 
       {/* Delete account section */}
       <div className="settings-card settings-card-danger">
-        <h3 className="settings-title-danger">🗑️ Удалить аккаунт</h3>
-        <p className="settings-desc">
-          После удаления все данные аккаунта будут стёрты. Ты сможешь зарегистрироваться заново с тем же логином.
-        </p>
+        <h3 className="settings-title-danger">{c.deleteTitle}</h3>
+        <p className="settings-desc">{c.deleteDesc}</p>
 
         {!showDeleteConfirm ? (
           <button className="btn btn-danger" onClick={() => setShowDeleteConfirm(true)}>
-            Удалить аккаунт
+            {c.deleteBtn}
           </button>
         ) : (
           <div className="settings-delete-confirm">
             <label className="settings-delete-label">
-              Введи свой логин <strong>{user.nick}</strong> для подтверждения:
+              {c.deleteConfirmPrefix} <strong>{user.nick}</strong> {c.deleteConfirmSuffix}
             </label>
             <input
               className="input"
@@ -129,14 +131,14 @@ export default function ProfilePage({ user, onUserUpdate, onLogout }: ProfilePag
             {deleteError && <div className="error-msg">{deleteError}</div>}
             <div className="settings-delete-actions">
               <button className="btn btn-danger" onClick={deleteAccount} disabled={deleteLoading}>
-                {deleteLoading ? 'Удаление...' : '✓ Да, удалить'}
+                {deleteLoading ? c.deleting : c.confirmDeleteBtn}
               </button>
               <button
                 className="btn btn-ghost"
                 onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); setDeleteError(''); }}
                 disabled={deleteLoading}
               >
-                Отмена
+                {c.cancel}
               </button>
             </div>
           </div>

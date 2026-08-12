@@ -3,7 +3,7 @@ import InfoSpoiler from '../../components/InfoSpoiler';
 import StarIcon from '../../components/StarIcon';
 import SoundIcon from '../../components/SoundIcon';
 import { CAPTURES_SPOILER } from '../../content/spoilerContent';
-import { CAPTURE_LOCATIONS } from '../../content/captureLocations';
+import { CAPTURE_LOCATIONS, CAPTURE_TYPE_LABEL } from '../../content/captureLocations';
 import type { CaptureLocation } from '../../content/captureLocations';
 import { getCaptureStatus, formatDuration, getViewerTimezoneLabel } from '../../utils/captures';
 import type { CaptureStatus } from '../../utils/captures';
@@ -11,6 +11,9 @@ import {
   isCaptureSoundEnabled, setCaptureSoundEnabled,
   isCaptureFavorite, setCaptureFavorite,
 } from '../../utils/soundPrefs';
+import { useI18n, useLocaleDict } from '../../i18n';
+import ruCaptures from '../../i18n/locales/ru/captures';
+import enCaptures from '../../i18n/locales/en/captures';
 
 interface Row {
   loc: CaptureLocation;
@@ -30,24 +33,21 @@ interface Column {
   getValue: (r: Row) => string | number;
 }
 
-const COLUMNS: Column[] = [
-  { key: 'name', label: 'Наименование', getValue: r => r.loc.name },
-  { key: 'type', label: 'Тип', getValue: r => r.loc.type },
-  { key: 'location', label: 'Локация', getValue: r => r.loc.location },
-  { key: 'coords', label: 'Координаты', getValue: r => r.loc.coords },
-  { key: 'date', label: 'Дата захвата', getValue: r => r.status.start.getTime() },
-  { key: 'countdown', label: 'До начала / до конца захвата', getValue: r => countdownSortValue(r.status) },
-];
-
-interface SortState {
-  key: Column['key'] | null;
-  dir: 'asc' | 'desc';
-}
-
 export default function CapturesPage() {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruCaptures, enCaptures);
   const [now, setNow] = useState(() => new Date());
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ key: null, dir: 'asc' });
+
+  const COLUMNS: Column[] = useMemo(() => [
+    { key: 'name', label: c.colName, getValue: r => r.loc.name },
+    { key: 'type', label: c.colType, getValue: r => r.loc.type },
+    { key: 'location', label: c.colLocation, getValue: r => r.loc.location },
+    { key: 'coords', label: c.colCoords, getValue: r => r.loc.coords },
+    { key: 'date', label: c.colDate, getValue: r => r.status.start.getTime() },
+    { key: 'countdown', label: c.colCountdown, getValue: r => countdownSortValue(r.status) },
+  ], [c]);
 
   // Избранное и звук — по умолчанию выключены у всех точек, состояние
   // читается из localStorage при загрузке и запоминается для игрока.
@@ -89,30 +89,30 @@ export default function CapturesPage() {
   // звезды на реальные цветные иконки-звёздочки — такие же, как в подписи
   // под таблицей — чтобы это выглядело наглядно, а не текстом.
   const capturesSpoiler = useMemo(() => {
-    const blocks = CAPTURES_SPOILER.blocks.map(block => {
-      if (block.heading !== 'Избранное и звуковые уведомления') return block;
+    const base = CAPTURES_SPOILER[locale];
+    const blocks = base.blocks.map(block => {
+      if (block.heading !== c.spoilerFavHeadingMatch) return block;
       const body: ReactNode[] = [
-        '⭐ Звезда — добавить в избранное. Избранное автоматически отображается вверху таблицы.',
-        '🔊 Значок звука — включает звуковое уведомление о начале захвата. По умолчанию уведомление отключено и настраивается отдельно для каждой точки.',
-        'Цвет звезды:',
+        c.spoilerFavBullet1,
+        c.spoilerFavBullet2,
+        c.spoilerFavColorLabel,
         <span key="star-blue">
           <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /></span>
-          {' '}— до начала захвата больше часа.
+          {' '}{c.spoilerFavBlue}
         </span>,
         <span key="star-yellow">
           <span style={{ color: 'var(--orange)' }}><StarIcon size={13} on /></span>
-          {' '}— до начала захвата осталось меньше часа.
+          {' '}{c.spoilerFavYellow}
         </span>,
         <span key="star-red">
           <span style={{ color: 'var(--red)' }}><StarIcon size={13} on /></span>
-          {' '}— захват уже идёт.
+          {' '}{c.spoilerFavRed}
         </span>,
       ];
       return { ...block, body };
     });
-    return { ...CAPTURES_SPOILER, blocks };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return { ...base, blocks };
+  }, [locale, c]);
 
   // Тикаем раз в секунду — таймеры "до начала"/"до конца" в таблице живые
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function CapturesPage() {
   }, [rows, search]);
 
   const sorted = useMemo(() => {
-    const col = sort.key ? COLUMNS.find(c => c.key === sort.key) : null;
+    const col = sort.key ? COLUMNS.find(cc => cc.key === sort.key) : null;
     const list = [...filtered];
     list.sort((a, b) => {
       // Избранные точки всегда всплывают наверх — как закреплённые
@@ -160,7 +160,7 @@ export default function CapturesPage() {
       return sort.dir === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [filtered, sort, favorites]);
+  }, [filtered, sort, favorites, COLUMNS]);
 
   const activeCount = rows.filter(r => r.status.isActive).length;
   const soonCount = rows.filter(r => r.status.isSoon).length;
@@ -168,27 +168,27 @@ export default function CapturesPage() {
   return (
     <div className="page">
       <div className="bears-hdr">
-        <h2 className="page-title">🚩 Захваты</h2>
+        <h2 className="page-title">{c.title}</h2>
         <div className="stat-pills">
           <span className="pill" style={{ color: 'var(--red)', borderColor: 'rgba(248,81,73,.4)', background: 'rgba(248,81,73,.1)' }}>
-            🔴 Идёт сейчас: {activeCount}
+            {c.activeNow(activeCount)}
           </span>
           <span className="pill" style={{ color: 'var(--orange)', borderColor: 'rgba(210,153,34,.4)', background: 'rgba(210,153,34,.1)' }}>
-            🟡 Скоро: {soonCount}
+            {c.soon(soonCount)}
           </span>
-          <span className="pill">📍 Всего точек: {CAPTURE_LOCATIONS.length}</span>
+          <span className="pill">{c.totalPoints(CAPTURE_LOCATIONS.length)}</span>
         </div>
       </div>
 
       <div className="captures-tz-note">
-        🕒 Время до захвата рассчитано в соответствии с часовым поясом, установленным на вашем устройстве: <b>{getViewerTimezoneLabel(now)}</b>
+        {c.tzNotePrefix} <b>{getViewerTimezoneLabel(now, locale)}</b>
       </div>
 
       <InfoSpoiler {...capturesSpoiler} storageKey="spoiler_captures" />
 
       <input
         className="input captures-search"
-        placeholder="Поиск по названию, локации или координатам..."
+        placeholder={c.searchPlaceholder}
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
@@ -198,7 +198,7 @@ export default function CapturesPage() {
           <table className="bears-table captures-table">
             <thead>
               <tr>
-                <th className="captures-col-icon" title="Избранное">
+                <th className="captures-col-icon" title={c.favoriteTitle}>
                   <StarIcon size={14} on={false} />
                 </th>
                 {COLUMNS.map(col => {
@@ -209,13 +209,13 @@ export default function CapturesPage() {
                       key={col.key}
                       className={`sortable-th${isSorted ? ' sortable-th-active' : ''}`}
                       onClick={() => handleSort(col.key)}
-                      title="Нажмите, чтобы отсортировать"
+                      title={c.sortHint}
                     >
                       {col.label} <span className="sort-arrow">{arrow}</span>
                     </th>
                   );
                 })}
-                <th className="captures-col-icon" title="Звуковое уведомление">
+                <th className="captures-col-icon" title={c.soundTitle}>
                   <SoundIcon size={14} on={false} />
                 </th>
               </tr>
@@ -244,18 +244,18 @@ export default function CapturesPage() {
                       <button
                         className={`star-btn ${starStatusClass}`}
                         onClick={() => toggleFavorite(loc.name)}
-                        title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+                        title={isFav ? c.removeFavorite : c.addFavorite}
                       >
                         <StarIcon on={isFav} />
                       </button>
                     </td>
                     <td>{loc.name}</td>
-                    <td>{loc.type}</td>
+                    <td>{CAPTURE_TYPE_LABEL[loc.type][locale]}</td>
                     <td>{loc.location}</td>
                     <td><span className="square-badge">{loc.coords}</span></td>
                     <td>
-                      {status.start.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })},{' '}
-                      {status.start.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                      {status.start.toLocaleDateString(locale === 'en' ? 'en-US' : 'ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })},{' '}
+                      {status.start.toLocaleTimeString(locale === 'en' ? 'en-US' : 'ru-RU', { hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td>
                       {status.isActive ? (
@@ -272,7 +272,7 @@ export default function CapturesPage() {
                       <button
                         className={`rupor-btn rupor-btn-sm ${isSoundOn ? 'rupor-on' : 'rupor-off'}`}
                         onClick={() => toggleSound(loc.name)}
-                        title={isSoundOn ? 'Звук в начале захвата включён' : 'Звук в начале захвата выключен'}
+                        title={isSoundOn ? c.soundOnTitle : c.soundOffTitle}
                       >
                         <SoundIcon on={isSoundOn} />
                       </button>
@@ -283,7 +283,7 @@ export default function CapturesPage() {
               {sorted.length === 0 && (
                 <tr>
                   <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text3)', padding: 20 }}>
-                    Ничего не найдено
+                    {c.notFound}
                   </td>
                 </tr>
               )}
@@ -293,17 +293,22 @@ export default function CapturesPage() {
       </div>
 
       <div className="captures-legend">
-        <span><span className="legend-swatch legend-swatch-active" /> — точка захватывается прямо сейчас</span>
-        <span><span className="legend-swatch legend-swatch-soon" /> — захват начнётся в течение ближайшего часа</span>
-        <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /> — избранные точки отображаются вверху таблицы</span>
-        <span style={{ color: 'var(--green)' }}><SoundIcon size={13} on /> — звук в начале захвата (по умолчанию отключён, включается для каждой точки отдельно)</span>
+        <span><span className="legend-swatch legend-swatch-active" /> {c.legendActive}</span>
+        <span><span className="legend-swatch legend-swatch-soon" /> {c.legendSoon}</span>
+        <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /> {c.legendFavorite}</span>
+        <span style={{ color: 'var(--green)' }}><SoundIcon size={13} on /> {c.legendSound}</span>
         <span>
-          Цвет звезды:{' '}
-          <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /></span> избранное,{' '}
-          <span style={{ color: 'var(--orange)' }}><StarIcon size={13} on /></span> захват скоро,{' '}
-          <span style={{ color: 'var(--red)' }}><StarIcon size={13} on /></span> захват идёт
+          {c.legendStarColorPrefix}{' '}
+          <span style={{ color: 'var(--accent)' }}><StarIcon size={13} on /></span> {c.legendStarFavorite}{' '}
+          <span style={{ color: 'var(--orange)' }}><StarIcon size={13} on /></span> {c.legendStarSoon}{' '}
+          <span style={{ color: 'var(--red)' }}><StarIcon size={13} on /></span> {c.legendStarActive}
         </span>
       </div>
     </div>
   );
+}
+
+interface SortState {
+  key: Column['key'] | null;
+  dir: 'asc' | 'desc';
 }

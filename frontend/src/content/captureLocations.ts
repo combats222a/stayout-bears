@@ -11,6 +11,14 @@
 // каждого типа точки: Укрепточки захватываются 30 минут, Базы — 60 минут.
 export type CaptureType = 'Укрепточка' | 'База';
 
+// Отображаемая подпись типа точки — переводимая UI-категория (не имя
+// собственное), в отличие от name/location ниже, которые остаются как есть
+// на обоих языках (см. комментарий у CAPTURE_LOCATIONS).
+export const CAPTURE_TYPE_LABEL: Record<CaptureType, { ru: string; en: string }> = {
+  'Укрепточка': { ru: 'Укрепточка', en: 'Outpost' },
+  'База':       { ru: 'База',       en: 'Base' },
+};
+
 export const DURATION_BY_TYPE: Record<CaptureType, number> = {
   'Укрепточка': 30,
   'База': 60,
@@ -46,6 +54,12 @@ export interface CaptureLocation {
   weekday?: number;
 }
 
+// name/location — конкретные точки и зоны карты Stay Out (игровые
+// собственные названия, взятые из вики). Официальной английской
+// локализации у игры нет, поэтому они намеренно НЕ переводятся и
+// показываются одинаково на обеих языковых версиях — чтобы не придумывать
+// несуществующие английские названия за разработчиков (см. общее правило
+// для игрового контента в src/content/achievementsData.ts).
 export const CAPTURE_LOCATIONS: CaptureLocation[] = [
   { name: 'Заброшенный рудник',              type: 'База',        location: 'Окрестности Любеча',     coords: 'H3-2', hour: 19, minute: 0, weekday: WEEKDAY.SATURDAY },
   { name: 'Деревня на холме',                type: 'База',        location: 'Окрестности Любеча',     coords: 'G7-3', hour: 19, minute: 0, weekday: WEEKDAY.SATURDAY },

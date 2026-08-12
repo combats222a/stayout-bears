@@ -8,16 +8,20 @@ import GuestLock from '../../components/GuestLock';
 import SoundIcon from '../../components/SoundIcon';
 import { TIMERS_SPOILER } from '../../content/spoilerContent';
 import type { AuthUser, UserTimer } from '../../types/entities';
+import { useI18n, useLocaleDict } from '../../i18n';
+import ruTimers from '../../i18n/locales/ru/timers';
+import enTimers from '../../i18n/locales/en/timers';
+import type { TimersContent } from '../../i18n/locales/ru/timers';
 
 function pad(n: number): string { return String(Math.floor(n)).padStart(2, '0'); }
 
-function formatDuration(seconds: number): string {
+function formatDuration(seconds: number, c: TimersContent): string {
   if (seconds < 0) seconds = 0;
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (d > 0) return `${d}д ${pad(h)}:${pad(m)}:${pad(s)}`;
+  if (d > 0) return `${d}${c.dayUnit} ${pad(h)}:${pad(m)}:${pad(s)}`;
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
@@ -89,7 +93,7 @@ function EditPencilIcon({ size = 18 }: { size?: number }) {
 
 // Числовое поле со стрелками вверх/вниз (вместо нативного OS-спиннера) —
 // как в макете обновлённой модалки редактирования таймера.
-function SteppedNumberInput({ value, onChange, max = 999 }: { value: number; onChange: (v: number) => void; max?: number }) {
+function SteppedNumberInput({ value, onChange, max = 999, increaseAria, decreaseAria }: { value: number; onChange: (v: number) => void; max?: number; increaseAria: string; decreaseAria: string }) {
   function clamp(v: number) { return Math.min(max, Math.max(0, v)); }
   return (
     <div className="stepped-input">
@@ -103,11 +107,11 @@ function SteppedNumberInput({ value, onChange, max = 999 }: { value: number; onC
         onChange={e => onChange(clamp(parseInt(e.target.value) || 0))}
       />
       <div className="stepped-input-arrows">
-        <button type="button" className="stepped-input-arrow" tabIndex={-1} aria-label="Увеличить"
+        <button type="button" className="stepped-input-arrow" tabIndex={-1} aria-label={increaseAria}
           onClick={() => onChange(clamp(value + 1))}>
           <svg width="9" height="6" viewBox="0 0 9 6" fill="currentColor" aria-hidden="true"><path d="M4.5 0L9 6H0z" /></svg>
         </button>
-        <button type="button" className="stepped-input-arrow" tabIndex={-1} aria-label="Уменьшить"
+        <button type="button" className="stepped-input-arrow" tabIndex={-1} aria-label={decreaseAria}
           onClick={() => onChange(clamp(value - 1))}>
           <svg width="9" height="6" viewBox="0 0 9 6" fill="currentColor" aria-hidden="true"><path d="M4.5 6L0 0h9z" /></svg>
         </button>
@@ -130,6 +134,7 @@ interface MenuPos {
 // виден. Теперь меню рисуется через position:fixed по координатам самой кнопки —
 // оно всегда поверх всего и не зависит от overflow родителей.
 function RowActionsMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  const c = useLocaleDict(ruTimers, enTimers);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<MenuPos | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -173,7 +178,7 @@ function RowActionsMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: ()
         ref={btnRef}
         className="icon-btn"
         onClick={() => (open ? setOpen(false) : openMenu())}
-        title="Ещё"
+        title={c.moreTitle}
         aria-haspopup="true"
         aria-expanded={open}
       >
@@ -185,8 +190,8 @@ function RowActionsMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: ()
           ref={menuRef}
           style={{ position: 'fixed', top: pos.top ?? undefined, bottom: pos.bottom ?? undefined, right: pos.right }}
         >
-          <button className="row-menu-item" onClick={() => { setOpen(false); onEdit(); }}>Изменить</button>
-          <button className="row-menu-item row-menu-item-danger" onClick={() => { setOpen(false); onDelete(); }}>Удалить</button>
+          <button className="row-menu-item" onClick={() => { setOpen(false); onEdit(); }}>{c.editItem}</button>
+          <button className="row-menu-item row-menu-item-danger" onClick={() => { setOpen(false); onDelete(); }}>{c.deleteItem}</button>
         </div>
       )}
     </div>
@@ -224,6 +229,7 @@ interface TimerEditChanges {
 // как и раньше в модалке: если период уменьшили меньше текущего остатка,
 // остаток подрезаем, чтобы прогресс-бар не зашкаливал.
 function PeriodInlineEdit({ timer, onEdit }: { timer: UserTimer; onEdit: (id: number, changes: TimerEditChanges) => void }) {
+  const c = useLocaleDict(ruTimers, enTimers);
   const [days, setDays] = useState(Math.floor(timer.period_seconds / 86400));
   const [hours, setHours] = useState(Math.floor((timer.period_seconds % 86400) / 3600));
   const [minutes, setMinutes] = useState(Math.floor((timer.period_seconds % 3600) / 60));
@@ -260,25 +266,25 @@ function PeriodInlineEdit({ timer, onEdit }: { timer: UserTimer; onEdit: (id: nu
   }
 
   return (
-    <div className="timer-row-period-edit" title="Период таймера">
+    <div className="timer-row-period-edit" title={c.periodTitle}>
       <input
         className="timer-row-period-num" type="number" min="0" max="999"
         value={days} onFocus={e => e.target.select()}
         onChange={e => commit(Math.max(0, parseInt(e.target.value) || 0), hours, minutes)}
       />
-      <span className="timer-row-period-unit">д</span>
+      <span className="timer-row-period-unit">{c.dayUnit}</span>
       <input
         className="timer-row-period-num" type="number" min="0" max="23"
         value={hours} onFocus={e => e.target.select()}
         onChange={e => commit(days, Math.min(23, Math.max(0, parseInt(e.target.value) || 0)), minutes)}
       />
-      <span className="timer-row-period-unit">ч</span>
+      <span className="timer-row-period-unit">{c.hourUnit}</span>
       <input
         className="timer-row-period-num" type="number" min="0" max="59"
         value={minutes} onFocus={e => e.target.select()}
         onChange={e => commit(days, hours, Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
       />
-      <span className="timer-row-period-unit">м</span>
+      <span className="timer-row-period-unit">{c.minuteUnit}</span>
     </div>
   );
 }
@@ -287,6 +293,7 @@ function PeriodInlineEdit({ timer, onEdit }: { timer: UserTimer; onEdit: (id: nu
 function EditTimerModal({ timer, onCommit, onClose }: {
   timer: UserTimer; onCommit: (changes: TimerEditChanges) => void; onClose: () => void;
 }) {
+  const c = useLocaleDict(ruTimers, enTimers);
   const [name, setName] = useState(timer.name);
 
   // Оставшееся время — отдельное поле, не связанное с периодом. Предзаполняем
@@ -323,7 +330,7 @@ function EditTimerModal({ timer, onCommit, onClose }: {
   }
 
   function handleSubmit() {
-    if (!name.trim()) { setError('Введите название таймера'); return; }
+    if (!name.trim()) { setError(c.nameRequired); return; }
     const changes: TimerEditChanges = { name: name.trim() };
     if (remainingTouched) {
       changes.remaining_seconds = remDays * 86400 + remHours * 3600 + remMinutes * 60;
@@ -343,12 +350,12 @@ function EditTimerModal({ timer, onCommit, onClose }: {
         <div className="modal-title">
           <div className="modal-title-main">
             <span className="modal-title-icon-box"><EditPencilIcon /></span>
-            <span className="modal-title-text">Редактировать таймер</span>
+            <span className="modal-title-text">{c.editTimerTitle}</span>
           </div>
-          <button className="modal-close-btn" onClick={onClose} aria-label="Закрыть">✕</button>
+          <button className="modal-close-btn" onClick={onClose} aria-label={c.closeAria}>✕</button>
         </div>
         <div className="modal-body">
-          <label className="modal-label">Название таймера</label>
+          <label className="modal-label">{c.timerNameLabel}</label>
           <input
             className="input"
             value={name}
@@ -360,24 +367,24 @@ function EditTimerModal({ timer, onCommit, onClose }: {
           <div className="modal-divider" />
 
           <label className="modal-label">
-            Осталось до события
-            <InfoTip text="Поправьте, если забыли вовремя нажать «Обновить» — период при этом не изменится" />
+            {c.untilEventLabel}
+            <InfoTip text={c.untilEventTip} />
           </label>
           <div className="timer-period-inputs">
-            <SteppedNumberInput value={remDays} onChange={d => updateRemaining(d, remHours, remMinutes)} />
-            <span className="timer-period-unit">дн.</span>
-            <SteppedNumberInput value={remHours} onChange={h => updateRemaining(remDays, h, remMinutes)} max={23} />
-            <span className="timer-period-unit">ч.</span>
-            <SteppedNumberInput value={remMinutes} onChange={m => updateRemaining(remDays, remHours, m)} max={59} />
-            <span className="timer-period-unit">мин.</span>
+            <SteppedNumberInput value={remDays} onChange={d => updateRemaining(d, remHours, remMinutes)} increaseAria={c.increaseAria} decreaseAria={c.decreaseAria} />
+            <span className="timer-period-unit">{c.dayUnitLong}</span>
+            <SteppedNumberInput value={remHours} onChange={h => updateRemaining(remDays, h, remMinutes)} max={23} increaseAria={c.increaseAria} decreaseAria={c.decreaseAria} />
+            <span className="timer-period-unit">{c.hourUnitLong}</span>
+            <SteppedNumberInput value={remMinutes} onChange={m => updateRemaining(remDays, remHours, m)} max={59} increaseAria={c.increaseAria} decreaseAria={c.decreaseAria} />
+            <span className="timer-period-unit">{c.minuteUnitLong}</span>
           </div>
-          <div className="modal-hint">Введите время, которое показывает игра.</div>
+          <div className="modal-hint">{c.hintEnterGameTime}</div>
 
           {error && <div className="modal-error">{error}</div>}
         </div>
         <div className="modal-footer">
-          <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>Сохранить изменения</button>
+          <button className="modal-btn-cancel" onClick={onClose}>{c.cancel}</button>
+          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>{c.saveChanges}</button>
         </div>
       </div>
     </div>
@@ -410,6 +417,8 @@ function TimerRow({
   dragState, onDragStart, onDragOver, onDrop, onDragEnd,
   registerRowRef, justDroppedId,
 }: TimerRowProps) {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruTimers, enTimers);
   const [, setTick] = useState(0);
   const [showEdit, setShowEdit] = useState(false);
 
@@ -455,7 +464,7 @@ function TimerRow({
           draggable
           onDragStart={e => onDragStart(e, index)}
           onDragEnd={onDragEnd}
-          title="Перетащи чтобы изменить порядок"
+          title={c.dragToReorder}
         >≡</div>
         <div className="timer-row-name">
           <span className="timer-row-name-text">{timer.name}</span>
@@ -477,21 +486,21 @@ function TimerRow({
             <div className="timer-row-ring-hole" />
           </div>
           <span className="timer-row-remaining-text">
-            {isEmpty ? '-- : -- : --' : isExpired ? 'Готово!' : formatDuration(remaining!)}
+            {isEmpty ? '-- : -- : --' : isExpired ? c.ready : formatDuration(remaining!, c)}
           </span>
         </div>
         <div className="timer-row-forecast">
-          {isEmpty || !forecast ? '-- : -- : --' : isExpired ? 'Уже!' :
-            forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          {isEmpty || !forecast ? '-- : -- : --' : isExpired ? c.now :
+            forecast.toLocaleTimeString(locale === 'en' ? 'en-US' : 'ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
         <div className="timer-row-actions">
-          <button className="icon-btn icon-btn-primary" onClick={() => onReset(timer.id)} title="Обновить">
+          <button className="icon-btn icon-btn-primary" onClick={() => onReset(timer.id)} title={c.updateTitle}>
             <RefreshIcon />
           </button>
           <button
             className={`rupor-btn rupor-btn-sm ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
             onClick={() => onToggleSound(timer)}
-            title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
+            title={timer.sound_enabled ? c.soundOnTitle : c.soundOffTitle}
           >
             <SoundIcon on={timer.sound_enabled} />
           </button>
@@ -527,12 +536,12 @@ function TimerRow({
 
           <div className="timer-mcard-info">
             <div className={`timer-mcard-time ${isExpired ? 'expired' : isEmpty ? 'empty' : ''}`}>
-              {isEmpty ? '--:--:--' : isExpired ? 'Готово!' : formatDuration(remaining!)}
+              {isEmpty ? '--:--:--' : isExpired ? c.ready : formatDuration(remaining!, c)}
             </div>
             <div className="timer-mcard-sub">
-              <span className="timer-mcard-period-tag">каждые {formatDuration(timer.period_seconds)}</span>
+              <span className="timer-mcard-period-tag">{c.everyPrefix} {formatDuration(timer.period_seconds, c)}</span>
               <span className="timer-mcard-forecast">
-                🎯 {isEmpty || !forecast ? '--:--' : isExpired ? 'уже!' : forecast.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                🎯 {isEmpty || !forecast ? '--:--' : isExpired ? c.now.toLowerCase() : forecast.toLocaleTimeString(locale === 'en' ? 'en-US' : 'ru-RU', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
@@ -540,12 +549,12 @@ function TimerRow({
 
         <div className="timer-mcard-actions">
           <button className="btn btn-reset timer-mcard-reset-btn btn-anim" onClick={() => onReset(timer.id)}>
-            <RefreshIcon size={15} /> Обновить
+            <RefreshIcon size={15} /> {c.updateBtn}
           </button>
           <button
             className={`rupor-btn timer-mcard-sound-btn ${timer.sound_enabled ? 'rupor-on' : 'rupor-off'}`}
             onClick={() => onToggleSound(timer)}
-            title={timer.sound_enabled ? 'Звук по окончании включён' : 'Звук по окончании выключен'}
+            title={timer.sound_enabled ? c.soundOnTitle : c.soundOffTitle}
           >
             <SoundIcon on={timer.sound_enabled} />
           </button>
@@ -569,6 +578,8 @@ interface TimersPageProps {
 }
 
 export default function TimersPage({ user, onLoginClick = () => {} }: TimersPageProps) {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruTimers, enTimers);
   const [timers, setTimers] = useState<UserTimer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -660,8 +671,8 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
 
   async function handleCreate() {
     const totalSeconds = days * 86400 + hours * 3600 + minutes * 60;
-    if (!name.trim()) return setError('Введите название таймера');
-    if (totalSeconds < 60) return setError('Период должен быть не менее 1 минуты');
+    if (!name.trim()) return setError(c.nameRequired);
+    if (totalSeconds < 60) return setError(c.periodRequired);
     setCreating(true);
     setError('');
     try {
@@ -735,17 +746,17 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
     setDragState({ draggedIndex: null, overIndex: null });
   }
 
-  if (loading) return <div className="page"><div className="text-muted">Загрузка...</div></div>;
+  if (loading) return <div className="page"><div className="text-muted">{c.loading}</div></div>;
 
   if (!user) {
     return (
       <div className="page">
-        <div className="page-title">⏱️ Мои таймеры</div>
-        <InfoSpoiler {...TIMERS_SPOILER} storageKey="spoiler_timers" />
+        <div className="page-title">{c.pageTitleGuest}</div>
+        <InfoSpoiler {...TIMERS_SPOILER[locale]} storageKey="spoiler_timers" />
         <GuestLock
           icon="⏱"
-          title="Личные таймеры — только твои"
-          text="Таймеры видит и настраивает только их создатель. Зарегистрируйся, чтобы завести свои — под откаты заданий, ресурсов или чего угодно ещё."
+          title={c.guestLockTitle}
+          text={c.guestLockText}
           onLoginClick={onLoginClick}
         />
       </div>
@@ -755,33 +766,33 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
   return (
     <div className="page">
       <div>
-        <div className="page-title">⏱️ Таймеры</div>
-        <div className="page-subtitle">Создавайте таймеры, отслеживайте время и получайте уведомления</div>
+        <div className="page-title">{c.pageTitle}</div>
+        <div className="page-subtitle">{c.pageSubtitle}</div>
       </div>
       <div className="timer-owner-note">
-        🔒 Таймеры видит только их создатель — <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
+        {c.ownerNotePrefix} <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{user?.game_nick || user?.nick}</span>
       </div>
 
-      <InfoSpoiler {...TIMERS_SPOILER} storageKey="spoiler_timers" />
+      <InfoSpoiler {...TIMERS_SPOILER[locale]} storageKey="spoiler_timers" />
 
       {error && <div className="error-banner">{error}</div>}
 
       {timers.length === 0 ? (
         <div className="timers-empty">
           <div className="timers-empty-icon">🕐</div>
-          <div>У вас пока нет таймеров</div>
-          <div className="text-muted">Создайте первый таймер с помощью формы ниже</div>
+          <div>{c.emptyTitle}</div>
+          <div className="text-muted">{c.emptySubtitle}</div>
         </div>
       ) : (
         <div className="timers-table">
           <div className="timers-thead timers-thead-desktop">
             <div className="timer-row timer-row-header">
               <div className="timer-row-drag"></div>
-              <div className="timer-row-name">Название таймера</div>
-              <div className="timer-row-period">Период</div>
-              <div className="timer-row-remaining">Оставшееся время</div>
-              <div className="timer-row-forecast">Прогноз</div>
-              <div className="timer-row-actions">Действия</div>
+              <div className="timer-row-name">{c.colName}</div>
+              <div className="timer-row-period">{c.colPeriod}</div>
+              <div className="timer-row-remaining">{c.colRemaining}</div>
+              <div className="timer-row-forecast">{c.colForecast}</div>
+              <div className="timer-row-actions">{c.colActions}</div>
             </div>
           </div>
           <div className="timers-tbody">
@@ -809,27 +820,27 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
 
       {/* Форма создания */}
       <div className="card timer-create-form">
-        <div className="timer-create-title">Создать новый таймер</div>
+        <div className="timer-create-title">{c.createTitle}</div>
         <div className="timer-create-row">
           <div className="timer-create-field">
-            <label className="timer-field-label">Название таймера</label>
+            <label className="timer-field-label">{c.createNameLabel}</label>
             <input
               className="input"
-              placeholder="Введите название"
+              placeholder={c.createNamePlaceholder}
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
             />
           </div>
           <div className="timer-create-field timer-period-field">
-            <label className="timer-field-label">Период таймера</label>
+            <label className="timer-field-label">{c.createPeriodLabel}</label>
             <div className="timer-period-inputs">
               <PeriodNumberInput value={days} onChange={setDays} />
-              <span className="timer-period-unit">д</span>
+              <span className="timer-period-unit">{c.dayUnit}</span>
               <PeriodNumberInput value={hours} onChange={setHours} max={23} />
-              <span className="timer-period-unit">ч</span>
+              <span className="timer-period-unit">{c.hourUnit}</span>
               <PeriodNumberInput value={minutes} onChange={setMinutes} max={59} />
-              <span className="timer-period-unit">м</span>
+              <span className="timer-period-unit">{c.minuteUnit}</span>
             </div>
           </div>
           <button
@@ -838,14 +849,14 @@ export default function TimersPage({ user, onLoginClick = () => {} }: TimersPage
             disabled={creating}
             style={{ width: '100%' }}
           >
-            + Создать таймер
+            {c.createBtn}
           </button>
         </div>
       </div>
 
       {/* Timezone + update info */}
       <div className="timer-info-strip green-strip">
-        🕐 Часовой пояс: <strong>Europe/Kiev</strong>
+        {c.timezoneLabel} <strong>Europe/Kiev</strong>
       </div>
     </div>
   );

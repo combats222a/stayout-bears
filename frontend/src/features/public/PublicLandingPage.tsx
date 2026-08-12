@@ -1,6 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 import Header from '../../components/Header';
 import PromoPage from '../promo/PromoPage';
+import { useI18n } from '../../i18n';
 
 interface PublicLandingPageProps {
   onLoginClick: () => void;
@@ -19,6 +20,7 @@ interface PublicLandingPageProps {
 // разделу просто открывает форму входа), а вместо ника/кнопки «Выйти» —
 // кнопка «Войти/Зарегистрироваться».
 export default function PublicLandingPage({ onLoginClick, onNavigate, menuOpen, setMenuOpen }: PublicLandingPageProps) {
+  const { t } = useI18n();
   return (
     <>
       <Header
@@ -34,11 +36,9 @@ export default function PublicLandingPage({ onLoginClick, onNavigate, menuOpen, 
         <PromoPage />
 
         <div className="public-landing-cta">
-          <div className="public-landing-cta-text">
-            Хочешь также отслеживать медведей, Гору Сияния и таймеры своего клана?
-          </div>
+          <div className="public-landing-cta-text">{t('landing.ctaText')}</div>
           <button className="btn btn-primary btn-shiny" onClick={onLoginClick}>
-            Войти / Зарегистрироваться
+            {t('actions.login')}
           </button>
         </div>
       </div>

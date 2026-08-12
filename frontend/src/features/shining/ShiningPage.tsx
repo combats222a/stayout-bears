@@ -13,6 +13,9 @@ import GuestLock from '../../components/GuestLock';
 import { SHINING_SPOILER } from '../../content/spoilerContent';
 import { api } from '../../utils/api';
 import type { Clan } from '../../types/entities';
+import { useI18n, useLocaleDict } from '../../i18n';
+import ruShining from '../../i18n/locales/ru/shining';
+import enShining from '../../i18n/locales/en/shining';
 
 interface CommitPayload {
   gameTimeStr: string;
@@ -22,14 +25,15 @@ interface CommitPayload {
 
 // ─── Модалка ввода якорей Z и X ──────────────────────────────────
 function SetGameTimeModal({ onCommit, onClose }: { onCommit: (p: CommitPayload) => void; onClose: () => void }) {
+  const c = useLocaleDict(ruShining, enShining);
   const [digits, setDigits] = useState('');
   const [error,  setError]  = useState('');
 
   function handleSubmit() {
-    if (!digits) { setError('Введи игровое время — просто цифры, например 0113'); return; }
+    if (!digits) { setError(c.modalErrorEmpty); return; }
     const timeStr = digitsToTimeStr(digits, 2);
     const [gh, gm] = timeStr.split(':').map(Number);
-    if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError('Неверное время'); return; }
+    if (gh < 0 || gh > 23 || gm < 0 || gm > 59) { setError(c.modalErrorInvalid); return; }
     const anchorRealMs = Date.now();
     onCommit({ gameTimeStr: timeStr, locationId: DEFAULT_LOCATION_ID, anchorRealMs });
     onClose();
@@ -38,11 +42,11 @@ function SetGameTimeModal({ onCommit, onClose }: { onCommit: (p: CommitPayload) 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
-        <div className="modal-title">✨ Установить время Горы Сияния</div>
+        <div className="modal-title">{c.modalTitle}</div>
         <div className="modal-body" style={{ gap: 18 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label className="modal-label">
-              Якорь Z — игровое время которое ты видишь прямо сейчас в игре (только цифры)
+              {c.modalLabel}
             </label>
             <MaskedTimeInput
               segments={2}
@@ -53,15 +57,15 @@ function SetGameTimeModal({ onCommit, onClose }: { onCommit: (p: CommitPayload) 
               autoFocus
             />
             <div className="modal-hint">
-              Backspace удаляет время справа налево: минуты → часы. Затем просто вводи цифры — двоеточие появится само · Любое текущее игровое время
+              {c.modalHint}
             </div>
           </div>
 
           {error && <div className="modal-error">{error}</div>}
         </div>
         <div className="modal-footer">
-          <button className="modal-btn-cancel" onClick={onClose}>Отмена</button>
-          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>Сохранить</button>
+          <button className="modal-btn-cancel" onClick={onClose}>{c.modalCancel}</button>
+          <button className="modal-btn-ok btn-shiny" onClick={handleSubmit}>{c.modalSave}</button>
         </div>
       </div>
     </div>
@@ -79,6 +83,7 @@ interface ShiningCardProps {
 
 // ─── Карточка одного сияния ───────────────────────────────────────
 function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anchorRealMs, onWarn }: ShiningCardProps) {
+  const c = useLocaleDict(ruShining, enShining);
   const [now, setNow] = useState(() => Date.now());
   // Как у медведей: реф инициализируем РЕАЛЬНЫМ текущим состоянием,
   // а не false — иначе при заходе на вкладку/пересоздании карточки
@@ -131,16 +136,16 @@ function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anc
     bgColor = 'transparent'; dotColor = '#4a6a8a';
   }
 
-  const CARD_LABELS = ['СИЯНИЕ 1', 'СИЯНИЕ 2', 'СИЯНИЕ 3', 'СИЯНИЕ 4'];
+  const CARD_LABELS = c.cardLabels;
 
   // ── Таймер ──
   let timerLabel: string, timerValue: string, timerColor: string;
   if (burning) {
-    timerLabel = 'До конца';
+    timerLabel = c.untilEnd;
     timerValue = msUntilEnd > 0 ? formatCountdown(msUntilEnd) : '00:00';
     timerColor = '#50c878';
   } else {
-    timerLabel = 'Через';
+    timerLabel = c.inLabel;
     timerValue = msUntilStart > 0 ? formatCountdown(msUntilStart) : '00:00';
     timerColor = isWarn ? '#e0a030' : (cardIndex === 0 ? '#4a9edd' : '#6e8090');
   }
@@ -170,7 +175,7 @@ function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anc
       {/* Игровое время — тикает, одинаково для всех */}
       <div>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-          Игровое время
+          {c.gameTimeLabel}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 700,
@@ -183,7 +188,7 @@ function ShiningCard({ cardIndex, realStartMs, realEndMs, anchorGameTimeStr, anc
       {/* Реальное время начала ЭТОГО сияния */}
       <div>
         <div style={{ fontSize: 9, color: '#6e7681', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-          {burning ? 'Началось в' : 'Начало в'}
+          {burning ? c.startedAt : c.startsAt}
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, color: '#8b949e' }}>
           {formatRealTime(realStartMs)}
@@ -222,6 +227,8 @@ interface ShiningPageProps {
 
 // ─── Основная страница ───────────────────────────────────────────
 export default function ShiningPage({ clan, shiningData, onShiningChange, isGuest, onLoginClick = () => {} }: ShiningPageProps) {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruShining, enShining);
   const [showModal, setShowModal] = useState(false);
   const [now, setNow]             = useState(() => Date.now());
   const [soundOn, setSoundOn]     = useState(() => isShiningSoundEnabled());
@@ -267,13 +274,13 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
     const slot0 = slots[0];
     const burning = now >= slot0.realStartMs && now < slot0.realEndMs;
     if (burning) {
-      statusPill = { color: '#50c878', text: '⚡ Сияние идёт прямо сейчас!' };
+      statusPill = { color: '#50c878', text: c.burningNow };
     } else {
       const msUntilNext = slot0.realStartMs - now;
       if (msUntilNext <= WARN_BEFORE_SHINING_MS) {
-        statusPill = { color: '#e0a030', text: `⚠️ Сияние через ${formatCountdown(msUntilNext)}!` };
+        statusPill = { color: '#e0a030', text: c.shiningIn(formatCountdown(msUntilNext)) };
       } else {
-        statusPill = { color: '#4a9edd', text: `До ближайшего Сияния: ${formatCountdown(msUntilNext)}` };
+        statusPill = { color: '#4a9edd', text: c.untilNext(formatCountdown(msUntilNext)) };
       }
     }
   }
@@ -281,17 +288,17 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
   if (!clan) {
     return (
       <div className="page">
-        <h2 className="page-title">✨ Гора Сияния</h2>
-        <InfoSpoiler {...SHINING_SPOILER} storageKey="spoiler_shining" />
+        <h2 className="page-title">{c.pageTitle}</h2>
+        <InfoSpoiler {...SHINING_SPOILER[locale]} storageKey="spoiler_shining" />
         {isGuest ? (
           <GuestLock
             icon="✨"
-            title="Не пропускай Сияние на Горе"
-            text="Точный отсчёт до ближайшего цикла и звуковое уведомление доступны кланам Bear Tracker — зарегистрируйся, чтобы подключиться."
+            title={c.guestLockTitle}
+            text={c.guestLockText}
             onLoginClick={onLoginClick}
           />
         ) : (
-          <div className="empty-state"><p>Вступи в клан чтобы отслеживать Сияния</p></div>
+          <div className="empty-state"><p>{c.joinClanToTrack}</p></div>
         )}
       </div>
     );
@@ -301,7 +308,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
     <div className="page">
       {/* Заголовок */}
       <div className="bears-hdr">
-        <h2 className="page-title">✨ Гора Сияния — {clan.name}</h2>
+        <h2 className="page-title">{c.pageTitle} — {clan.name}</h2>
         <div className="stat-pills">
           {statusPill && (
             <span className="pill" style={{
@@ -315,14 +322,14 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
           <button
             className={`rupor-btn ${soundOn ? 'rupor-on' : 'rupor-off'}`}
             onClick={toggleSound}
-            title={soundOn ? 'Звук включён — нажми чтобы выключить' : 'Звук выключен — нажми чтобы включить'}
+            title={soundOn ? c.soundOnTitle : c.soundOffTitle}
           >
             <SoundIcon on={soundOn} />
           </button>
         </div>
       </div>
 
-      <InfoSpoiler {...SHINING_SPOILER} storageKey="spoiler_shining" />
+      <InfoSpoiler {...SHINING_SPOILER[locale]} storageKey="spoiler_shining" />
 
       {/* Инфо-панель */}
       <div style={{
@@ -334,7 +341,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
           {hasData ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 13, color: '#c8d6e5' }}>
-                Якорь Z (игровое):{' '}
+                {c.anchorGameLabel}{' '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#58a6ff', fontWeight: 700 }}>
                   {shiningData!.gameTimeStr}
                 </span>
@@ -344,9 +351,9 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
               <div style={{ fontSize: 11, color: '#6e7681' }}>
                 {loc.name}
                 {shiningData!.setByNick && (
-                  <> · Установил: <span style={{ color: '#8b949e' }}>{shiningData!.setByNick}</span></>
+                  <> · {c.setByPrefix} <span style={{ color: '#8b949e' }}>{shiningData!.setByNick}</span></>
                 )}
-                {' · Якорь X (реальное): '}
+                {' · '}{c.anchorRealLabel}{' '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#4a6a8a' }}>
                   {formatRealTime(shiningData!.anchorRealMs!)}
                 </span>
@@ -354,7 +361,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
             </div>
           ) : (
             <div style={{ fontSize: 13, color: '#8b949e' }}>
-              Введи текущее игровое время чтобы начать отсчёт
+              {c.enterTimePrompt}
             </div>
           )}
         </div>
@@ -362,7 +369,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
           style={{ padding: '8px 20px', whiteSpace: 'nowrap' }}
           onClick={() => setShowModal(true)}
         >
-          ✨ Установить время
+          {c.setTimeBtn}
         </button>
       </div>
 
@@ -388,7 +395,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
               } as CSSProperties}>
                 <div style={{ fontSize: 10, color: '#4a6a8a', textTransform: 'uppercase',
                   letterSpacing: '.07em', marginBottom: 10 }}>
-                  {['СИЯНИЕ 1','СИЯНИЕ 2','СИЯНИЕ 3','СИЯНИЕ 4'][i]}
+                  {c.cardLabels[i]}
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: '#1e2a3a' }}>--:--</div>
               </div>
@@ -398,9 +405,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
 
       {/* Подсказка */}
       <div className="tbl-hint">
-        ✨ Сияния каждые 6 игровых часов = 52 мин 30 сек реального времени ·
-        Диапазоны: 00:00–01:00 · 06:00–07:00 · 12:00–13:00 · 18:00–19:00 ·
-        Звук за 5 мин · Любой игрок клана может обновить время
+        {c.hintText}
       </div>
 
       {showModal && (

@@ -26,6 +26,13 @@ import {
 import { isBearSoundEnabled, setBearSoundEnabled, isDraugSoundEnabled, setDraugSoundEnabled } from '../../utils/soundPrefs';
 import { BEARS_SPOILER, DRAUGS_SPOILER } from '../../content/spoilerContent';
 import type { InfoSpoilerContent } from '../../components/InfoSpoiler';
+import type { Locale } from '../../i18n';
+
+// Текст, который зависит от текущего языка интерфейса — выбирается по
+// LOCALE_TEXT[locale] в местах использования (TrackerPage/TrackerRow),
+// а не через t(), т.к. эти строки приходят из конфига конкретного
+// трекера (медведи/драуги), а не из общего дерева переводов.
+export interface LocaleText { ru: string; en: string }
 
 export interface TrackerListEntry {
   index: number;
@@ -49,15 +56,15 @@ export interface TrackerConfig {
   parseLocalTimeInput: (timeStr: string) => string | null;
   soundPrefs: { isEnabled: (index: number) => boolean; setEnabled: (index: number, val: boolean) => void };
   icon: string;
-  pageTitleGuest: string;
-  trackingNounGenitive: string; // "Вступи в клан чтобы отслеживать ___"
-  headerTitle: (clanName: string) => string;
-  rowNounLabel: string;
-  killedNounGenitive: string; // "Введи время когда убили ___"
-  vanishedNoun: string; // "«Исчез» — ___ пропал ~5 мин назад"
-  spoiler: InfoSpoilerContent;
+  pageTitleGuest: LocaleText;
+  trackingNounGenitive: LocaleText; // "Вступи в клан чтобы отслеживать ___"
+  headerTitle: (clanName: string, locale: Locale) => string;
+  rowNounLabel: LocaleText;
+  killedNounGenitive: LocaleText; // "Введи время когда убили ___"
+  vanishedNoun: LocaleText; // "«Исчез» — ___ пропал ~5 мин назад"
+  spoiler: Record<Locale, InfoSpoilerContent>;
   spoilerStorageKey: string;
-  guestLock: { icon: string; title: string; text: string };
+  guestLock: { icon: string; title: LocaleText; text: LocaleText };
 }
 
 export const BEARS_CONFIG: TrackerConfig = {
@@ -76,18 +83,21 @@ export const BEARS_CONFIG: TrackerConfig = {
   parseLocalTimeInput: bearParseLocalTimeInput,
   soundPrefs: { isEnabled: isBearSoundEnabled, setEnabled: setBearSoundEnabled },
   icon: '🐻\u200d❄️',
-  pageTitleGuest: 'Медведи',
-  trackingNounGenitive: 'медведей',
-  headerTitle: (clanName) => `🐻\u200d❄️ Белые медведи — ${clanName}`,
-  rowNounLabel: 'Медведь',
-  killedNounGenitive: 'медведя',
-  vanishedNoun: 'медведь',
+  pageTitleGuest: { ru: 'Медведи', en: 'Bears' },
+  trackingNounGenitive: { ru: 'медведей', en: 'bears' },
+  headerTitle: (clanName, locale) => locale === 'en' ? `🐻\u200d❄️ White Bears — ${clanName}` : `🐻\u200d❄️ Белые медведи — ${clanName}`,
+  rowNounLabel: { ru: 'Медведь', en: 'Bear' },
+  killedNounGenitive: { ru: 'медведя', en: 'the bear' },
+  vanishedNoun: { ru: 'медведь', en: 'the bear' },
   spoiler: BEARS_SPOILER,
   spoilerStorageKey: 'spoiler_bears',
   guestLock: {
     icon: '🐻\u200d❄️',
-    title: 'Отслеживай спавны медведей вместе с кланом',
-    text: 'Тайминги медведей и синхронизация с кланом доступны после регистрации — это займёт меньше минуты.',
+    title: { ru: 'Отслеживай спавны медведей вместе с кланом', en: 'Track bear spawns together with your clan' },
+    text: {
+      ru: 'Тайминги медведей и синхронизация с кланом доступны после регистрации — это займёт меньше минуты.',
+      en: 'Bear timers and clan sync are available after you register — it takes less than a minute.',
+    },
   },
 };
 
@@ -107,17 +117,21 @@ export const DRAUGS_CONFIG: TrackerConfig = {
   parseLocalTimeInput: draugParseLocalTimeInput,
   soundPrefs: { isEnabled: isDraugSoundEnabled, setEnabled: setDraugSoundEnabled },
   icon: '💀',
-  pageTitleGuest: 'Драуги',
-  trackingNounGenitive: 'драугов',
-  headerTitle: (clanName) => `💀 Драуги — ${clanName}`,
-  rowNounLabel: 'Драуг',
-  killedNounGenitive: 'драуга',
-  vanishedNoun: 'драуг',
+  pageTitleGuest: { ru: 'Драуги', en: 'Draugs' },
+  trackingNounGenitive: { ru: 'драугов', en: 'draugs' },
+  headerTitle: (clanName, locale) => locale === 'en' ? `💀 Draugs — ${clanName}` : `💀 Драуги — ${clanName}`,
+  rowNounLabel: { ru: 'Драуг', en: 'Draug' },
+  killedNounGenitive: { ru: 'драуга', en: 'the draug' },
+  vanishedNoun: { ru: 'драуг', en: 'the draug' },
   spoiler: DRAUGS_SPOILER,
   spoilerStorageKey: 'spoiler_draugs',
   guestLock: {
     icon: '💀',
-    title: 'Отслеживай спавны драугов вместе с кланом',
-    text: 'Тайминги драугов и синхронизация с кланом доступны после регистрации — это займёт меньше минуты.',
+    title: { ru: 'Отслеживай спавны драугов вместе с кланом', en: 'Track draug spawns together with your clan' },
+    text: {
+      ru: 'Тайминги драугов и синхронизация с кланом доступны после регистрации — это займёт меньше минуты.',
+      en: 'Draug timers and clan sync are available after you register — it takes less than a minute.',
+    },
   },
 };
+

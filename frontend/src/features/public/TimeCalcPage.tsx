@@ -3,6 +3,7 @@ import InfoSpoiler from '../../components/InfoSpoiler';
 import { TIMECALC_SPOILER } from '../../content/spoilerContent';
 import MaskedTimeInput, { isDigitsComplete, digitsToTimeStr } from '../../components/MaskedTimeInput';
 import { computeTimeResult, formatDayShift, formatDeltaPhrase, pad2 } from '../../utils/timeCalc';
+import { useI18n } from '../../i18n';
 
 const QUICK_DELTAS = [-20, -30, 30, 20];
 
@@ -11,6 +12,7 @@ function onlyDigits(str: string, maxLen: number): string {
 }
 
 export default function TimeCalcPage() {
+  const { t, locale } = useI18n();
   const [baseDigits, setBaseDigits] = useState('');
   const [sign, setSign] = useState<'+' | '-'>('+');
   const [deltaDigits, setDeltaDigits] = useState('');
@@ -69,24 +71,21 @@ export default function TimeCalcPage() {
     }
   }
 
-  const dayBadge = result && !result.error ? formatDayShift(result.dayShift) : null;
+  const dayBadge = result && !result.error ? formatDayShift(result.dayShift, locale) : null;
   const hasAnyInput = !baseEmpty || deltaDigits !== '';
 
   return (
     <div className="page timecalc-page">
       <div className="bears-hdr">
-        <h2 className="page-title">🧮 Калькулятор времени</h2>
+        <h2 className="page-title">{t('timecalc.title')}</h2>
         {hasAnyInput && (
-          <button type="button" className="btn btn-sm btn-ghost" onClick={handleReset}>Сбросить</button>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={handleReset}>{t('timecalc.reset')}</button>
         )}
       </div>
 
-      <p className="timecalc-sub">
-        Укажите время — цифрами, без двоеточия, оно проставится само — и на сколько минут его сдвинуть.
-        Если время не трогать, расчёт идёт от текущего момента.
-      </p>
+      <p className="timecalc-sub">{t('timecalc.subtitle')}</p>
 
-      <InfoSpoiler {...TIMECALC_SPOILER} storageKey="spoiler_timecalc" />
+      <InfoSpoiler {...TIMECALC_SPOILER[locale]} storageKey="spoiler_timecalc" />
 
       <div className="card timecalc-card">
         <div className="timecalc-row">
@@ -95,11 +94,11 @@ export default function TimeCalcPage() {
             segments={2}
             value={baseDigits}
             onChange={digits => setBaseDigits(digits)}
-            placeholder="сейчас"
+            placeholder={t('timecalc.timePlaceholder')}
             className="timecalc-input"
             autoFocus
           />
-          <button type="button" className="btn btn-sm timecalc-now-btn" onClick={handleNow}>🕐 Сейчас</button>
+          <button type="button" className="btn btn-sm timecalc-now-btn" onClick={handleNow}>{t('timecalc.nowBtn')}</button>
         </div>
 
         <div className="timecalc-row timecalc-row-delta">
@@ -108,13 +107,13 @@ export default function TimeCalcPage() {
               type="button"
               className={sign === '-' ? 'active' : ''}
               onClick={() => setSign('-')}
-              aria-label="Отнять"
+              aria-label={t('timecalc.subtractAria')}
             >−</button>
             <button
               type="button"
               className={sign === '+' ? 'active' : ''}
               onClick={() => setSign('+')}
-              aria-label="Прибавить"
+              aria-label={t('timecalc.addAria')}
             >+</button>
           </div>
           <input
@@ -126,7 +125,7 @@ export default function TimeCalcPage() {
             pattern="[0-9]*"
             autoComplete="off"
           />
-          <span className="timecalc-delta-suffix">мин</span>
+          <span className="timecalc-delta-suffix">{t('timecalc.minutesSuffix')}</span>
         </div>
 
         <div className="timecalc-chips">
@@ -137,17 +136,17 @@ export default function TimeCalcPage() {
               className={`timecalc-chip ${d < 0 ? 'timecalc-chip-minus' : 'timecalc-chip-plus'}`}
               onClick={() => applyChip(d)}
             >
-              {d > 0 ? `+${d}` : d} мин
+              {d > 0 ? `+${d}` : d} {t('timecalc.chipMinutesSuffix')}
             </button>
           ))}
         </div>
 
         {basePartial && (
-          <div className="timecalc-empty">Дозаполните время — не хватает цифр</div>
+          <div className="timecalc-empty">{t('timecalc.incomplete')}</div>
         )}
 
         {!basePartial && result?.error && (
-          <div className="timecalc-error">🤔 Такого времени не бывает — проверьте часы и минуты</div>
+          <div className="timecalc-error">{t('timecalc.invalidTime')}</div>
         )}
 
         {!basePartial && result && !result.error && (
@@ -160,12 +159,12 @@ export default function TimeCalcPage() {
                 className={`timecalc-copy-btn ${copied ? 'timecalc-copy-btn-done' : ''}`}
                 onClick={handleCopy}
               >
-                {copied ? '✓ Скопировано' : '📋 Копировать'}
+                {copied ? t('timecalc.copied') : t('timecalc.copy')}
               </button>
             </div>
             <p className="timecalc-result-phrase">
-              {result.usedNow ? `Сейчас (${result.baseLabel})` : result.baseLabel}
-              {' '}{result.sign === '-' ? '−' : '+'} {formatDeltaPhrase(result.deltaMin)}{' = '}
+              {result.usedNow ? `${t('timecalc.nowLabel')} (${result.baseLabel})` : result.baseLabel}
+              {' '}{result.sign === '-' ? '−' : '+'} {formatDeltaPhrase(result.deltaMin, locale)}{' = '}
               <b>{result.resultLabel}</b>
             </p>
           </div>

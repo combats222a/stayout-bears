@@ -6,6 +6,7 @@ import TrackerRow from './components/TrackerRow';
 import type { TrackerConfig } from './trackerConfig';
 import type { createTrackerStore, TrackerItem } from './createTrackerStore';
 import type { Clan } from '../../types/entities';
+import { useI18n } from '../../i18n';
 
 type TrackerStoreHook = ReturnType<typeof createTrackerStore>;
 
@@ -20,6 +21,7 @@ interface TrackerPageProps {
 // config — TrackerConfig (BEARS_CONFIG или DRAUGS_CONFIG)
 // useStore — соответствующий хук из stores.ts (useBearsStore / useDraugsStore)
 export default function TrackerPage({ config, useStore, clan, isGuest, onLoginClick = () => {} }: TrackerPageProps) {
+  const { t, locale } = useI18n();
   const [error, setError] = useState('');
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const items = useStore((s) => s.items);
@@ -73,17 +75,17 @@ export default function TrackerPage({ config, useStore, clan, isGuest, onLoginCl
   if (!clan) {
     return (
       <div className="page">
-        <h2 className="page-title">{config.pageTitleGuest}</h2>
-        <InfoSpoiler {...config.spoiler} storageKey={config.spoilerStorageKey} />
+        <h2 className="page-title">{config.pageTitleGuest[locale]}</h2>
+        <InfoSpoiler {...config.spoiler[locale]} storageKey={config.spoilerStorageKey} />
         {isGuest ? (
           <GuestLock
             icon={config.guestLock.icon}
-            title={config.guestLock.title}
-            text={config.guestLock.text}
+            title={config.guestLock.title[locale]}
+            text={config.guestLock.text[locale]}
             onLoginClick={onLoginClick}
           />
         ) : (
-          <div className="empty-state"><p>Вступи в клан чтобы отслеживать {config.trackingNounGenitive}</p></div>
+          <div className="empty-state"><p>{t('tracker.joinClanPrefix')} {config.trackingNounGenitive[locale]}</p></div>
         )}
       </div>
     );
@@ -92,13 +94,13 @@ export default function TrackerPage({ config, useStore, clan, isGuest, onLoginCl
   return (
     <div className="page bears-page">
       <div className="bears-hdr">
-        <h2 className="page-title">{config.headerTitle(clan.name)}</h2>
+        <h2 className="page-title">{config.headerTitle(clan.name, locale)}</h2>
         <div className="stat-pills">
-          {active > 0 && <span className="pill pill-blue">⏱ {active} таймер{active > 1 ? 'а' : ''}</span>}
-          {ready  > 0 && <span className="pill pill-green">⚡ {ready} спавн!</span>}
+          {active > 0 && <span className="pill pill-blue">⏱ {active} {active > 1 ? t('tracker.timerWordPlural') : t('tracker.timerWord')}</span>}
+          {ready  > 0 && <span className="pill pill-green">⚡ {ready} {t('tracker.spawnBangSuffix')}</span>}
         </div>
       </div>
-      <InfoSpoiler {...config.spoiler} storageKey={config.spoilerStorageKey} />
+      <InfoSpoiler {...config.spoiler[locale]} storageKey={config.spoilerStorageKey} />
       {error && <div className="error-msg">{error}</div>}
 
       <div className="tbl-wrap">
@@ -106,14 +108,14 @@ export default function TrackerPage({ config, useStore, clan, isGuest, onLoginCl
           <thead>
             <tr>
               <th></th>
-              <th>Название</th>
-              <th>Квадрат</th>
-              <th>До спавна</th>
-              <th>Действия</th>
-              <th>Время спавна</th>
-              <th>Прошло времени</th>
-              <th>Время смерти</th>
-              <th>Игрок</th>
+              <th>{config.rowNounLabel[locale]}</th>
+              <th>{t('tracker.colSquare')}</th>
+              <th>{t('tracker.colToSpawn')}</th>
+              <th>{t('tracker.colActions')}</th>
+              <th>{t('tracker.colSpawnTime')}</th>
+              <th>{t('tracker.colElapsed')}</th>
+              <th>{t('tracker.colDeathTime')}</th>
+              <th>{t('tracker.colPlayer')}</th>
             </tr>
           </thead>
           <tbody>
@@ -131,11 +133,11 @@ export default function TrackerPage({ config, useStore, clan, isGuest, onLoginCl
           </tbody>
         </table>
         <div className="tbl-timezone">
-          ⏱ Часовой пояс: <span className="tbl-timezone-value">{userTimezone}</span>
+          {t('tracker.timezoneLabel')} <span className="tbl-timezone-value">{userTimezone}</span>
         </div>
       </div>
       <div className="tbl-hint">
-        ⚡ Звук за 5 мин до спавна · «Исчез» — {config.vanishedNoun} пропал ~5 мин назад · ✎ Нажми на «Время смерти» чтобы исправить
+        {t('tracker.tableHint')} {config.vanishedNoun[locale]} {t('tracker.tableHintVanishedSuffix')}
       </div>
     </div>
   );

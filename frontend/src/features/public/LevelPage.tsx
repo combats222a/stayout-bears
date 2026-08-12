@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocaleDict, useI18n } from '../../i18n';
+import ruLevel from '../../i18n/locales/ru/level';
+import enLevel from '../../i18n/locales/en/level';
 
 // Данные взяты со страницы «Уровень персонажа» базы знаний Stay Out
 // (so-wiki.ru), уровни 0-150. На вики столбец «Опыт для уровня» скрыт за
@@ -35,62 +38,8 @@ const LEVELS: LevelRow[] = TOTAL_EXP_BY_LEVEL.map((total, i) => ({
   needed: i === 0 ? 0 : total - TOTAL_EXP_BY_LEVEL[i - 1],
 }));
 
-interface FaqItem {
-  q: string;
-  a: string;
-}
-
-const FAQ_ITEMS: FaqItem[] = [
-  {
-    q: 'Сколько опыта нужно для любого уровня в Stay Out?',
-    a: 'Воспользуйтесь поиском по таблице выше — введите номер уровня в поле «Найти уровень…», и таблица сразу покажет нужную строку: сколько всего опыта нужно накопить и сколько EXP требуется именно на этот уровень. Так можно узнать данные для любого уровня с 0 по 150, например для 20, 30, 50 или 100.',
-  },
-  {
-    q: 'Как рассчитывается опыт для уровня?',
-    a: 'Столбец «Опыт для уровня» показывает разницу между общим (накопленным) опытом текущего уровня и общим опытом предыдущего уровня. Проще говоря — сколько EXP нужно набрать дополнительно, уже имея опыт предыдущего уровня, чтобы поднять уровень персонажа на один пункт.',
-  },
-  {
-    q: 'До какого уровня есть таблица опыта Stay Out?',
-    a: 'Таблица уровней и опыта содержит все значения с 0 по 150 уровень — это полный диапазон уровней персонажа в игре Stay Out на данный момент, без каких-либо ограничений или платных заглушек.',
-  },
-  {
-    q: 'Где взять калькулятор уровней Stay Out?',
-    a: 'Калькулятор находится прямо на этой странице, над таблицей: укажите начальный и конечный уровень (например, с 115 по 142) — и сразу увидите, сколько всего опыта нужно набрать персонажу, чтобы прокачаться между ними. А в самой таблице можно найти данные по каждому отдельному уровню через поиск.',
-  },
-];
-
-const LEVEL_JSON_LD = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Table',
-    about: 'Таблица опыта (EXP) и уровней персонажа Stay Out, уровни 0–150',
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Bear Tracker', item: 'https://stayout-bears.vercel.app/' },
-      { '@type': 'ListItem', position: 2, name: 'Таблица уровней и опыта', item: 'https://stayout-bears.vercel.app/level' },
-    ],
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ_ITEMS.map(item => ({
-      '@type': 'Question',
-      name: item.q,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: item.a,
-      },
-    })),
-  },
-];
-
-const PAGE_TITLE = 'Таблица опыта и уровней Stay Out (0–150) — сколько опыта нужно';
-const PAGE_DESCRIPTION =
-  'Таблица опыта и уровней Stay Out: сколько EXP нужно для каждого уровня персонажа с 0 по 150, сколько опыта до следующего уровня и общий опыт для любого уровня. Быстрый расчёт прокачки персонажа.';
 const PAGE_URL = 'https://stayout-bears.vercel.app/level';
+const HOME_URL = 'https://stayout-bears.vercel.app/';
 
 interface MetaOverride {
   tag: string;
@@ -99,22 +48,8 @@ interface MetaOverride {
   value: string;
 }
 
-// Мета-теги, которые нужно подменить на время показа этой страницы
-// (страница живёт на том же index.html, что и остальные роуты, поэтому
-// по умолчанию там теги для главной — их нужно временно переопределить
-// и вернуть обратно при уходе со страницы).
-const META_OVERRIDES: MetaOverride[] = [
-  { tag: 'meta', match: { name: 'description' }, contentAttr: 'content', value: PAGE_DESCRIPTION },
-  { tag: 'link', match: { rel: 'canonical' }, contentAttr: 'href', value: PAGE_URL },
-  { tag: 'meta', match: { property: 'og:title' }, contentAttr: 'content', value: PAGE_TITLE },
-  { tag: 'meta', match: { property: 'og:description' }, contentAttr: 'content', value: PAGE_DESCRIPTION },
-  { tag: 'meta', match: { property: 'og:url' }, contentAttr: 'content', value: PAGE_URL },
-  { tag: 'meta', match: { name: 'twitter:title' }, contentAttr: 'content', value: PAGE_TITLE },
-  { tag: 'meta', match: { name: 'twitter:description' }, contentAttr: 'content', value: PAGE_DESCRIPTION },
-];
-
-function nf(n: number): string {
-  return n.toLocaleString('ru-RU');
+function nf(n: number, locale: string): string {
+  return n.toLocaleString(locale === 'en' ? 'en-US' : 'ru-RU');
 }
 
 // standalone — рендерится как самостоятельная страница (со своей топбаром
@@ -128,6 +63,8 @@ type CalcResult =
   | { ok: true; from: number; to: number; exp: number; reversed: boolean };
 
 export default function LevelPage({ standalone = false }: { standalone?: boolean }) {
+  const { locale } = useI18n();
+  const c = useLocaleDict(ruLevel, enLevel);
   const [search, setSearch] = useState('');
   const [calcFrom, setCalcFrom] = useState('');
   const [calcTo, setCalcTo] = useState('');
@@ -144,30 +81,73 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
     const from = Number(calcFrom);
     const to = Number(calcTo);
     if (!Number.isInteger(from) || !Number.isInteger(to)) {
-      return { ok: false, error: 'Введите целые числа' };
+      return { ok: false, error: c.calcErrorInteger };
     }
     if (from < 0 || to < 0 || from > MAX_LEVEL || to > MAX_LEVEL) {
-      return { ok: false, error: `Уровни должны быть от 0 до ${MAX_LEVEL}` };
+      return { ok: false, error: c.calcErrorRange(MAX_LEVEL) };
     }
     if (from === to) {
-      return { ok: false, error: 'Выберите два разных уровня' };
+      return { ok: false, error: c.calcErrorSameLevel };
     }
     const lo = Math.min(from, to);
     const hi = Math.max(from, to);
     const exp = TOTAL_EXP_BY_LEVEL[hi] - TOTAL_EXP_BY_LEVEL[lo];
     return { ok: true, from: lo, to: hi, exp, reversed: from > to };
-  }, [calcFrom, calcTo]);
+  }, [calcFrom, calcTo, c]);
+
+  const jsonLd = useMemo(() => [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Table',
+      about: c.tableAbout,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Bear Tracker', item: HOME_URL },
+        { '@type': 'ListItem', position: 2, name: c.breadcrumbName, item: PAGE_URL },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: c.faqItems.map(item => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    },
+  ], [c]);
+
+  // Мета-теги, которые нужно подменить на время показа этой страницы
+  // (страница живёт на том же index.html, что и остальные роуты, поэтому
+  // по умолчанию там теги для главной — их нужно временно переопределить
+  // и вернуть обратно при уходе со страницы).
+  const metaOverrides: MetaOverride[] = useMemo<MetaOverride[]>(() => {
+    const mo = (tag: string, match: Record<string, string>, contentAttr: string, value: string): MetaOverride =>
+      ({ tag, match, contentAttr, value });
+    return [
+      mo('meta', { name: 'description' }, 'content', c.pageDescription),
+      mo('link', { rel: 'canonical' }, 'href', PAGE_URL),
+      mo('meta', { property: 'og:title' }, 'content', c.pageTitle),
+      mo('meta', { property: 'og:description' }, 'content', c.pageDescription),
+      mo('meta', { property: 'og:url' }, 'content', PAGE_URL),
+      mo('meta', { name: 'twitter:title' }, 'content', c.pageTitle),
+      mo('meta', { name: 'twitter:description' }, 'content', c.pageDescription),
+    ];
+  }, [c]);
 
   useEffect(() => {
     if (!standalone) return;
 
     const prevTitle = document.title;
-    document.title = PAGE_TITLE;
+    document.title = c.pageTitle;
 
     // Для каждого тега запоминаем: нашёлся ли он уже в <head> (тогда просто
     // подменяем значение и возвращаем прежнее на выходе) или его пришлось
     // создать с нуля (тогда на выходе просто удаляем).
-    const restoreFns = META_OVERRIDES.map(({ tag, match, contentAttr, value }) => {
+    const restoreFns = metaOverrides.map(({ tag, match, contentAttr, value }) => {
       const attrSelector = Object.entries(match).map(([k, v]) => `[${k}="${v}"]`).join('');
       let el = document.head.querySelector(`${tag}${attrSelector}`);
       const existed = !!el;
@@ -186,7 +166,7 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
       };
     });
 
-    const ldScripts = LEVEL_JSON_LD.map(obj => {
+    const ldScripts = jsonLd.map(obj => {
       const script = document.createElement('script');
       script.type = 'application/ld+json';
       script.text = JSON.stringify(obj);
@@ -199,36 +179,23 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
       restoreFns.forEach(fn => fn());
       ldScripts.forEach(s => document.head.removeChild(s));
     };
-  }, [standalone]);
+  }, [standalone, c, jsonLd, metaOverrides]);
 
   const content = (
     <div className="page level-page">
       <div className="promo-hero">
         <div className="promo-hero-icon">📈</div>
-        <h1 className="promo-hero-title">Таблица опыта (EXP) и уровней персонажа <span className="promo-accent">Stay Out</span></h1>
-        <p className="promo-hero-sub">
-          Здесь собрана полная таблица опыта (EXP) и уровней персонажа Stay Out. Узнайте, сколько опыта
-          требуется для каждого уровня с 0 по 150, сколько EXP осталось до следующего уровня и какой общий
-          опыт нужен для достижения любого уровня. Также доступен калькулятор опыта между уровнями для
-          быстрого расчёта прокачки.
-        </p>
+        <h1 className="promo-hero-title">{c.heroTitlePrefix}<span className="promo-accent">{c.heroTitleAccent}</span></h1>
+        <p className="promo-hero-sub">{c.heroSubtitle}</p>
       </div>
 
       <div className="card level-calc-card">
-        <h2 className="level-table-footnote-title level-calc-title">
-          Калькулятор опыта (EXP) между уровнями Stay Out
-        </h2>
-        <p className="level-calc-sub">
-          Укажите начальный и конечный уровень — калькулятор посчитает, сколько всего опыта (EXP)
-          нужно набрать персонажу, чтобы прокачаться с одного уровня до другого.
-        </p>
-        <p className="level-calc-sub">
-          Калькулятор автоматически рассчитывает, сколько всего опыта (EXP) необходимо набрать для
-          перехода между двумя выбранными уровнями персонажа Stay Out.
-        </p>
+        <h2 className="level-table-footnote-title level-calc-title">{c.calcTitle}</h2>
+        <p className="level-calc-sub">{c.calcSub1}</p>
+        <p className="level-calc-sub">{c.calcSub2}</p>
         <div className="level-calc-row">
           <label className="level-calc-field">
-            <span className="level-calc-label">С уровня</span>
+            <span className="level-calc-label">{c.calcFromLabel}</span>
             <input
               type="number"
               inputMode="numeric"
@@ -242,7 +209,7 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
           </label>
           <span className="level-calc-arrow">→</span>
           <label className="level-calc-field">
-            <span className="level-calc-label">До уровня</span>
+            <span className="level-calc-label">{c.calcToLabel}</span>
             <input
               type="number"
               inputMode="numeric"
@@ -262,18 +229,11 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
 
         {calcResult && calcResult.ok && (
           <div className="level-calc-result">
-            <span className="level-calc-result-label">
-              Опыт с {calcResult.from} до {calcResult.to} уровня:
-            </span>
-            <span className="level-calc-result-value">{nf(calcResult.exp)} EXP</span>
-            <p className="level-calc-phrase">
-              С {calcResult.from} до {calcResult.to} уровня потребуется набрать: {nf(calcResult.exp)} EXP.
-              Необходимо получить ещё {nf(calcResult.exp)} опыта.
-            </p>
+            <span className="level-calc-result-label">{c.calcResultLabel(calcResult.from, calcResult.to)}</span>
+            <span className="level-calc-result-value">{nf(calcResult.exp, locale)} EXP</span>
+            <p className="level-calc-phrase">{c.calcPhrase(calcResult.from, calcResult.to, nf(calcResult.exp, locale))}</p>
             {calcResult.reversed && (
-              <span className="level-calc-note">
-                (уровни переставлены местами — расчёт всегда идёт от меньшего к большему)
-              </span>
+              <span className="level-calc-note">{c.calcReversedNote}</span>
             )}
           </div>
         )}
@@ -286,13 +246,13 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
             inputMode="numeric"
             min="0"
             max="150"
-            placeholder="Найти уровень…"
+            placeholder={c.searchPlaceholder}
             className="level-search-input"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
           <span className="level-table-count">
-            {filteredRows.length === rows.length ? `Все уровни: 0–${rows.length - 1}` : `Найдено: ${filteredRows.length}`}
+            {filteredRows.length === rows.length ? c.allLevels(rows.length - 1) : c.found(filteredRows.length)}
           </span>
         </div>
 
@@ -300,9 +260,9 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
           <table className="level-table">
             <thead>
               <tr>
-                <th>Уровень</th>
-                <th>Всего опыта</th>
-                <th>Опыт для уровня</th>
+                <th>{c.tableHeadLevel}</th>
+                <th>{c.tableHeadTotal}</th>
+                <th>{c.tableHeadNeeded}</th>
               </tr>
             </thead>
             <tbody>
@@ -311,15 +271,15 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
                   <td>
                     <span className="level-badge">{row.level}</span>
                   </td>
-                  <td className="level-total">{nf(row.total)}</td>
+                  <td className="level-total">{nf(row.total, locale)}</td>
                   <td className="level-needed">
-                    {row.level === 0 ? '—' : `+${nf(row.needed)}`}
+                    {row.level === 0 ? '—' : `+${nf(row.needed, locale)}`}
                   </td>
                 </tr>
               ))}
               {filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="level-table-empty">Уровень не найден</td>
+                  <td colSpan={3} className="level-table-empty">{c.levelNotFound}</td>
                 </tr>
               )}
             </tbody>
@@ -327,20 +287,14 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
         </div>
 
         <div className="level-table-footnote">
-          <h2 className="level-table-footnote-title">Откуда цифры в столбце «Опыт для уровня»</h2>
-          <p>
-            Столбец считается по простой формуле: берём «Всего опыта» нужного уровня и вычитаем «Всего опыта»
-            уровня, который был перед ним. Получившееся число и есть тот самый недостающий опыт — сколько
-            очков должно накопиться сверху, чтобы счётчик уровня щёлкнул на следующий. Ничего скрывать за
-            платной подпиской не пришлось: расчёт идёт прямо в браузере по всем 151 значению (уровни 0–150),
-            обновится сам, если появятся более свежие цифры.
-          </p>
+          <h2 className="level-table-footnote-title">{c.footnoteTitle}</h2>
+          <p>{c.footnoteText}</p>
         </div>
       </div>
 
       <div className="card faq-list level-faq">
-        <h2 className="level-table-footnote-title">Частые вопросы об опыте и уровнях Stay Out</h2>
-        {FAQ_ITEMS.map(item => (
+        <h2 className="level-table-footnote-title">{c.faqSectionTitle}</h2>
+        {c.faqItems.map(item => (
           <div className="faq-item" key={item.q}>
             <h3 className="faq-question">{item.q}</h3>
             <p className="faq-answer">{item.a}</p>
@@ -350,12 +304,8 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
 
       {standalone && (
         <p className="level-page-seo-footer">
-          Таблица опыта Stay Out содержит полный список уровней персонажа с 0 по 150, общий накопленный опыт
-          и количество EXP, необходимое для перехода на каждый следующий уровень. Если нужно быстро узнать,
-          сколько опыта осталось до нужного уровня, воспользуйтесь поиском по таблице или калькулятором опыта
-          между уровнями. На Bear Tracker также доступны другие инструменты для игроков Stay Out: респауны
-          белых медведей, расчёт Горы Сияния, учёт лута рейдов и персональные таймеры. Загляни также в{' '}
-          <a href="/faq">FAQ</a>, если остались вопросы.
+          {c.standaloneSeoFooter}{' '}
+          <a href="/faq">{c.faqLinkLabel}</a>.
         </p>
       )}
     </div>
@@ -370,11 +320,7 @@ export default function LevelPage({ standalone = false }: { standalone?: boolean
   return (
     <div className="promo-page">
       {content}
-
-      <div className="promo-footer">
-        Хочешь ещё и отслеживать медведей, Гору Сияния и таймеры клана? Загляни на главную и зарегистрируйся —
-        это бесплатно.
-      </div>
+      <div className="promo-footer">{c.standaloneFooterText}</div>
     </div>
   );
 }
