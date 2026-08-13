@@ -4,7 +4,7 @@ export const WARN_BEFORE_SPAWN_MS = 5 * 60 * 1000; // Звук за 5 мин д�
 
 export interface BearMeta {
   index: number;
-  name: string;
+  name: { ru: string; en: string };
   square: string;
 }
 
@@ -15,22 +15,27 @@ interface TimedItem {
   killed_at?: string | null;
 }
 
+// Имена — это неофициальные прозвища точек спавна, придуманные сообществом
+// клана (не официальные игровые термины), поэтому, в отличие от
+// achievementsData.ts/captureLocations.ts, их можно спокойно переводить —
+// это не изобретение недостающей игровой локализации, а обычный перевод
+// описательных слов ("Ржавый" = "Rusty" и т.п.).
 export const BEARS_LIST: BearMeta[] = [
-  { index: 1,  name: 'Ржавый',          square: 'B1-4' },
-  { index: 2,  name: 'Кривой',          square: 'B3-2' },
-  { index: 3,  name: 'Подводная лодка', square: 'B3-4' },
-  { index: 4,  name: 'Первый',          square: 'A3-1' },
-  { index: 5,  name: 'Второй',          square: 'A3-1' },
-  { index: 6,  name: 'Третий',          square: 'A3-3' },
-  { index: 7,  name: 'Правый',          square: 'B4-2' },
-  { index: 8,  name: 'Левый',           square: 'A4-4' },
-  { index: 9,  name: 'Северный Криоген', square: 'B5-4' },
-  { index: 10, name: 'Южка Плевок',     square: 'C3-1' },
-  { index: 11, name: 'Южка Сникерс',    square: 'D3-3' },
+  { index: 1,  name: { ru: 'Ржавый',           en: 'Rusty' },           square: 'B1-4' },
+  { index: 2,  name: { ru: 'Кривой',           en: 'Crooked' },         square: 'B3-2' },
+  { index: 3,  name: { ru: 'Подводная лодка',  en: 'Submarine' },       square: 'B3-4' },
+  { index: 4,  name: { ru: 'Первый',           en: 'First' },           square: 'A3-1' },
+  { index: 5,  name: { ru: 'Второй',           en: 'Second' },          square: 'A3-1' },
+  { index: 6,  name: { ru: 'Третий',           en: 'Third' },           square: 'A3-3' },
+  { index: 7,  name: { ru: 'Правый',           en: 'Right' },           square: 'B4-2' },
+  { index: 8,  name: { ru: 'Левый',            en: 'Left' },            square: 'A4-4' },
+  { index: 9,  name: { ru: 'Северный Криоген', en: 'Northern Cryogen' }, square: 'B5-4' },
+  { index: 10, name: { ru: 'Южка Плевок',      en: 'Southern Spit' },   square: 'C3-1' },
+  { index: 11, name: { ru: 'Южка Сникерс',     en: 'Southern Snickers' }, square: 'D3-3' },
 ];
 
 export function getBearMeta(index: number): BearMeta {
-  return BEARS_LIST.find(b => b.index === index) || { index, name: `Медведь ${index}`, square: '?' };
+  return BEARS_LIST.find(b => b.index === index) || { index, name: { ru: `Медведь ${index}`, en: `Bear ${index}` }, square: '?' };
 }
 
 export function getBearStatus(bear: TimedItem): 'alive' | 'dead' {

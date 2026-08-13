@@ -4,7 +4,7 @@ export const WARN_BEFORE_SPAWN_MS = 5 * 60 * 1000; // Звук за 5 мин д�
 
 export interface DraugMeta {
   index: number;
-  name: string;
+  name: { ru: string; en: string };
   square: string;
 }
 
@@ -13,17 +13,19 @@ interface TimedItem {
   killed_at?: string | null;
 }
 
+// См. комментарий у BEARS_LIST в utils/bears.ts — то же самое: неофициальные
+// прозвища точек спавна от сообщества, спокойно переводимые описательные слова.
 export const DRAUGS_LIST: DraugMeta[] = [
-  { index: 1, name: 'Северный',          square: 'H3-4' },
-  { index: 2, name: 'Под северным',      square: 'H4-3' },
-  { index: 3, name: 'Западный',          square: 'H5'   },
-  { index: 4, name: 'Восточный дальний', square: 'J4-3' },
-  { index: 5, name: 'Восточный',         square: 'J5-2' },
-  { index: 6, name: 'Южный',             square: 'K7-1' },
+  { index: 1, name: { ru: 'Северный',          en: 'North' },        square: 'H3-4' },
+  { index: 2, name: { ru: 'Под северным',      en: 'Under North' },  square: 'H4-3' },
+  { index: 3, name: { ru: 'Западный',          en: 'West' },         square: 'H5'   },
+  { index: 4, name: { ru: 'Восточный дальний', en: 'Far East' },     square: 'J4-3' },
+  { index: 5, name: { ru: 'Восточный',         en: 'East' },         square: 'J5-2' },
+  { index: 6, name: { ru: 'Южный',             en: 'South' },        square: 'K7-1' },
 ];
 
 export function getDraugMeta(index: number): DraugMeta {
-  return DRAUGS_LIST.find(d => d.index === index) || { index, name: `Драуг ${index}`, square: '?' };
+  return DRAUGS_LIST.find(d => d.index === index) || { index, name: { ru: `Драуг ${index}`, en: `Draug ${index}` }, square: '?' };
 }
 
 export function getDraugStatus(draug: TimedItem): 'alive' | 'dead' {

@@ -167,15 +167,15 @@ export function useGlobalSoundWatcher({ token, bears, draugs, shiningData, anoma
         for (const loc of CAPTURE_LOCATIONS) {
           const status = getCaptureStatus(loc, now);
           const key = status.start.getTime();
-          let entry = captureStateRef.current[loc.name];
+          let entry = captureStateRef.current[loc.coords];
           if (!entry || entry.key !== key) {
             // Смена окна захвата — инициализируем реальным текущим
             // состоянием, чтобы не пикнуть ложно сразу после смены дня.
             entry = { key, isActive: status.isActive };
-            captureStateRef.current[loc.name] = entry;
+            captureStateRef.current[loc.coords] = entry;
           }
           if (status.isActive && !entry.isActive) {
-            if (isCaptureSoundEnabled(loc.name)) playCaptureStartSound();
+            if (isCaptureSoundEnabled(loc.coords)) playCaptureStartSound();
           }
           entry.isActive = status.isActive;
         }

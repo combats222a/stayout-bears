@@ -22,14 +22,18 @@ export interface ShiningLocation {
   id: string;
   label: string;
   offset: number;
-  name: string;
+  name: { ru: string; en: string };
 }
 
+// Локации — реальные и вымышленные топонимы карты Stay Out (Тунгуска,
+// Новая Земля и т.п. — существующие географические названия, у остальных
+// прямой описательный смысл), поэтому, в отличие от achievementsData.ts,
+// переводятся обычным образом, а не транслитерацией выдуманных существ.
 export const LOCATIONS: ShiningLocation[] = [
-  { id: 'gmt0',  label: 'GMT +00:00', offset: 0,  name: 'Аэропорт, Везувий, Любеч, Окрестности Любеча, Чёрный лес' },
-  { id: 'gmt+2', label: 'GMT +02:00', offset: 2,  name: 'Город N' },
-  { id: 'gmt+4', label: 'GMT +04:00', offset: 4,  name: 'Тунгуска, Казачий Аул' },
-  { id: 'gmt-1', label: 'GMT −01:00', offset: -1, name: 'Новая Земля о. Северный, Новая Земля о. Южный' },
+  { id: 'gmt0',  label: 'GMT +00:00', offset: 0,  name: { ru: 'Аэропорт, Везувий, Любеч, Окрестности Любеча, Чёрный лес', en: 'Airport, Vesuvius, Lyubech, Lyubech Outskirts, Black Forest' } },
+  { id: 'gmt+2', label: 'GMT +02:00', offset: 2,  name: { ru: 'Город N', en: 'City N' } },
+  { id: 'gmt+4', label: 'GMT +04:00', offset: 4,  name: { ru: 'Тунгуска, Казачий Аул', en: 'Tunguska, Cossack Aul' } },
+  { id: 'gmt-1', label: 'GMT −01:00', offset: -1, name: { ru: 'Новая Земля о. Северный, Новая Земля о. Южный', en: 'Novaya Zemlya North Island, Novaya Zemlya South Island' } },
 ];
 export const DEFAULT_LOCATION_ID = 'gmt-1';
 export function getLocation(id: string): ShiningLocation {
