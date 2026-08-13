@@ -349,7 +349,7 @@ export default function ShiningPage({ clan, shiningData, onShiningChange, isGues
                 <span style={{ color: '#50c878' }}>{loc.label}</span>
               </div>
               <div style={{ fontSize: 11, color: '#6e7681' }}>
-                {loc.name}
+                {loc.name[locale]}
                 {shiningData!.setByNick && (
                   <> · {c.setByPrefix} <span style={{ color: '#8b949e' }}>{shiningData!.setByNick}</span></>
                 )}

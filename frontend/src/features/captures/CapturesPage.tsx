@@ -41,40 +41,42 @@ export default function CapturesPage() {
   const [sort, setSort] = useState<SortState>({ key: null, dir: 'asc' });
 
   const COLUMNS: Column[] = useMemo(() => [
-    { key: 'name', label: c.colName, getValue: r => r.loc.name },
+    { key: 'name', label: c.colName, getValue: r => r.loc.name[locale] },
     { key: 'type', label: c.colType, getValue: r => r.loc.type },
-    { key: 'location', label: c.colLocation, getValue: r => r.loc.location },
+    { key: 'location', label: c.colLocation, getValue: r => r.loc.location[locale] },
     { key: 'coords', label: c.colCoords, getValue: r => r.loc.coords },
     { key: 'date', label: c.colDate, getValue: r => r.status.start.getTime() },
     { key: 'countdown', label: c.colCountdown, getValue: r => countdownSortValue(r.status) },
-  ], [c]);
+  ], [c, locale]);
 
   // Избранное и звук — по умолчанию выключены у всех точек, состояние
   // читается из localStorage при загрузке и запоминается для игрока.
+  // Ключ хранения — coords (устойчивый ID точки, не зависит от языка),
+  // а не name, т.к. name теперь локализован и не подходит на роль ключа.
   const [favorites, setFavorites] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
-    for (const loc of CAPTURE_LOCATIONS) map[loc.name] = isCaptureFavorite(loc.name);
+    for (const loc of CAPTURE_LOCATIONS) map[loc.coords] = isCaptureFavorite(loc.coords);
     return map;
   });
   const [soundOn, setSoundOn] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
-    for (const loc of CAPTURE_LOCATIONS) map[loc.name] = isCaptureSoundEnabled(loc.name);
+    for (const loc of CAPTURE_LOCATIONS) map[loc.coords] = isCaptureSoundEnabled(loc.coords);
     return map;
   });
 
-  const toggleFavorite = (name: string) => {
+  const toggleFavorite = (id: string) => {
     setFavorites(prev => {
-      const next = !prev[name];
-      setCaptureFavorite(name, next);
-      return { ...prev, [name]: next };
+      const next = !prev[id];
+      setCaptureFavorite(id, next);
+      return { ...prev, [id]: next };
     });
   };
 
-  const toggleSound = (name: string) => {
+  const toggleSound = (id: string) => {
     setSoundOn(prev => {
-      const next = !prev[name];
-      setCaptureSoundEnabled(name, next);
-      return { ...prev, [name]: next };
+      const next = !prev[id];
+      setCaptureSoundEnabled(id, next);
+      return { ...prev, [id]: next };
     });
   };
 
@@ -134,12 +136,14 @@ export default function CapturesPage() {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter(({ loc }) =>
-      loc.name.toLowerCase().includes(q) ||
-      loc.location.toLowerCase().includes(q) ||
+      loc.name[locale].toLowerCase().includes(q) ||
+      loc.name.ru.toLowerCase().includes(q) ||
+      loc.name.en.toLowerCase().includes(q) ||
+      loc.location[locale].toLowerCase().includes(q) ||
       loc.coords.toLowerCase().includes(q) ||
-      loc.type.toLowerCase().includes(q)
+      CAPTURE_TYPE_LABEL[loc.type][locale].toLowerCase().includes(q)
     );
-  }, [rows, search]);
+  }, [rows, search, locale]);
 
   const sorted = useMemo(() => {
     const col = sort.key ? COLUMNS.find(cc => cc.key === sort.key) : null;
@@ -147,15 +151,15 @@ export default function CapturesPage() {
     list.sort((a, b) => {
       // Избранные точки всегда всплывают наверх — как закреплённые
       // закладки в браузере — независимо от того, какая колонка выбрана.
-      const af = favorites[a.loc.name] ? 1 : 0;
-      const bf = favorites[b.loc.name] ? 1 : 0;
+      const af = favorites[a.loc.coords] ? 1 : 0;
+      const bf = favorites[b.loc.coords] ? 1 : 0;
       if (af !== bf) return bf - af;
 
       if (!col) return 0;
       const va = col.getValue(a);
       const vb = col.getValue(b);
       let cmp: number;
-      if (typeof va === 'string') cmp = va.localeCompare(vb as string, 'ru');
+      if (typeof va === 'string') cmp = va.localeCompare(vb as string, locale === 'en' ? 'en' : 'ru');
       else cmp = va - (vb as number);
       return sort.dir === 'asc' ? cmp : -cmp;
     });
@@ -222,8 +226,8 @@ export default function CapturesPage() {
             </thead>
             <tbody>
               {sorted.map(({ loc, status }) => {
-                const isFav = !!favorites[loc.name];
-                const isSoundOn = !!soundOn[loc.name];
+                const isFav = !!favorites[loc.coords];
+                const isSoundOn = !!soundOn[loc.coords];
                 const starStatusClass = !isFav
                   ? ''
                   : status.isActive
@@ -239,19 +243,19 @@ export default function CapturesPage() {
                       ? 'capture-row-favorite'
                       : '';
                 return (
-                  <tr key={loc.name} className={rowClass}>
+                  <tr key={loc.coords} className={rowClass}>
                     <td className="captures-col-icon">
                       <button
                         className={`star-btn ${starStatusClass}`}
-                        onClick={() => toggleFavorite(loc.name)}
+                        onClick={() => toggleFavorite(loc.coords)}
                         title={isFav ? c.removeFavorite : c.addFavorite}
                       >
                         <StarIcon on={isFav} />
                       </button>
                     </td>
-                    <td>{loc.name}</td>
+                    <td>{loc.name[locale]}</td>
                     <td>{CAPTURE_TYPE_LABEL[loc.type][locale]}</td>
-                    <td>{loc.location}</td>
+                    <td>{loc.location[locale]}</td>
                     <td><span className="square-badge">{loc.coords}</span></td>
                     <td>
                       {status.start.toLocaleDateString(locale === 'en' ? 'en-US' : 'ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })},{' '}
@@ -271,7 +275,7 @@ export default function CapturesPage() {
                     <td className="captures-col-icon">
                       <button
                         className={`rupor-btn rupor-btn-sm ${isSoundOn ? 'rupor-on' : 'rupor-off'}`}
-                        onClick={() => toggleSound(loc.name)}
+                        onClick={() => toggleSound(loc.coords)}
                         title={isSoundOn ? c.soundOnTitle : c.soundOffTitle}
                       >
                         <SoundIcon on={isSoundOn} />

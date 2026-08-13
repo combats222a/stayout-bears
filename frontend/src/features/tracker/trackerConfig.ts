@@ -36,7 +36,7 @@ export interface LocaleText { ru: string; en: string }
 
 export interface TrackerListEntry {
   index: number;
-  name: string;
+  name: { ru: string; en: string };
   square: string;
 }
 

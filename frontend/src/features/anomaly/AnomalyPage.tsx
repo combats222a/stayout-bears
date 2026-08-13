@@ -333,7 +333,7 @@ export default function AnomalyPage({ user, anomalyData, onAnomalyChange, isGues
                 <span style={{ color: '#50c878' }}>{loc.label}</span>
               </div>
               <div style={{ fontSize: 11, color: '#6e7681' }}>
-                {loc.name}
+                {loc.name[locale]}
                 {' · '}{c.anchorRealLabel}{' '}
                 <span style={{ fontFamily: 'var(--font-mono)', color: '#4a6a8a' }}>
                   {formatRealTime(anomalyData!.anchorRealMs!)}

@@ -33,10 +33,10 @@ export default function AchievementsPage() {
   // как отмечено в референсе (красные стрелки на скриншоте). "Категория" и
   // "Скрытое" убраны из таблицы совсем — категория теперь видна через иконку.
   const columns: Column[] = useMemo(() => [
-    { key: 'name', label: c.colName, getValue: r => r.name },
-    { key: 'description', label: c.colDescription, getValue: r => r.description },
+    { key: 'name', label: c.colName, getValue: r => r.name[locale] },
+    { key: 'description', label: c.colDescription, getValue: r => r.description[locale] },
     { key: 'exp', label: c.colExp, getValue: r => r.exp },
-  ], [c]);
+  ], [c, locale]);
 
   const handleSort = (key: Column['key']) => {
     setSort(prev => {
@@ -48,10 +48,16 @@ export default function AchievementsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return ACHIEVEMENTS;
+    // Ищем и по текущему языку, и по русскому/английскому исходнику разом —
+    // так поиск не ломается, если человек начал печатать раньше, чем
+    // переключил язык, или помнит название достижения на другом языке.
     return ACHIEVEMENTS.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      a.description.toLowerCase().includes(q) ||
-      a.category.toLowerCase().includes(q)
+      a.name.ru.toLowerCase().includes(q) ||
+      a.name.en.toLowerCase().includes(q) ||
+      a.description.ru.toLowerCase().includes(q) ||
+      a.description.en.toLowerCase().includes(q) ||
+      a.category.ru.toLowerCase().includes(q) ||
+      a.category.en.toLowerCase().includes(q)
     );
   }, [search]);
 
@@ -64,12 +70,12 @@ export default function AchievementsPage() {
       const va = col.getValue(a);
       const vb = col.getValue(b);
       let cmp: number;
-      if (typeof va === 'string') cmp = va.localeCompare(vb as string, 'ru');
+      if (typeof va === 'string') cmp = va.localeCompare(vb as string, locale === 'en' ? 'en' : 'ru');
       else cmp = va - (vb as number);
       return sort.dir === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [filtered, sort, columns]);
+  }, [filtered, sort, columns, locale]);
 
   return (
     <div className="page">
@@ -81,10 +87,6 @@ export default function AchievementsPage() {
       </div>
 
       <InfoSpoiler {...ACHIEVEMENTS_SPOILER[locale]} storageKey="spoiler_achievements" />
-
-      {c.untranslatedNote && (
-        <p className="achievements-untranslated-note">{c.untranslatedNote}</p>
-      )}
 
       <input
         className="input captures-search"
@@ -116,14 +118,14 @@ export default function AchievementsPage() {
             </thead>
             <tbody>
               {sorted.map((a) => (
-                <tr key={a.name}>
+                <tr key={a.name.ru}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <AchievementIcon category={a.category} />
-                      <span>{a.name}</span>
+                      <AchievementIcon category={a.category.ru} />
+                      <span>{a.name[locale]}</span>
                     </div>
                   </td>
-                  <td style={{ whiteSpace: 'normal', minWidth: 260 }}>{a.description}</td>
+                  <td style={{ whiteSpace: 'normal', minWidth: 260 }}>{a.description[locale]}</td>
                   <td>{formatExp(a.exp, locale)}</td>
                 </tr>
               ))}

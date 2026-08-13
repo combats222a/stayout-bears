@@ -83,7 +83,7 @@ export default function TrackerRow({ item, config, onKill, onVanish, onReset, on
     <>
       <tr className={rowCls}>
         <td className="td-dot"><span className={dotCls} /></td>
-        <td className="td-name" data-label={config.rowNounLabel[locale]}>{meta.name}</td>
+        <td className="td-name" data-label={config.rowNounLabel[locale]}>{meta.name[locale]}</td>
         <td className="td-square" data-label={t('tracker.colSquare')}><span className="square-badge">{meta.square}</span></td>
         <td className="td-timer" data-label={t('tracker.colToSpawn')}>
           {isReady
@@ -133,7 +133,7 @@ export default function TrackerRow({ item, config, onKill, onVanish, onReset, on
 
       {showModal && (
         <KillTimeModal
-          itemName={meta.name}
+          itemName={meta.name[locale]}
           killedNounGenitive={config.killedNounGenitive[locale]}
           parseLocalTimeInput={config.parseLocalTimeInput}
           onCommit={iso => onManualTime(index, iso)}
