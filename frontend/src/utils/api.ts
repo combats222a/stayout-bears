@@ -18,44 +18,24 @@ function apiErrorText(): DeepValuesToString<typeof ruApiErrors> {
   return resolveInitialLocale() === 'en' ? enApiErrors : ruApiErrors;
 }
 
-// Render (бесплатный тариф) "усыпляет" бэкенд после простоя — первый запрос
-// после сна может не устанавливать соединение ещё 30-50 сек. Чтобы не пугать
-// пользователя мгновенной "Нет соединения с сервером", тихо повторяем запрос
-// несколько раз с паузой, прежде чем показать ошибку.
-const COLD_START_RETRIES = 4;
-const COLD_START_DELAY_MS = 4000;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function request(method: string, path: string, body?: unknown): Promise<any> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  let res: Response | undefined;
-  for (let attempt = 0; attempt <= COLD_START_RETRIES; attempt++) {
-    try {
-      res = await fetch(`${BASE}/api${path}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      break;
-    } catch (e) {
-      // Сеть недоступна / сервер не отвечает (например, хостинг ещё "просыпается")
-      if (attempt < COLD_START_RETRIES) {
-        await sleep(COLD_START_DELAY_MS);
-        continue;
-      }
-      const err: ApiError = new Error(apiErrorText().noConnection);
-      err.isNetworkError = true;
-      throw err;
-    }
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/api${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    // Сеть недоступна / сервер не отвечает (например, хостинг ещё "просыпается")
+    const err: ApiError = new Error(apiErrorText().noConnection);
+    err.isNetworkError = true;
+    throw err;
   }
-  // res гарантированно назначен: либо fetch отработал, либо мы бросили ошибку выше
-  res = res as Response;
 
   let data: any;
   try {
