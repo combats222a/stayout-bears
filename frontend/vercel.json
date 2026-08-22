@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/((?!assets/|favicon|robots.txt|sitemap.xml).*)", "destination": "/index.html" }
-  ]
-}
