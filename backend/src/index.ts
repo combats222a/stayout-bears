@@ -19,6 +19,12 @@ import timersRoutes from './routes/timers';
 import anomalyRoutes from './routes/anomaly';
 
 const app = express();
+// Нужно для express-rate-limit (см. middleware/rateLimiter.ts): без этого
+// за реверс-прокси (Vercel/Railway/Render/Nginx и т.п.) req.ip будет всегда
+// IP-адресом прокси, и лимит регистрации станет общим на всех пользователей
+// сразу. "1" — доверяем одному хопу прокси перед приложением; если хопов
+// больше, поднимите значение или настройте через переменную окружения.
+app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) : 1);
 const server = http.createServer(app);
 
 const io = new Server(server, {
